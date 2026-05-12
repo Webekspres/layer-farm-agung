@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: layerfarm-agung-db
+    restart: always
+    environment:
+      POSTGRES_USER: layerfarm_user
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: layerfarm_agung_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: layerfarm-agung-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://layerfarm_user:secretpassword@db:5432/layerfarm_agung_db?schema=public"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

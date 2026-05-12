@@ -2,24 +2,43 @@
   "name": "layered-farm-agung",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "hybrid": "bun run docker:db && bun run db:generate && bun run dev",
+    "docker:db": "docker compose up db -d",
+    "db:generate": "bun --bun prisma generate",
+    "db:migrate": "bun --bun prisma migrate dev",
+    "db:studio": "bun --bun prisma studio",
+    "db:push": "bun --bun prisma db push",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose up -d --build",
+    "docker:logs": "docker compose logs -f",
+    "docker:stop": "docker compose stop",
+    "fresh": "bun run docker:up && bun run db:migrate && bun run dev"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "next": "16.2.6",
+    "pg": "^8.20.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
