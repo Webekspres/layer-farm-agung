@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* --- Masukin semua variabel default di sini --- */
+  --color-primary: #31813a;
+  --color-primary-hover: #2b6e33;
+  --color-primary-active: #26592c;
+
+  --color-secondary: #d44519;
+  --color-secondary-hover: #c03e17;
+  --color-secondary-active: #a83615;
+
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(20 14.3% 4.1%);
+
+  --color-muted: hsl(210 40% 96.1%);
+  --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+  
+  --color-border: hsl(214.3 31.8% 91.4%);
+  /* ... tambahin variabel lainnya di sini (TANPA SELECTOR) ... */
+  --background-image-login-screen: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.9)), url('/image/login-bg-img.jpg');
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* 1. Daftarkan variant dark-nya di luar @theme */
+@variant dark (&:where(.dark, .dark *));
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* 2. Gunakan CSS standar buat override variabel pas mode dark */
+.dark {
+  --color-background: hsl(222.2 84% 4.9%);
+  --color-foreground: hsl(210 40% 98%);
+  
+  --color-primary: #3db34a;
+  --color-secondary: #ff5722;
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  --color-muted: hsl(217.2 32.6% 17.5%);
+  --color-muted-foreground: hsl(215 20.2% 65.1%);
+  
+  --color-border: hsl(217.2 32.6% 17.5%);
+  /* ... override sisa warna dark mode lu di sini ... */
 }
