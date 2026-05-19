@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  signInWithIdentifier,
+  type SignInState,
+} from "@/features/auth/actions/sign-in";
+
+const initialState: SignInState = {};
 
 export default function LoginSplitScreen() {
   const [showPassword, setShowPassword] = useState(false);
-  const isLoading = false;
+  const [state, formAction, isPending] = useActionState(
+    signInWithIdentifier,
+    initialState,
+  );
 
   return (
     <main className="flex h-screen w-full overflow-hidden">
@@ -82,7 +91,15 @@ export default function LoginSplitScreen() {
           </p>
 
           {/* Form */}
-          <form className="mt-6 w-full flex flex-col gap-4">
+          <form action={formAction} className="mt-6 w-full flex flex-col gap-4">
+            {state.error ? (
+              <p
+                role="alert"
+                className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              >
+                {state.error}
+              </p>
+            ) : null}
 
             {/* Username / Email */}
             <div className="flex flex-col gap-1.5">
@@ -95,10 +112,13 @@ export default function LoginSplitScreen() {
 
               <input
                 id="username"
+                name="identifier"
                 type="text"
+                required
+                disabled={isPending}
                 placeholder="Masukkan username atau email"
                 autoComplete="username"
-                className="w-full rounded-lg border border-border bg-background py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-background py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
               />
             </div>
 
@@ -113,10 +133,13 @@ export default function LoginSplitScreen() {
               <div className="relative">
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
+                  required
+                  disabled={isPending}
                   placeholder="Masukkan password"
                   autoComplete="current-password"
-                  className="w-full rounded-lg border border-border bg-background py-2.5 pl-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-lg border border-border bg-background py-2.5 pl-3 pr-10 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                 />
                 <button
                   type="button"
@@ -149,10 +172,10 @@ export default function LoginSplitScreen() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isPending}
               className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:bg-primary/90 active:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isLoading && <Loader2 size={16} className="animate-spin" />}
+              {isPending && <Loader2 size={16} className="animate-spin" />}
               Login
             </button>
           </form>

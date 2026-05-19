@@ -1,9 +1,7 @@
-const page = () => {
-  return (
-    <main>
-      <h1>Hello World</h1>
-    </main>
-  )
-}
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth/session";
 
-export default page
+export default async function HomePage() {
+  const session = await getServerSession();
+  redirect(session ? "/dashboard" : "/login");
+}
