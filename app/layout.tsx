@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, Raleway } from "next/font/google";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
@@ -25,14 +26,17 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="id"
+      suppressHydrationWarning
       className={cn(
         "h-full antialiased font-sans",
         raleway.variable,
         instrumentSansHeading.variable,
       )}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
