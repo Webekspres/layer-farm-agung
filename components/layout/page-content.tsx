@@ -9,7 +9,7 @@ export function PageContent({ children, className }: PageContentProps) {
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-1 flex-col gap-6 p-4 pb-8 md:p-6 md:pb-10",
+        "flex min-w-0 flex-1 flex-col gap-6 p-4 pb-8 md:p-6 lg:p-12",
         className,
       )}
     >
