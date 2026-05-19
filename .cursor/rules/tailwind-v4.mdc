@@ -1,0 +1,27 @@
+---
+description: Tailwind CSS v4 — theme tokens and styling conventions
+globs: app/**/*.css,**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# Tailwind CSS v4
+
+CSS-first setup. Theme lives in `app/globals.css`.
+
+## Do
+
+- Import chain: `tailwindcss`, `tw-animate-css`, `shadcn/tailwind.css`.
+- Use theme utilities: `bg-primary`, `text-primary-foreground`, `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-sidebar`, `bg-card`.
+- Dark mode via `.dark { ... }` and `@custom-variant dark` — not `tailwind.config`.
+- Headings: `font-[family-name:var(--font-heading)]` where appropriate.
+
+## Do not
+
+- Create or edit `tailwind.config.ts` / `tailwind.config.js`.
+- Hardcode one-off hex colors when a semantic token exists.
+- Put business logic in CSS files.
+
+## shadcn
+
+- Add primitives with `bunx shadcn@latest add [component]`.
+- New UI building blocks compose from `components/ui/*`.
