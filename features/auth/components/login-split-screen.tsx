@@ -41,7 +41,7 @@ export default function LoginSplitScreen() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 hover:">
             {[
               { value: "24/7", label: "Akses" },
               { value: "Real-time", label: "Monitoring" },
@@ -49,7 +49,7 @@ export default function LoginSplitScreen() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-xl border border-white/20 bg-white/10 px-3 py-3 text-center backdrop-blur-sm"
+                className="rounded-xl border border-white/20 bg-white/10 px-3 py-3 text-center backdrop-blur-sm hover:scale-105 hover:bg-white/20 transition-all duration-300"
               >
                 <p className="text-sm font-semibold text-white">{stat.value}</p>
                 <p className="mt-0.5 text-xs text-white/60">{stat.label}</p>
@@ -140,7 +140,7 @@ export default function LoginSplitScreen() {
               </label>
               <a
                 href="#"
-                className="text-sm text-primary hover:text-primary-hover hover:underline hover:underline-offset-2 transition"
+                className="text-sm text-primary hover:text-primary/80 hover:underline hover:underline-offset-2 transition"
               >
                 Lupa password?
               </a>
@@ -150,7 +150,7 @@ export default function LoginSplitScreen() {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-widest text-white transition hover:bg-primary-hover active:bg-primary-active focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold uppercase tracking-widest text-primary-foreground transition hover:bg-primary/90 active:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading && <Loader2 size={16} className="animate-spin" />}
               Login
