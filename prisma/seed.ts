@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { createUserWithCredential } from "../lib/auth/create-user";
+import { createUserWithCredential } from "@/features/auth/services/create-user";
 
 const PERMISSIONS = [
   "view_dashboard",

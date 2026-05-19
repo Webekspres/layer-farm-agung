@@ -3,7 +3,7 @@ import {
   customSessionClient,
   usernameClient,
 } from "better-auth/client/plugins";
-import type { Auth } from "@/lib/auth";
+import type { Auth } from "@/features/auth/server/auth";
 
 export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,

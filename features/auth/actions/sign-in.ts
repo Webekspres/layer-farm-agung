@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
-import { auth } from "@/lib/auth";
+import { auth } from "@/features/auth/server/auth";
 import prisma from "@/lib/prisma";
 
 export type SignInState = {

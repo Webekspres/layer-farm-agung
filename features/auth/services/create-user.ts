@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import prisma from "@/lib/prisma";
-import { hashPasswordsForUser } from "@/lib/auth/password";
+import { hashPasswordsForUser } from "@/features/auth/lib/password";
 
-type CreateUserInput = {
+export type CreateUserInput = {
   fullName: string;
   username: string;
   email?: string | null;
