@@ -48,7 +48,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight font-[family-name:var(--font-heading)] text-foreground">
+        <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground">
           Selamat datang, {displayName}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -78,7 +78,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
           <CardHeader>
-            <CardTitle className="font-[family-name:var(--font-heading)]">
+            <CardTitle className="font-heading">
               Sesi Anda
             </CardTitle>
             <CardDescription>
@@ -97,7 +97,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader>
-            <CardTitle className="font-[family-name:var(--font-heading)]">
+            <CardTitle className="font-heading">
               Hak akses
             </CardTitle>
             <CardDescription>

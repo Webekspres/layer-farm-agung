@@ -20,7 +20,7 @@ export function ComingSoonPanel({ title, description }: ComingSoonPanelProps) {
           <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
             <Construction className="size-6" />
           </div>
-          <CardTitle className="font-[family-name:var(--font-heading)]">
+          <CardTitle className="font-heading">
             {title}
           </CardTitle>
           <CardDescription>{description}</CardDescription>

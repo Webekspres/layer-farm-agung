@@ -52,7 +52,6 @@ export const adminNavItems: NavItem[] = [
     href: "/dashboard/users",
     icon: Users,
     permission: "manage_users",
-    badge: "Soon",
   },
   {
     title: "Peran & Akses",
