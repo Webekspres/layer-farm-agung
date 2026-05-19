@@ -14,7 +14,7 @@ type DashboardShellProps = {
 export function DashboardShell({ session, children }: DashboardShellProps) {
   return (
     <TooltipProvider>
-      <SidebarProvider defaultOpen={false}>
+      <SidebarProvider defaultOpen>
         <AppSidebar session={session} />
         <SidebarInset className="min-h-svh">
           <DashboardHeader session={session} />

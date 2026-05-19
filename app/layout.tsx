@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans, Raleway } from "next/font/google";
+import { NavigationProgress } from "@/components/providers/navigation-progress";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,10 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <NavigationProgress />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

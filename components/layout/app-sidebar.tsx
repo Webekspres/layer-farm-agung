@@ -50,17 +50,17 @@ export function AppSidebar({ session }: AppSidebarProps) {
               asChild
             >
               <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <div className="flex aspect-square mr-2 size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
                   <Image
                     src="/image/Logo.png"
                     alt="AAPM"
                     width={32}
                     height={32}
-                    className="size-7 rounded-md object-contain"
+                    className="size-8 rounded-lg object-contain"
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold font-[family-name:var(--font-heading)]">
+                  <span className="truncate font-semibold font-heading">
                     Layer Farm
                   </span>
                   <span className="truncate text-xs text-sidebar-foreground/70">
