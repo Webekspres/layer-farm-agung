@@ -3,6 +3,10 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { customSession, username } from "better-auth/plugins";
 import { APIError } from "better-auth/api";
+import {
+  assertActiveBranchContext,
+  assertUserMayUseSession,
+} from "@/features/auth/lib/session-guards";
 import prisma from "@/lib/prisma";
 
 export const auth = betterAuth({
@@ -83,6 +87,7 @@ export const auth = betterAuth({
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
         include: {
+          subdomain: true,
           role: {
             include: {
               role_permissions: {
@@ -97,13 +102,26 @@ export const auth = betterAuth({
         throw new APIError("UNAUTHORIZED", { message: "User not found" });
       }
 
-      const permissions = dbUser.role.role_permissions.map(
-        (rp) => rp.permission.name,
-      );
+      assertUserMayUseSession(dbUser);
 
       const sessionRecord = session as typeof session & {
         activeSubdomainId?: string | null;
       };
+
+      const activeSubdomainId =
+        sessionRecord.activeSubdomainId ?? dbUser.subdomain_id;
+
+      if (activeSubdomainId) {
+        const contextBranch = await prisma.subdomain.findUnique({
+          where: { id: activeSubdomainId },
+          select: { is_active: true },
+        });
+        assertActiveBranchContext(contextBranch);
+      }
+
+      const permissions = dbUser.role.role_permissions.map(
+        (rp) => rp.permission.name,
+      );
 
       return {
         user: {
@@ -117,8 +135,7 @@ export const auth = betterAuth({
         },
         session: {
           ...session,
-          activeSubdomainId:
-            sessionRecord.activeSubdomainId ?? dbUser.subdomain_id,
+          activeSubdomainId,
         },
       };
     }),

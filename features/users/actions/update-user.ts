@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { revokeAllUserSessions } from "@/features/auth/services/revoke-sessions";
 import {
   getUsersTenantScope,
   requireManageUsersSession,
 } from "@/features/users/lib/access";
 import { updateUserSchema } from "@/features/users/schemas/user";
+import { resolveSubdomainForRoleAssignment } from "@/features/users/services/resolve-subdomain-for-role";
 import { updateUserRecord } from "@/features/users/services/update-user";
 
 export type UpdateUserState = {
@@ -55,13 +57,15 @@ export async function updateUserAction(
     return { error: "Pengguna tidak ditemukan." };
   }
 
-  let subdomainId: string | null = null;
-  if (isGlobalAdmin) {
-    if (data.subdomainId && data.subdomainId !== "global") {
-      subdomainId = data.subdomainId;
-    }
-  } else {
-    subdomainId = scopedSubdomainId;
+  const resolved = await resolveSubdomainForRoleAssignment({
+    roleId: data.roleId,
+    subdomainIdFromForm: data.subdomainId,
+    isGlobalAdmin,
+    scopedSubdomainId,
+  });
+
+  if (resolved.error) {
+    return { error: resolved.error };
   }
 
   try {
@@ -70,9 +74,13 @@ export async function updateUserAction(
       username: data.username,
       email: data.email || null,
       roleId: data.roleId,
-      subdomainId,
+      subdomainId: resolved.subdomainId,
       isActive: data.isActive,
     });
+
+    if (!data.isActive) {
+      await revokeAllUserSessions(data.userId);
+    }
   } catch {
     return {
       error:

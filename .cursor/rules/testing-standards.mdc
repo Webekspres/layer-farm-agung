@@ -54,7 +54,7 @@ High-risk logic where a bug hurts operations, stock, or security:
 | Area | Why |
 |------|-----|
 | **Inventory / stock math** | Formulas that deduct feed or egg stock on submit — wrong math = wrong reports for Pak Agung |
-| **RBAC / permissions** | Role gates (e.g. `Petugas Kandang` cannot open finance or delete records) |
+| **RBAC / permissions** | Role gates via `requirePermission("key")`; keys in DB must match code (`wired-permissions.ts`) |
 | **Auth & user provisioning** | Custom `$transaction` or multi-step flows (e.g. `create-user`, password sync, tenant scope) |
 | **Tenant scoping** | Queries filtered by `subdomain_id` / `getActiveSubdomainId` — cross-branch data leaks |
 | **Financial / production calculations** | Aggregations, FCR, HD%, cost allocation when implemented |

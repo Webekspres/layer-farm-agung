@@ -6,6 +6,7 @@ import {
   requireGlobalAdmin,
   requirePermission,
 } from "@/features/auth/lib/require-permission";
+import { revokeAllBranchSessions } from "@/features/auth/services/revoke-sessions";
 import { updateSubdomainSchema } from "@/features/subdomains/schemas/subdomain";
 
 export type SubdomainFormState = {
@@ -31,6 +32,15 @@ export async function updateSubdomainAction(
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
   }
 
+  const existing = await prisma.subdomain.findUnique({
+    where: { id: parsed.data.id },
+    select: { is_active: true },
+  });
+
+  if (!existing) {
+    return { error: "Cabang tidak ditemukan." };
+  }
+
   try {
     await prisma.subdomain.update({
       where: { id: parsed.data.id },
@@ -40,6 +50,10 @@ export async function updateSubdomainAction(
         is_active: parsed.data.isActive,
       },
     });
+
+    if (existing.is_active && !parsed.data.isActive) {
+      await revokeAllBranchSessions(parsed.data.id);
+    }
   } catch {
     return { error: "Gagal memperbarui cabang." };
   }

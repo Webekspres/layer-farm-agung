@@ -7,6 +7,7 @@ import {
   requireManageUsersSession,
 } from "@/features/users/lib/access";
 import { createUserSchema } from "@/features/users/schemas/user";
+import { resolveSubdomainForRoleAssignment } from "@/features/users/services/resolve-subdomain-for-role";
 
 export type CreateUserState = {
   error?: string;
@@ -37,14 +38,16 @@ export async function createUserAction(
   }
 
   const data = parsed.data;
-  let subdomainId: string | null = null;
 
-  if (isGlobalAdmin) {
-    if (data.subdomainId && data.subdomainId !== "global") {
-      subdomainId = data.subdomainId;
-    }
-  } else {
-    subdomainId = scopedSubdomainId;
+  const resolved = await resolveSubdomainForRoleAssignment({
+    roleId: data.roleId,
+    subdomainIdFromForm: data.subdomainId,
+    isGlobalAdmin,
+    scopedSubdomainId,
+  });
+
+  if (resolved.error) {
+    return { error: resolved.error };
   }
 
   try {
@@ -54,7 +57,7 @@ export async function createUserAction(
       email: data.email || null,
       password: data.password,
       roleId: data.roleId,
-      subdomainId,
+      subdomainId: resolved.subdomainId,
       isActive: data.isActive ?? true,
     });
   } catch {

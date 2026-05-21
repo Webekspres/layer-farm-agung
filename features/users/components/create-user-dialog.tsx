@@ -32,6 +32,10 @@ import {
   createUserAction,
   type CreateUserState,
 } from "@/features/users/actions/create-user";
+import {
+  isSuperadminRole,
+  subdomainIdAfterRoleChange,
+} from "@/features/users/lib/role-subdomain";
 import type { UserFormOptions } from "@/features/users/types";
 
 const initialState: CreateUserState = {};
@@ -52,28 +56,44 @@ export function CreateUserDialog({
     initialState,
   );
 
-  const defaultSubdomain =
-    formOptions.defaultSubdomainId ??
-    (formOptions.isGlobalAdmin ? "global" : "");
+  const defaultBranchId =
+    formOptions.defaultSubdomainId ?? formOptions.subdomains[0]?.id ?? "";
 
   const [roleId, setRoleId] = useState("");
-  const [subdomainId, setSubdomainId] = useState(defaultSubdomain);
+  const [subdomainId, setSubdomainId] = useState(defaultBranchId);
   const [isActive, setIsActive] = useState(true);
+
+  const superadminSelected =
+    Boolean(roleId) && isSuperadminRole(roleId, formOptions.roles);
+
+  function handleRoleChange(nextRoleId: string) {
+    setRoleId(nextRoleId);
+    setSubdomainId((current) =>
+      subdomainIdAfterRoleChange(
+        nextRoleId,
+        current,
+        formOptions.roles,
+        formOptions.subdomains,
+        defaultBranchId,
+      ),
+    );
+  }
 
   useEffect(() => {
     if (state.success) {
       onOpenChange(false);
       setRoleId("");
-      setSubdomainId(defaultSubdomain);
+      setSubdomainId(defaultBranchId);
       setIsActive(true);
     }
-  }, [state.success, onOpenChange, defaultSubdomain]);
+  }, [state.success, onOpenChange, defaultBranchId]);
 
   useEffect(() => {
     if (open) {
-      setSubdomainId(defaultSubdomain);
+      setRoleId("");
+      setSubdomainId(defaultBranchId);
     }
-  }, [open, defaultSubdomain]);
+  }, [open, defaultBranchId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -147,7 +167,7 @@ export function CreateUserDialog({
                 <FieldLabel htmlFor="roleId">Peran</FieldLabel>
                 <Select
                   value={roleId}
-                  onValueChange={setRoleId}
+                  onValueChange={handleRoleChange}
                   required
                   disabled={isPending}
                 >
@@ -167,23 +187,45 @@ export function CreateUserDialog({
               {formOptions.isGlobalAdmin ? (
                 <Field>
                   <FieldLabel htmlFor="subdomainId">Cabang</FieldLabel>
-                  <Select
-                    value={subdomainId}
-                    onValueChange={setSubdomainId}
-                    disabled={isPending}
-                  >
-                    <SelectTrigger id="subdomainId" className="w-full">
-                      <SelectValue placeholder="Pilih cabang" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="global">Global (superadmin)</SelectItem>
-                      {formOptions.subdomains.map((sub) => (
-                        <SelectItem key={sub.id} value={sub.id}>
-                          {sub.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {superadminSelected ? (
+                    <>
+                      <Select value="global" disabled>
+                        <SelectTrigger id="subdomainId" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="global">Global (superadmin)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        Peran superadmin selalu terikat akses global, bukan cabang
+                        tertentu.
+                      </FieldDescription>
+                    </>
+                  ) : (
+                    <>
+                      <Select
+                        value={subdomainId}
+                        onValueChange={setSubdomainId}
+                        disabled={isPending || !roleId}
+                        required
+                      >
+                        <SelectTrigger id="subdomainId" className="w-full">
+                          <SelectValue placeholder="Pilih cabang" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formOptions.subdomains.map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        Admin dan staff harus dipetakan ke satu cabang.
+                      </FieldDescription>
+                    </>
+                  )}
                 </Field>
               ) : null}
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
+import { revokeAllUserSessions } from "@/features/auth/services/revoke-sessions";
 import {
   getUsersTenantScope,
   requireManageUsersSession,
@@ -31,6 +32,10 @@ export async function updateUserStatusAction(userId: string, isActive: boolean) 
     where: { id: userId },
     data: { is_active: isActive },
   });
+
+  if (!isActive) {
+    await revokeAllUserSessions(userId);
+  }
 
   revalidatePath("/dashboard/users");
   return { success: true };

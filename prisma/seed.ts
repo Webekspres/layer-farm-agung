@@ -29,6 +29,15 @@ async function main() {
     },
   });
 
+  const staffRole = await prisma.role.upsert({
+    where: { name: "staff" },
+    update: { description: "Staff operasional / petugas kandang" },
+    create: {
+      name: "staff",
+      description: "Staff operasional / petugas kandang",
+    },
+  });
+
   const permissionRecords = await Promise.all(
     PERMISSIONS.map((name) =>
       prisma.permission.upsert({
@@ -70,6 +79,30 @@ async function main() {
       update: {},
       create: {
         role_id: adminRole.id,
+        permission_id: permission.id,
+      },
+    });
+  }
+
+  const staffPermissionNames = new Set([
+    "view_dashboard",
+    "manage_production",
+    "manage_inventory",
+  ]);
+
+  for (const permission of permissionRecords.filter((p) =>
+    staffPermissionNames.has(p.name),
+  )) {
+    await prisma.rolePermission.upsert({
+      where: {
+        role_id_permission_id: {
+          role_id: staffRole.id,
+          permission_id: permission.id,
+        },
+      },
+      update: {},
+      create: {
+        role_id: staffRole.id,
         permission_id: permission.id,
       },
     });
@@ -119,9 +152,27 @@ async function main() {
     });
   }
 
+  const staffUsername = "staff.kandang";
+  const existingStaff = await prisma.user.findUnique({
+    where: { username: staffUsername },
+  });
+
+  if (!existingStaff) {
+    await createUserWithCredential({
+      fullName: "Staff Kandang",
+      username: staffUsername,
+      email: "staff@cabang-utama.local",
+      password: "ChangeMe123!",
+      roleId: staffRole.id,
+      subdomainId: defaultBranch.id,
+      isActive: true,
+    });
+  }
+
   console.log("Seed selesai.");
   console.log("Superadmin: superadmin / ChangeMe123!");
   console.log("Admin cabang: admin.cabang / ChangeMe123!");
+  console.log("Staff kandang: staff.kandang / ChangeMe123!");
 }
 
 main()

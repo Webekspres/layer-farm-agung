@@ -32,6 +32,10 @@ import {
   updateUserAction,
   type UpdateUserState,
 } from "@/features/users/actions/update-user";
+import {
+  isSuperadminRole,
+  subdomainIdAfterRoleChange,
+} from "@/features/users/lib/role-subdomain";
 import type { UserFormOptions, UserListItem } from "@/features/users/types";
 
 const updateInitial: UpdateUserState = {};
@@ -56,9 +60,28 @@ export function EditUserDialog({
     updateInitial,
   );
 
+  const defaultBranchId =
+    formOptions.defaultSubdomainId ?? formOptions.subdomains[0]?.id ?? "";
+
   const [roleId, setRoleId] = useState("");
   const [subdomainId, setSubdomainId] = useState("global");
   const [isActive, setIsActive] = useState(true);
+
+  const superadminSelected =
+    Boolean(roleId) && isSuperadminRole(roleId, formOptions.roles);
+
+  function handleRoleChange(nextRoleId: string) {
+    setRoleId(nextRoleId);
+    setSubdomainId((current) =>
+      subdomainIdAfterRoleChange(
+        nextRoleId,
+        current,
+        formOptions.roles,
+        formOptions.subdomains,
+        defaultBranchId,
+      ),
+    );
+  }
 
   useEffect(() => {
     if (!user || !open) return;
@@ -129,7 +152,7 @@ export function EditUserDialog({
                 <FieldLabel htmlFor="edit-roleId">Peran</FieldLabel>
                 <Select
                   value={roleId}
-                  onValueChange={setRoleId}
+                  onValueChange={handleRoleChange}
                   disabled={updatePending}
                 >
                   <SelectTrigger id="edit-roleId" className="w-full">
@@ -147,23 +170,44 @@ export function EditUserDialog({
               {formOptions.isGlobalAdmin ? (
                 <Field>
                   <FieldLabel htmlFor="edit-subdomainId">Cabang</FieldLabel>
-                  <Select
-                    value={subdomainId}
-                    onValueChange={setSubdomainId}
-                    disabled={updatePending}
-                  >
-                    <SelectTrigger id="edit-subdomainId" className="w-full">
-                      <SelectValue placeholder="Pilih cabang" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="global">Global (superadmin)</SelectItem>
-                      {formOptions.subdomains.map((sub) => (
-                        <SelectItem key={sub.id} value={sub.id}>
-                          {sub.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {superadminSelected ? (
+                    <>
+                      <Select value="global" disabled>
+                        <SelectTrigger id="edit-subdomainId" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="global">Global (superadmin)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        Peran superadmin selalu terikat akses global.
+                      </FieldDescription>
+                    </>
+                  ) : (
+                    <>
+                      <Select
+                        value={subdomainId}
+                        onValueChange={setSubdomainId}
+                        disabled={updatePending}
+                        required
+                      >
+                        <SelectTrigger id="edit-subdomainId" className="w-full">
+                          <SelectValue placeholder="Pilih cabang" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formOptions.subdomains.map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FieldDescription>
+                        Admin dan staff harus dipetakan ke satu cabang.
+                      </FieldDescription>
+                    </>
+                  )}
                 </Field>
               ) : null}
               <Field orientation="horizontal" className="items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">

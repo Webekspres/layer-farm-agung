@@ -18,6 +18,7 @@ import {
   updateRolePermissionsAction,
   type UpdateRolePermissionsState,
 } from "@/features/roles/actions/update-role-permissions";
+import { PermissionsRegistry } from "@/features/permissions/components/permissions-registry";
 import type { PermissionItem, RoleWithPermissions } from "@/features/roles/types";
 
 const initialState: UpdateRolePermissionsState = {};
@@ -172,6 +173,8 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
           )}
         </CardContent>
       </Card>
+
+      <PermissionsRegistry permissions={permissions} />
     </div>
   );
 }

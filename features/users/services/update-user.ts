@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import { syncAuthUserIdentity } from "@/features/auth/services/sync-auth-user-identity";
 
 export type UpdateUserData = {
   fullName: string;
@@ -10,17 +10,13 @@ export type UpdateUserData = {
 };
 
 export async function updateUserRecord(userId: string, data: UpdateUserData) {
-  return prisma.user.update({
-    where: { id: userId },
-    data: {
-      full_name: data.fullName,
-      username: data.username,
-      display_username: data.username,
-      email: data.email,
-      email_verified: Boolean(data.email),
-      role_id: data.roleId,
-      subdomain_id: data.subdomainId,
-      is_active: data.isActive,
-    },
+  return syncAuthUserIdentity({
+    userId,
+    fullName: data.fullName,
+    username: data.username,
+    email: data.email,
+    roleId: data.roleId,
+    subdomainId: data.subdomainId,
+    isActive: data.isActive,
   });
 }
