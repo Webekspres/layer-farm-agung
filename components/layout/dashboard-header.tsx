@@ -82,7 +82,7 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-backdrop-filter:bg-background/80 sm:px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-1 hidden h-4 sm:block" />
       <Breadcrumb className="min-w-0 flex-1">

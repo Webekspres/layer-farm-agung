@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CreateUserDialog } from "@/features/users/components/create-user-dialog";
 import { EditUserDialog } from "@/features/users/components/edit-user-dialog";
+import { DeleteUserDialog } from "@/features/users/components/delete-user-dialog";
 import { ResetPasswordDialog } from "@/features/users/components/reset-password-dialog";
 import { UsersTable } from "@/features/users/components/users-table";
 import { UsersToolbar } from "@/features/users/components/users-toolbar";
@@ -30,6 +31,8 @@ export function UsersManagement({
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserListItem | null>(null);
   const [passwordUser, setPasswordUser] = useState<UserListItem | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<UserListItem | null>(null);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -49,6 +52,10 @@ export function UsersManagement({
           setPasswordUser(user);
           setPasswordOpen(true);
         }}
+        onDeleteUser={(user) => {
+          setDeletingUser(user);
+          setDeleteOpen(true);
+        }}
       />
       <CreateUserDialog
         open={createOpen}
@@ -66,6 +73,11 @@ export function UsersManagement({
         open={passwordOpen}
         onOpenChange={setPasswordOpen}
         user={passwordUser}
+      />
+      <DeleteUserDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        user={deletingUser}
       />
     </div>
   );

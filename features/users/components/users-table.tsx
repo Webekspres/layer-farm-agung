@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { KeyRound, MoreHorizontal, Pencil } from "lucide-react";
+import { KeyRound, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ type UsersTableProps = {
   pagination: UsersPaginationMeta;
   onEditUser: (user: UserListItem) => void;
   onResetPassword: (user: UserListItem) => void;
+  onDeleteUser: (user: UserListItem) => void;
 };
 
 function formatDate(iso: string) {
@@ -45,6 +46,7 @@ export function UsersTable({
   pagination,
   onEditUser,
   onResetPassword,
+  onDeleteUser,
 }: UsersTableProps) {
   const [isPending, startTransition] = useTransition();
 
@@ -125,7 +127,7 @@ export function UsersTable({
                             <MoreHorizontal className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuContent align="end" className="w-52">
                           <DropdownMenuItem onClick={() => onEditUser(user)}>
                             <Pencil className="size-4" />
                             Edit pengguna
@@ -134,6 +136,15 @@ export function UsersTable({
                             <KeyRound className="size-4" />
                             Atur password
                           </DropdownMenuItem>
+                          {!user.isActive && !isSelf ? (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => onDeleteUser(user)}
+                            >
+                              <Trash2 className="size-4" />
+                              Hapus pengguna
+                            </DropdownMenuItem>
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

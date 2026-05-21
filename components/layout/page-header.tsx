@@ -9,7 +9,7 @@ type PageHeaderProps = {
 export function PageHeader({ title, description, className }: PageHeaderProps) {
   return (
     <div className={cn("space-y-1", className)}>
-      <h1 className="font-[family-name:var(--font-heading)] text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+      <h1 className="font-heading text-xl font-bold tracking-tight text-foreground sm:text-2xl">
         {title}
       </h1>
       {description ? (

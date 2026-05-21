@@ -158,7 +158,7 @@
 }
 
 @utility dialog-footer-padding {
-  @apply -mx-0 -mb-0 shrink-0 gap-2 rounded-b-xl border-t border-border bg-muted/50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7 md:px-8;
+  @apply mx-0 mb-0 shrink-0 gap-2 rounded-b-xl border-t border-border bg-muted/50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7 md:px-8;
 }
 
 @utility dialog-form-fields {

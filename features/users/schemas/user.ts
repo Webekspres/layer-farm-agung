@@ -55,6 +55,10 @@ export const resetUserPasswordSchema = z.object({
   password: z.string().min(8, "Password minimal 8 karakter."),
 });
 
+export const deleteUserSchema = z.object({
+  userId: z.string().uuid("ID pengguna tidak valid."),
+});
+
 export const changeOwnPasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Password saat ini wajib diisi."),
