@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "hybrid": "bun run docker:db && bun run db:generate && bun run dev",
     "docker:db": "docker compose up db -d",
     "db:generate": "bun --bun prisma generate",

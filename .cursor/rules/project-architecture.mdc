@@ -28,6 +28,7 @@ One folder per module: `auth`, `dashboard`, `production`, `cages`, etc.
 | `lib/` | Feature helpers (session, permissions, password hashing) |
 | `config/` | Static config (nav items, constants) |
 | `schemas/` | Zod schemas for this feature |
+| `*.test.ts(x)` | Colocated unit tests (Bun) — see `testing-standards.mdc` |
 
 Example: `features/auth/actions/sign-in.ts`, `features/auth/server/auth.ts`, `features/dashboard/config/navigation.ts`.
 

@@ -1,0 +1,87 @@
+---
+description: Bun unit testing standards — runner, file placement, and when to test vs skip
+alwaysApply: true
+---
+
+# Testing Standards
+
+Pragmatic testing for Agung Petelur. **Do not aim for 100% coverage.** Test what protects money, stock, and access control.
+
+## Runner & file conventions
+
+- Use **Bun's native test runner** for unit tests (`bun:test`).
+- Run tests: `bun test` (or `bun test path/to/file.test.ts`).
+- Test files **must** use `.test.ts` or `.test.tsx` and be **colocated beside the file under test** — same subfolder (`actions/`, `services/`, `lib/`, `schemas/`, `config/`), never a global `tests/` or `__tests__/` tree.
+
+**Colocation layout (feature-based):**
+
+```
+features/auth/
+├── actions/
+│   ├── sign-in.ts
+│   └── sign-in.test.ts          ← next to source
+├── services/
+│   ├── create-user.ts
+│   └── create-user.test.ts
+├── lib/
+│   ├── session.ts
+│   └── session.test.ts
+└── components/
+    ├── login-split-screen.tsx
+    └── login-split-screen.test.tsx   ← optional; prefer testing logic in lib/services
+```
+
+Examples:
+
+- `features/auth/services/create-user.test.ts` ↔ `create-user.ts`
+- `features/users/actions/delete-user.test.ts` ↔ `delete-user.ts`
+- `features/users/schemas/user.test.ts` ↔ `user.ts`
+
+- **DO NOT** import `jest` or `vitest`.
+- **DO** use:
+
+```ts
+import { expect, test, describe, beforeEach } from "bun:test";
+```
+
+- Prefer testing **pure functions** and **service/action logic** extracted or callable without rendering React.
+- Mock Prisma/external IO at boundaries when needed; keep tests fast and deterministic.
+
+## When to write tests (Category A — DO TEST)
+
+High-risk logic where a bug hurts operations, stock, or security:
+
+| Area | Why |
+|------|-----|
+| **Inventory / stock math** | Formulas that deduct feed or egg stock on submit — wrong math = wrong reports for Pak Agung |
+| **RBAC / permissions** | Role gates (e.g. `Petugas Kandang` cannot open finance or delete records) |
+| **Auth & user provisioning** | Custom `$transaction` or multi-step flows (e.g. `create-user`, password sync, tenant scope) |
+| **Tenant scoping** | Queries filtered by `subdomain_id` / `getActiveSubdomainId` — cross-branch data leaks |
+| **Financial / production calculations** | Aggregations, FCR, HD%, cost allocation when implemented |
+
+If you add or change logic in these areas, **add or update colocated tests** unless the change is trivially obvious.
+
+## When to skip tests (Category B — SKIP)
+
+Low-risk UI and boilerplate — manual check in browser is enough:
+
+| Area | Why skip |
+|------|----------|
+| **shadcn / UI primitives** | Buttons, dialogs, sidebar collapse — library-owned behavior |
+| **Simple CRUD display** | Read-only tables, static labels, layout spacing |
+| **Pass-through Server Actions** | Thin wrappers with no branching — optional smoke test only if regressions are feared |
+
+Do **not** add tests just to satisfy coverage metrics.
+
+## Placement checklist
+
+1. Logic lives in `features/[name]/services/` or `lib/`? → test beside that file in the same folder.
+2. Logic in `features/[name]/actions/`? → `actions/foo.test.ts` next to `foo.ts`.
+3. Shared pure helper used by one feature? → test inside that feature's `lib/` folder.
+4. Global infra in `lib/` (e.g. `cn`)? → usually **no test** unless non-trivial.
+
+## Agent behavior
+
+- When implementing Category A logic, **propose or write tests** in the same PR/task.
+- When implementing Category B only, **do not** add tests unless the user asks.
+- Never introduce Jest/Vitest config or dependencies for unit tests.
