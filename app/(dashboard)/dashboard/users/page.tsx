@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { PageContent } from "@/components/layout/page-content";
 import { PageHeader } from "@/components/layout/page-header";
 import { UsersManagement } from "@/features/users/components/users-management";
 import {
@@ -59,7 +58,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   ]);
 
   return (
-    <PageContent>
+    <>
       <PageHeader
         title="Manajemen Pengguna"
         description="Kelola akun staff dan admin per cabang. Buat pengguna baru, filter daftar, dan aktifkan atau nonaktifkan akses login."
@@ -78,6 +77,6 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
           }}
         />
       </Suspense>
-    </PageContent>
+    </>
   );
 }

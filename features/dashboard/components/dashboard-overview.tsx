@@ -1,4 +1,5 @@
 import { Egg, Package, TrendingUp, Users } from "lucide-react";
+import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -46,15 +47,11 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
     session.session.activeSubdomainId ?? session.user.subdomainId;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground">
-          Selamat datang, {displayName}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ringkasan operasional peternakan ayam petelur Anda.
-        </p>
-      </div>
+    <>
+      <PageHeader
+        title={`Selamat datang, ${displayName}`}
+        description="Ringkasan operasional peternakan ayam petelur Anda."
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((stat) => (
@@ -69,7 +66,9 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {stat.description}
+              </p>
             </CardContent>
           </Card>
         ))}
@@ -78,9 +77,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading">
-              Sesi Anda
-            </CardTitle>
+            <CardTitle className="font-heading">Sesi Anda</CardTitle>
             <CardDescription>
               Informasi akun dari Domain 1 (Auth & Tenant).
             </CardDescription>
@@ -97,9 +94,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
         <Card className="border-border/80 shadow-sm">
           <CardHeader>
-            <CardTitle className="font-heading">
-              Hak akses
-            </CardTitle>
+            <CardTitle className="font-heading">Hak akses</CardTitle>
             <CardDescription>
               Permission dari RBAC — menu sidebar difilter otomatis.
             </CardDescription>
@@ -125,13 +120,13 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-2 last:border-0 last:pb-0">
+    <div className="flex flex-col gap-0.5 border-b border-border/60 pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
     </div>

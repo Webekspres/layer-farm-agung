@@ -28,6 +28,21 @@ const themes = [
 
 type ThemeValue = (typeof themes)[number]["value"];
 
+function ThemeSwitcherPlaceholder({ className }: { className?: string }) {
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      className={cn("relative size-9 shrink-0", className)}
+      aria-label="Ubah tema"
+      disabled
+    >
+      <Sun className="size-4 opacity-50" />
+      <span className="sr-only">Ubah tema</span>
+    </Button>
+  );
+}
+
 export function ThemeSwitcher({ className }: { className?: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -35,6 +50,10 @@ export function ThemeSwitcher({ className }: { className?: string }) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  if (!mounted) {
+    return <ThemeSwitcherPlaceholder className={className} />;
+  }
 
   const activeTheme = (theme ?? "system") as ThemeValue;
   const activeLabel =
@@ -50,12 +69,11 @@ export function ThemeSwitcher({ className }: { className?: string }) {
               size="icon-sm"
               className={cn("relative size-9 shrink-0", className)}
               aria-label={`Tema: ${activeLabel}`}
-              disabled={!mounted}
             >
               <Sun
                 className={cn(
                   "size-4 transition-all",
-                  mounted && resolvedTheme === "dark"
+                  resolvedTheme === "dark"
                     ? "scale-0 rotate-90"
                     : "scale-100 rotate-0",
                 )}
@@ -63,7 +81,7 @@ export function ThemeSwitcher({ className }: { className?: string }) {
               <Moon
                 className={cn(
                   "absolute size-4 transition-all",
-                  mounted && resolvedTheme === "dark"
+                  resolvedTheme === "dark"
                     ? "scale-100 rotate-0"
                     : "scale-0 -rotate-90",
                 )}

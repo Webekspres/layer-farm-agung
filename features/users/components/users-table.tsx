@@ -50,11 +50,11 @@ export function UsersTable({ users, currentUserId, pagination }: UsersTableProps
             <TableRow className="bg-muted/40 hover:bg-muted/40">
               <TableHead>Nama</TableHead>
               <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Peran</TableHead>
-              <TableHead>Cabang</TableHead>
+              <TableHead className="hidden lg:table-cell">Cabang</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Dibuat</TableHead>
+              <TableHead className="hidden sm:table-cell">Dibuat</TableHead>
               <TableHead className="text-right">Aktif</TableHead>
             </TableRow>
           </TableHeader>
@@ -67,13 +67,13 @@ export function UsersTable({ users, currentUserId, pagination }: UsersTableProps
                     {user.fullName}
                   </TableCell>
                   <TableCell className="text-foreground">{user.username}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-muted-foreground">
+                  <TableCell className="hidden max-w-[200px] truncate text-muted-foreground md:table-cell">
                     {user.email ?? "—"}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{user.roleName}</Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     {user.subdomainName ? (
                       <span className="text-foreground">{user.subdomainName}</span>
                     ) : (
@@ -85,7 +85,7 @@ export function UsersTable({ users, currentUserId, pagination }: UsersTableProps
                       {user.isActive ? "Aktif" : "Nonaktif"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {formatDate(user.createdAt)}
                   </TableCell>
                   <TableCell className="text-right">

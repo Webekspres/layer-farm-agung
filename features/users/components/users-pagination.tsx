@@ -75,14 +75,14 @@ export function UsersPagination({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-t border-border bg-card px-4 py-3 text-card-foreground sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground">
+    <div className="flex flex-col gap-3 border-t border-border bg-card px-3 py-3 text-card-foreground sm:px-4 md:flex-row md:items-center md:justify-between">
+      <p className="text-center text-sm text-muted-foreground md:text-left">
         {total === 0
           ? "Tidak ada data"
           : `Menampilkan ${from}–${to} dari ${total} pengguna`}
       </p>
 
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center md:justify-end">
         <div className="flex items-center gap-2">
           <span className="whitespace-nowrap text-sm text-muted-foreground">
             Baris per halaman

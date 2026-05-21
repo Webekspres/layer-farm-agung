@@ -73,9 +73,9 @@ export function UsersToolbar({ formOptions, onCreateClick }: UsersToolbarProps) 
   const subdomainId = searchParams.get("subdomainId") ?? "all";
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+      <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 lg:flex lg:flex-row lg:flex-wrap lg:items-center">
+        <div className="relative min-w-0 sm:col-span-2 lg:max-w-xs lg:flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Cari nama, username, email..."
@@ -131,7 +131,7 @@ export function UsersToolbar({ formOptions, onCreateClick }: UsersToolbarProps) 
         ) : null}
       </div>
 
-      <Button onClick={onCreateClick} className="shrink-0">
+      <Button onClick={onCreateClick} className="w-full shrink-0 sm:w-auto lg:self-center">
         <UserPlus className="size-4" />
         Tambah pengguna
       </Button>

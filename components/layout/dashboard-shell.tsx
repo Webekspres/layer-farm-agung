@@ -16,9 +16,11 @@ export function DashboardShell({ session, children }: DashboardShellProps) {
     <TooltipProvider>
       <SidebarProvider defaultOpen>
         <AppSidebar session={session} />
-        <SidebarInset className="min-h-svh">
+        <SidebarInset className="min-h-svh min-w-0 overflow-x-hidden">
           <DashboardHeader session={session} />
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
