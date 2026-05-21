@@ -29,129 +29,110 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
-  createUserAction,
-  type CreateUserState,
-} from "@/features/users/actions/create-user";
-import type { UserFormOptions } from "@/features/users/types";
+  updateUserAction,
+  type UpdateUserState,
+} from "@/features/users/actions/update-user";
+import type { UserFormOptions, UserListItem } from "@/features/users/types";
 
-const initialState: CreateUserState = {};
+const updateInitial: UpdateUserState = {};
 
-type CreateUserDialogProps = {
+type EditUserDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  user: UserListItem | null;
   formOptions: UserFormOptions;
+  isSelf: boolean;
 };
 
-export function CreateUserDialog({
+export function EditUserDialog({
   open,
   onOpenChange,
+  user,
   formOptions,
-}: CreateUserDialogProps) {
-  const [state, formAction, isPending] = useActionState(
-    createUserAction,
-    initialState,
+  isSelf,
+}: EditUserDialogProps) {
+  const [updateState, updateAction, updatePending] = useActionState(
+    updateUserAction,
+    updateInitial,
   );
 
-  const defaultSubdomain =
-    formOptions.defaultSubdomainId ??
-    (formOptions.isGlobalAdmin ? "global" : "");
-
   const [roleId, setRoleId] = useState("");
-  const [subdomainId, setSubdomainId] = useState(defaultSubdomain);
+  const [subdomainId, setSubdomainId] = useState("global");
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
-    if (state.success) {
-      onOpenChange(false);
-      setRoleId("");
-      setSubdomainId(defaultSubdomain);
-      setIsActive(true);
-    }
-  }, [state.success, onOpenChange, defaultSubdomain]);
+    if (!user || !open) return;
+    setRoleId(String(user.roleId));
+    setSubdomainId(user.subdomainId ?? "global");
+    setIsActive(user.isActive);
+  }, [user, open]);
 
   useEffect(() => {
-    if (open) {
-      setSubdomainId(defaultSubdomain);
+    if (updateState.success) {
+      onOpenChange(false);
     }
-  }, [open, defaultSubdomain]);
+  }, [updateState.success, onOpenChange]);
+
+  if (!user) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="dialog-shell">
         <DialogHeader className="dialog-header-padding">
-          <DialogTitle>Tambah pengguna</DialogTitle>
+          <DialogTitle>Edit pengguna</DialogTitle>
           <DialogDescription>
-            Buat akun staff atau admin baru. Password awal wajib diisi untuk login
-            pertama.
+            Perbarui data akun untuk{" "}
+            <span className="font-medium text-foreground">{user.username}</span>.
+            Untuk mengubah password, gunakan menu aksi di tabel.
           </DialogDescription>
         </DialogHeader>
 
         <div className="dialog-body-scroll">
-          <form action={formAction} id="create-user-form" className="dialog-form-fields">
+          <form action={updateAction} id="edit-user-form" className="dialog-form-fields">
+            <input type="hidden" name="userId" value={user.id} />
             <input type="hidden" name="roleId" value={roleId} />
             <input type="hidden" name="subdomainId" value={subdomainId} />
             <input type="hidden" name="isActive" value={isActive ? "true" : "false"} />
 
             <FieldGroup className="gap-5">
               <Field>
-                <FieldLabel htmlFor="fullName">Nama lengkap</FieldLabel>
+                <FieldLabel htmlFor="edit-fullName">Nama lengkap</FieldLabel>
                 <Input
-                  id="fullName"
+                  id="edit-fullName"
                   name="fullName"
+                  defaultValue={user.fullName}
                   required
-                  autoComplete="name"
-                  disabled={isPending}
+                  disabled={updatePending}
                 />
               </Field>
-
               <Field>
-                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <FieldLabel htmlFor="edit-username">Username</FieldLabel>
                 <Input
-                  id="username"
+                  id="edit-username"
                   name="username"
+                  defaultValue={user.username}
                   required
-                  autoComplete="username"
-                  disabled={isPending}
+                  disabled={updatePending}
                 />
               </Field>
-
               <Field>
-                <FieldLabel htmlFor="email">Email (opsional)</FieldLabel>
+                <FieldLabel htmlFor="edit-email">Email (opsional)</FieldLabel>
                 <Input
-                  id="email"
+                  id="edit-email"
                   name="email"
                   type="email"
-                  autoComplete="email"
-                  disabled={isPending}
+                  defaultValue={user.email ?? ""}
+                  disabled={updatePending}
                 />
               </Field>
-
               <Field>
-                <FieldLabel htmlFor="password">Password awal</FieldLabel>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                  disabled={isPending}
-                  placeholder="Minimal 8 karakter"
-                />
-                <FieldDescription>
-                  Bisa diubah nanti dari menu aksi di tabel pengguna.
-                </FieldDescription>
-              </Field>
-
-              <Field>
-                <FieldLabel htmlFor="roleId">Peran</FieldLabel>
+                <FieldLabel htmlFor="edit-roleId">Peran</FieldLabel>
                 <Select
                   value={roleId}
                   onValueChange={setRoleId}
-                  required
-                  disabled={isPending}
+                  disabled={updatePending}
                 >
-                  <SelectTrigger id="roleId" className="w-full">
+                  <SelectTrigger id="edit-roleId" className="w-full">
                     <SelectValue placeholder="Pilih peran" />
                   </SelectTrigger>
                   <SelectContent>
@@ -163,16 +144,15 @@ export function CreateUserDialog({
                   </SelectContent>
                 </Select>
               </Field>
-
               {formOptions.isGlobalAdmin ? (
                 <Field>
-                  <FieldLabel htmlFor="subdomainId">Cabang</FieldLabel>
+                  <FieldLabel htmlFor="edit-subdomainId">Cabang</FieldLabel>
                   <Select
                     value={subdomainId}
                     onValueChange={setSubdomainId}
-                    disabled={isPending}
+                    disabled={updatePending}
                   >
-                    <SelectTrigger id="subdomainId" className="w-full">
+                    <SelectTrigger id="edit-subdomainId" className="w-full">
                       <SelectValue placeholder="Pilih cabang" />
                     </SelectTrigger>
                     <SelectContent>
@@ -186,26 +166,21 @@ export function CreateUserDialog({
                   </Select>
                 </Field>
               ) : null}
-
-              <Field
-                orientation="horizontal"
-                className="items-center justify-between gap-4 rounded-lg border border-border px-4 py-3"
-              >
+              <Field orientation="horizontal" className="items-center justify-between gap-4 rounded-lg border border-border px-4 py-3">
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="isActive">Akun aktif</Label>
+                  <Label htmlFor="edit-isActive">Akun aktif</Label>
                   <FieldDescription>
-                    Pengguna nonaktif tidak dapat login.
+                    Nonaktifkan untuk menutup akses login.
                   </FieldDescription>
                 </div>
                 <Switch
-                  id="isActive"
+                  id="edit-isActive"
                   checked={isActive}
                   onCheckedChange={setIsActive}
-                  disabled={isPending}
+                  disabled={updatePending || isSelf}
                 />
               </Field>
-
-              {state.error ? <FieldError>{state.error}</FieldError> : null}
+              {updateState.error ? <FieldError>{updateState.error}</FieldError> : null}
             </FieldGroup>
           </form>
         </div>
@@ -215,18 +190,18 @@ export function CreateUserDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isPending}
+            disabled={updatePending}
           >
             Batal
           </Button>
-          <Button type="submit" form="create-user-form" disabled={isPending}>
-            {isPending ? (
+          <Button type="submit" form="edit-user-form" disabled={updatePending}>
+            {updatePending ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
                 Menyimpan...
               </>
             ) : (
-              "Simpan"
+              "Simpan perubahan"
             )}
           </Button>
         </DialogFooter>

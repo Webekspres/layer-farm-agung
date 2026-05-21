@@ -127,3 +127,50 @@
     @apply font-sans;
   }
 }
+
+/* Hide scrollbar while keeping scroll (dialogs, panels) */
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+/* User/admin dialog layout */
+@utility dialog-shell {
+  @apply flex max-h-[min(90vh,80dvh)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl md:max-w-2xl;
+}
+
+@utility dialog-shell-sm {
+  @apply flex max-h-[min(90vh,80dvh)] max-w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md md:max-w-lg;
+}
+
+@utility dialog-header-padding {
+  @apply shrink-0 px-5 pt-5 pb-3 sm:px-7 sm:pt-6 md:px-8;
+}
+
+@utility dialog-body-scroll {
+  @apply scrollbar-hidden min-h-0 flex-1 overflow-y-auto px-5 sm:px-7 md:px-8;
+}
+
+@utility dialog-footer-padding {
+  @apply -mx-0 -mb-0 shrink-0 gap-2 rounded-b-xl border-t border-border bg-muted/50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7 md:px-8;
+}
+
+@utility dialog-form-fields {
+  @apply flex flex-col gap-5 pb-5 sm:pb-6;
+}
+
+/* Dashboard main area — spacing from sidebar/header (mobile → desktop) */
+@utility page-content {
+  @apply flex min-w-0 w-full max-w-full flex-1 flex-col gap-6;
+  @apply p-4 pb-8 pt-5;
+  @apply sm:gap-6 sm:p-5 sm:pb-10 sm:pt-6;
+  @apply md:gap-6 md:p-6 md:pb-10 md:pt-6;
+  @apply lg:gap-8 lg:p-8 lg:pb-12 lg:pt-8;
+  @apply xl:gap-8 xl:p-12 xl:pb-14 xl:pt-10;
+}

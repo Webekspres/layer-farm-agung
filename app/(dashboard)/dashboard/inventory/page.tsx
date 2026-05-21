@@ -1,7 +1,10 @@
 import { PageHeader } from "@/components/layout/page-header";
+import { requirePermission } from "@/features/auth/lib/require-permission";
 import { ComingSoonPanel } from "@/features/dashboard/components/coming-soon-panel";
 
-export default function InventoryPage() {
+export default async function InventoryPage() {
+  await requirePermission("manage_inventory");
+
   return (
     <>
       <PageHeader

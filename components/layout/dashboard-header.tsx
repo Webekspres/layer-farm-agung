@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   adminNavItems,
@@ -24,13 +25,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { BranchSwitcher } from "@/components/layout/branch-switcher";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { authClient } from "@/features/auth/client/auth-client";
 import type { ServerSession } from "@/features/auth/lib/session";
 
+type BranchOption = { id: string; name: string };
+
 type DashboardHeaderProps = {
   session: ServerSession;
   title?: string;
+  branches?: BranchOption[];
+  activeSubdomainId?: string | null;
 };
 
 function getInitials(name: string) {
@@ -42,7 +48,12 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-const allNavItems = [...mainNavItems, ...adminNavItems];
+const allNavItems = [
+  ...mainNavItems,
+  ...adminNavItems,
+  { title: "Profil", href: "/dashboard/profile" },
+  { title: "Cabang", href: "/dashboard/branches" },
+];
 
 function resolvePageTitle(pathname: string, fallback = "Dashboard") {
   const match = allNavItems.find(
@@ -56,6 +67,8 @@ function resolvePageTitle(pathname: string, fallback = "Dashboard") {
 export function DashboardHeader({
   session,
   title,
+  branches = [],
+  activeSubdomainId = null,
 }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -69,13 +82,13 @@ export function DashboardHeader({
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/80">
+    <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-4">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-1 h-4" />
-      <Breadcrumb>
+      <Separator orientation="vertical" className="mr-1 hidden h-4 sm:block" />
+      <Breadcrumb className="min-w-0 flex-1">
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbPage className="font-heading">
+            <BreadcrumbPage className="truncate font-heading">
               {pageTitle}
             </BreadcrumbPage>
           </BreadcrumbItem>
@@ -83,11 +96,14 @@ export function DashboardHeader({
       </Breadcrumb>
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+        {branches.length > 0 ? (
+          <BranchSwitcher
+            branches={branches}
+            activeSubdomainId={activeSubdomainId}
+          />
+        ) : null}
         <ThemeSwitcher />
-        <Separator
-          orientation="vertical"
-          className="hidden h-4 sm:block"
-        />
+        <Separator orientation="vertical" className="hidden h-4 sm:block" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-9 gap-2 px-2">
@@ -103,7 +119,7 @@ export function DashboardHeader({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <p className="text-sm font-medium">{displayName}</p>
                 <p className="text-xs text-muted-foreground">
                   @{session.user.username}
@@ -114,9 +130,11 @@ export function DashboardHeader({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem disabled>
-              <User />
-              Profil (segera)
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">
+                <User />
+                Profil
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onClick={handleSignOut}>

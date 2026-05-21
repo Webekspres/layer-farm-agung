@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  Building2,
   Egg,
   LayoutDashboard,
   Package,
@@ -14,6 +15,8 @@ export type NavItem = {
   icon: LucideIcon;
   permission?: string;
   badge?: string;
+  /** Only visible when user has null subdomain_id (global superadmin). */
+  globalOnly?: boolean;
 };
 
 export const mainNavItems: NavItem[] = [
@@ -58,15 +61,23 @@ export const adminNavItems: NavItem[] = [
     href: "/dashboard/roles",
     icon: Shield,
     permission: "manage_roles",
-    badge: "Soon",
+  },
+  {
+    title: "Cabang",
+    href: "/dashboard/branches",
+    icon: Building2,
+    permission: "manage_roles",
+    globalOnly: true,
   },
 ];
 
 export function filterNavByPermissions(
   items: NavItem[],
   permissions: string[] | undefined,
+  isGlobalAdmin: boolean,
 ) {
-  return items.filter(
-    (item) => !item.permission || permissions?.includes(item.permission),
-  );
+  return items.filter((item) => {
+    if (item.globalOnly && !isGlobalAdmin) return false;
+    return !item.permission || permissions?.includes(item.permission);
+  });
 }

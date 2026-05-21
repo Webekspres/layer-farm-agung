@@ -1,14 +1,20 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { ComingSoonPanel } from "@/features/dashboard/components/coming-soon-panel";
+import { requirePermission } from "@/features/auth/lib/require-permission";
+import { RolesManagement } from "@/features/roles/components/roles-management";
+import { listRolesWithPermissions } from "@/features/roles/services/list-roles";
 
-export default function RolesPage() {
+export default async function RolesPage() {
+  await requirePermission("manage_roles");
+
+  const { roles, permissions } = await listRolesWithPermissions();
+
   return (
     <>
       <PageHeader
         title="Peran & Akses"
-        description="Atur role dan permission RBAC secara dinamis."
+        description="Kelola permission per peran secara dinamis. Perubahan langsung memengaruhi menu dan akses pengguna."
       />
-      <ComingSoonPanel />
+      <RolesManagement roles={roles} permissions={permissions} />
     </>
   );
 }

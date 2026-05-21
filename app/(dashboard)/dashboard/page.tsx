@@ -1,13 +1,8 @@
 import { DashboardOverview } from "@/features/dashboard/components/dashboard-overview";
-import { getServerSession } from "@/features/auth/lib/session";
-import { redirect } from "next/navigation";
+import { requirePermission } from "@/features/auth/lib/require-permission";
 
 export default async function DashboardPage() {
-  const session = await getServerSession();
-
-  if (!session) {
-    redirect("/login");
-  }
+  const session = await requirePermission("view_dashboard");
 
   return <DashboardOverview session={session} />;
 }

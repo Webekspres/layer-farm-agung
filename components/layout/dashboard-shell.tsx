@@ -6,18 +6,33 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import type { ServerSession } from "@/features/auth/lib/session";
 
+type BranchOption = { id: string; name: string };
+
 type DashboardShellProps = {
   session: ServerSession;
+  branches?: BranchOption[];
   children: React.ReactNode;
 };
 
-export function DashboardShell({ session, children }: DashboardShellProps) {
+export function DashboardShell({
+  session,
+  branches = [],
+  children,
+}: DashboardShellProps) {
+  const isGlobalAdmin = session.user.subdomainId === null;
+  const activeSubdomainId =
+    session.session.activeSubdomainId ?? session.user.subdomainId;
+
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen>
         <AppSidebar session={session} />
         <SidebarInset className="min-h-svh min-w-0 overflow-x-hidden">
-          <DashboardHeader session={session} />
+          <DashboardHeader
+            session={session}
+            branches={isGlobalAdmin ? branches : []}
+            activeSubdomainId={isGlobalAdmin ? activeSubdomainId : null}
+          />
           <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
             {children}
           </div>

@@ -1,7 +1,15 @@
 "use client";
 
 import { useTransition } from "react";
+import { KeyRound, MoreHorizontal, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -19,6 +27,8 @@ type UsersTableProps = {
   users: UserListItem[];
   currentUserId: string;
   pagination: UsersPaginationMeta;
+  onEditUser: (user: UserListItem) => void;
+  onResetPassword: (user: UserListItem) => void;
 };
 
 function formatDate(iso: string) {
@@ -29,7 +39,13 @@ function formatDate(iso: string) {
   });
 }
 
-export function UsersTable({ users, currentUserId, pagination }: UsersTableProps) {
+export function UsersTable({
+  users,
+  currentUserId,
+  pagination,
+  onEditUser,
+  onResetPassword,
+}: UsersTableProps) {
   const [isPending, startTransition] = useTransition();
 
   function handleStatusChange(userId: string, checked: boolean) {
@@ -55,7 +71,7 @@ export function UsersTable({ users, currentUserId, pagination }: UsersTableProps
               <TableHead className="hidden lg:table-cell">Cabang</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="hidden sm:table-cell">Dibuat</TableHead>
-              <TableHead className="text-right">Aktif</TableHead>
+              <TableHead className="text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,14 +105,38 @@ export function UsersTable({ users, currentUserId, pagination }: UsersTableProps
                     {formatDate(user.createdAt)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Switch
-                      checked={user.isActive}
-                      disabled={isPending || isSelf}
-                      onCheckedChange={(checked) =>
-                        handleStatusChange(user.id, checked)
-                      }
-                      aria-label={`Status ${user.username}`}
-                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <Switch
+                        checked={user.isActive}
+                        disabled={isPending || isSelf}
+                        onCheckedChange={(checked) =>
+                          handleStatusChange(user.id, checked)
+                        }
+                        aria-label={`Status ${user.username}`}
+                      />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Aksi ${user.username}`}
+                          >
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => onEditUser(user)}>
+                            <Pencil className="size-4" />
+                            Edit pengguna
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onResetPassword(user)}>
+                            <KeyRound className="size-4" />
+                            Atur password
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

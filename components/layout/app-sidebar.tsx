@@ -32,9 +32,10 @@ type AppSidebarProps = {
 export function AppSidebar({ session }: AppSidebarProps) {
   const pathname = usePathname();
   const permissions = session.user.permissions;
+  const isGlobalAdmin = session.user.subdomainId === null;
 
-  const mainItems = filterNavByPermissions(mainNavItems, permissions);
-  const adminItems = filterNavByPermissions(adminNavItems, permissions);
+  const mainItems = filterNavByPermissions(mainNavItems, permissions, isGlobalAdmin);
+  const adminItems = filterNavByPermissions(adminNavItems, permissions, isGlobalAdmin);
 
   const activeSubdomain =
     session.session.activeSubdomainId ?? session.user.subdomainId;
@@ -73,11 +74,11 @@ export function AppSidebar({ session }: AppSidebarProps) {
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="gap-3">
         <SidebarGroup>
-          <SidebarGroupLabel>Menu utama</SidebarGroupLabel>
+          <SidebarGroupLabel className="mb-1">Menu utama</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1.5">
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
@@ -109,9 +110,9 @@ export function AppSidebar({ session }: AppSidebarProps) {
           <>
             <SidebarSeparator />
             <SidebarGroup>
-              <SidebarGroupLabel>Administrasi</SidebarGroupLabel>
+              <SidebarGroupLabel className="mb-1">Administrasi</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="gap-1.5">
                   {adminItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton
@@ -140,7 +141,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="px-2 py-2 text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-          <p className="truncate font-medium text-sidebar-foreground">
+          <p className="truncate font-medium text-sidebar-foreground capitalize">
             {session.user.roleName}
           </p>
           <p className="truncate">

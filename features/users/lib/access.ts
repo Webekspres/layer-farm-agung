@@ -1,23 +1,11 @@
-import { redirect } from "next/navigation";
+import { requirePermission } from "@/features/auth/lib/require-permission";
 import {
   getActiveSubdomainId,
-  getServerSession,
-  hasPermission,
   type ServerSession,
 } from "@/features/auth/lib/session";
 
 export async function requireManageUsersSession() {
-  const session = await getServerSession();
-
-  if (!session) {
-    redirect("/login");
-  }
-
-  if (!hasPermission(session, "manage_users")) {
-    redirect("/dashboard");
-  }
-
-  return session;
+  return requirePermission("manage_users");
 }
 
 export function getUsersTenantScope(session: ServerSession) {
