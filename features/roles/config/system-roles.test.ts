@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   ADMIN_ROLE_NAME,
+  defaultPermissionIdsForRole,
+  getDefaultPermissionNamesForRole,
   resolveRolePermissionNames,
   sortRolesBySystemOrder,
   STAFF_ROLE_NAME,
@@ -30,6 +32,17 @@ describe("system-roles", () => {
     const admin = resolveRolePermissionNames(SYSTEM_ROLES[ADMIN_ROLE_NAME]);
     expect(admin).not.toContain("manage_roles");
     expect(admin).toContain("manage_users");
+  });
+
+  test("defaultPermissionIdsForRole maps names to ids", () => {
+    const permissions = [
+      { id: 1, name: "view_dashboard" },
+      { id: 2, name: "manage_roles" },
+      { id: 3, name: "manage_production" },
+    ];
+    const staffIds = defaultPermissionIdsForRole(STAFF_ROLE_NAME, permissions);
+    expect(staffIds).toEqual([1, 3]);
+    expect(getDefaultPermissionNamesForRole("custom")).toBeNull();
   });
 
   test("sortRolesBySystemOrder lists superadmin, admin, staff", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,14 +15,23 @@ import { FieldError } from "@/components/ui/field";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
+  resetRolePermissionsAction,
+  type ResetRolePermissionsState,
+} from "@/features/roles/actions/reset-role-permissions";
+import {
   updateRolePermissionsAction,
   type UpdateRolePermissionsState,
 } from "@/features/roles/actions/update-role-permissions";
 import { PermissionsRegistry } from "@/features/permissions/components/permissions-registry";
-import { SUPERADMIN_ROLE_NAME } from "@/features/roles/config/system-roles";
+import {
+  defaultPermissionIdsForRole,
+  getDefaultPermissionNamesForRole,
+  SUPERADMIN_ROLE_NAME,
+} from "@/features/roles/config/system-roles";
 import type { PermissionItem, RoleWithPermissions } from "@/features/roles/types";
 
-const initialState: UpdateRolePermissionsState = {};
+const updateInitial: UpdateRolePermissionsState = {};
+const resetInitial: ResetRolePermissionsState = {};
 
 type RolesManagementProps = {
   roles: RoleWithPermissions[];
@@ -47,11 +56,26 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
   );
   const [state, formAction, isPending] = useActionState(
     updateRolePermissionsAction,
-    initialState,
+    updateInitial,
+  );
+  const [resetState, resetAction, resetPending] = useActionState(
+    resetRolePermissionsAction,
+    resetInitial,
+  );
+  /** Pesan feedback hanya untuk peran yang memicu aksi terakhir. */
+  const [saveFeedbackRoleId, setSaveFeedbackRoleId] = useState<number | null>(
+    null,
+  );
+  const [resetFeedbackRoleId, setResetFeedbackRoleId] = useState<number | null>(
+    null,
   );
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null;
   const isSuperadminRole = selectedRole?.name === SUPERADMIN_ROLE_NAME;
+  const canResetToDefault =
+    selectedRole != null &&
+    !isSuperadminRole &&
+    getDefaultPermissionNamesForRole(selectedRole.name) != null;
 
   useEffect(() => {
     const role = roles.find((r) => r.id === selectedRoleId);
@@ -59,6 +83,31 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
       setChecked(toPermissionSet(role));
     }
   }, [selectedRoleId, roles]);
+
+  useEffect(() => {
+    setSaveFeedbackRoleId(null);
+    setResetFeedbackRoleId(null);
+  }, [selectedRoleId]);
+
+  useEffect(() => {
+    if ((state.success || state.error) && selectedRoleId != null) {
+      setSaveFeedbackRoleId(selectedRoleId);
+    }
+  }, [state.success, state.error, selectedRoleId]);
+
+  useEffect(() => {
+    if ((resetState.success || resetState.error) && selectedRoleId != null) {
+      setResetFeedbackRoleId(selectedRoleId);
+    }
+  }, [resetState.success, resetState.error, selectedRoleId]);
+
+  useEffect(() => {
+    if (!resetState.success || !selectedRole) return;
+    const defaults = defaultPermissionIdsForRole(selectedRole.name, permissions);
+    if (defaults) {
+      setChecked(new Set(defaults));
+    }
+  }, [resetState.success, selectedRole, permissions]);
 
   function selectRole(role: RoleWithPermissions) {
     setSelectedRoleId(role.id);
@@ -125,52 +174,108 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
               </p>
             </div>
           ) : (
-            <form action={formAction} className="flex flex-col gap-4">
-              <input type="hidden" name="roleId" value={selectedRole.id} />
-              <input
-                type="hidden"
-                name="permissionIds"
-                value={[...checked].join(",")}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                {permissions.map((permission) => (
-                  <div
-                    key={permission.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
-                  >
-                    <Label
-                      htmlFor={`perm-${permission.id}`}
-                      className="cursor-pointer text-sm capitalize"
+            <div className="flex flex-col gap-4">
+              <form
+                id="role-permissions-form"
+                action={formAction}
+                className="flex flex-col gap-4"
+              >
+                <input type="hidden" name="roleId" value={selectedRole.id} />
+                <input
+                  type="hidden"
+                  name="permissionIds"
+                  value={[...checked].join(",")}
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {permissions.map((permission) => (
+                    <div
+                      key={permission.id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2.5"
                     >
-                      {formatPermissionLabel(permission.name)}
-                    </Label>
-                    <Switch
-                      id={`perm-${permission.id}`}
-                      checked={checked.has(permission.id)}
-                      onCheckedChange={(v) => togglePermission(permission.id, v)}
-                      disabled={isPending}
-                    />
-                  </div>
-                ))}
+                      <Label
+                        htmlFor={`perm-${permission.id}`}
+                        className="cursor-pointer text-sm capitalize"
+                      >
+                        {formatPermissionLabel(permission.name)}
+                      </Label>
+                      <Switch
+                        id={`perm-${permission.id}`}
+                        checked={checked.has(permission.id)}
+                        onCheckedChange={(v) => togglePermission(permission.id, v)}
+                        disabled={isPending || resetPending}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {state.error && saveFeedbackRoleId === selectedRoleId ? (
+                  <FieldError>{state.error}</FieldError>
+                ) : null}
+                {state.success && saveFeedbackRoleId === selectedRoleId ? (
+                  <p className="flex items-center gap-1.5 text-sm text-primary">
+                    <Check className="size-4" />
+                    Permission berhasil disimpan.
+                  </p>
+                ) : null}
+                {resetState.error && resetFeedbackRoleId === selectedRoleId ? (
+                  <FieldError>{resetState.error}</FieldError>
+                ) : null}
+                {resetState.success && resetFeedbackRoleId === selectedRoleId ? (
+                  <p className="flex items-center gap-1.5 text-sm text-primary">
+                    <Check className="size-4" />
+                    Permission dikembalikan ke default.
+                  </p>
+                ) : null}
+              </form>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <Button
+                  type="submit"
+                  form="role-permissions-form"
+                  disabled={isPending || resetPending}
+                  className="w-full sm:w-auto"
+                >
+                  {isPending ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan permission"
+                  )}
+                </Button>
+                {canResetToDefault ? (
+                  <form action={resetAction} className="w-full sm:w-auto">
+                    <input type="hidden" name="roleId" value={selectedRole.id} />
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      disabled={isPending || resetPending}
+                      className="w-full sm:w-auto"
+                    >
+                      {resetPending ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Mereset...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="size-4" />
+                          Reset ke default
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                ) : null}
               </div>
-              {state.error ? <FieldError>{state.error}</FieldError> : null}
-              {state.success ? (
-                <p className="flex items-center gap-1.5 text-sm text-primary">
-                  <Check className="size-4" />
-                  Permission berhasil disimpan.
+
+              {canResetToDefault ? (
+                <p className="text-xs text-muted-foreground">
+                  Mengembalikan permission ke nilai bawaan sistem (seed). Admin
+                  tanpa <span className="font-medium">manage_roles</span>, staff
+                  hanya produksi &amp; inventori.
                 </p>
               ) : null}
-              <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-                {isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  "Simpan permission"
-                )}
-              </Button>
-            </form>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -62,3 +62,25 @@ export function resolveRolePermissionNames(
     ? WIRED_PERMISSIONS
     : definition.permissions;
 }
+
+export function isSystemRoleName(name: string): name is SystemRoleName {
+  return (SYSTEM_ROLE_ORDER as readonly string[]).includes(name);
+}
+
+/** Default permission keys for a system role; null if role has no seed defaults. */
+export function getDefaultPermissionNamesForRole(
+  roleName: string,
+): readonly string[] | null {
+  if (!isSystemRoleName(roleName)) return null;
+  return resolveRolePermissionNames(SYSTEM_ROLES[roleName]);
+}
+
+export function defaultPermissionIdsForRole(
+  roleName: string,
+  permissions: readonly { id: number; name: string }[],
+): number[] | null {
+  const names = getDefaultPermissionNamesForRole(roleName);
+  if (!names) return null;
+  const allowed = new Set(names);
+  return permissions.filter((p) => allowed.has(p.name)).map((p) => p.id);
+}
