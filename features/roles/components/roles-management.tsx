@@ -19,6 +19,7 @@ import {
   type UpdateRolePermissionsState,
 } from "@/features/roles/actions/update-role-permissions";
 import { PermissionsRegistry } from "@/features/permissions/components/permissions-registry";
+import { SUPERADMIN_ROLE_NAME } from "@/features/roles/config/system-roles";
 import type { PermissionItem, RoleWithPermissions } from "@/features/roles/types";
 
 const initialState: UpdateRolePermissionsState = {};
@@ -50,7 +51,7 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
   );
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null;
-  const isSuperadminRole = selectedRole?.name === "superadmin";
+  const isSuperadminRole = selectedRole?.name === SUPERADMIN_ROLE_NAME;
 
   useEffect(() => {
     const role = roles.find((r) => r.id === selectedRoleId);

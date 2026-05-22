@@ -1,4 +1,10 @@
-export const SUPERADMIN_ROLE_NAME = "superadmin";
+import {
+  ADMIN_ROLE_NAME,
+  STAFF_ROLE_NAME,
+  SUPERADMIN_ROLE_NAME,
+} from "@/features/roles/config/system-roles";
+
+export { ADMIN_ROLE_NAME, STAFF_ROLE_NAME, SUPERADMIN_ROLE_NAME };
 
 export type RoleOption = { id: number; name: string };
 

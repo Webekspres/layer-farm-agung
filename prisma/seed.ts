@@ -1,45 +1,34 @@
 import prisma from "../lib/prisma";
 import { createUserWithCredential } from "@/features/auth/services/create-user";
-
-const PERMISSIONS = [
-  "view_dashboard",
-  "manage_users",
-  "manage_roles",
-  "view_cashflow",
-  "manage_production",
-  "manage_inventory",
-] as const;
+import { WIRED_PERMISSIONS } from "@/features/permissions/config/wired-permissions";
+import {
+  ADMIN_ROLE_NAME,
+  resolveRolePermissionNames,
+  STAFF_ROLE_NAME,
+  SUPERADMIN_ROLE_NAME,
+  SYSTEM_ROLES,
+} from "@/features/roles/config/system-roles";
 
 async function main() {
-  const superadminRole = await prisma.role.upsert({
-    where: { name: "superadmin" },
-    update: { description: "Superadmin global (semua cabang)" },
-    create: {
-      name: "superadmin",
-      description: "Superadmin global (semua cabang)",
-    },
-  });
+  const roleRecords = await Promise.all(
+    Object.values(SYSTEM_ROLES).map((definition) =>
+      prisma.role.upsert({
+        where: { name: definition.name },
+        update: { description: definition.description },
+        create: {
+          name: definition.name,
+          description: definition.description,
+        },
+      }),
+    ),
+  );
 
-  const adminRole = await prisma.role.upsert({
-    where: { name: "admin" },
-    update: { description: "Admin cabang" },
-    create: {
-      name: "admin",
-      description: "Admin cabang",
-    },
-  });
-
-  const staffRole = await prisma.role.upsert({
-    where: { name: "staff" },
-    update: { description: "Staff operasional / petugas kandang" },
-    create: {
-      name: "staff",
-      description: "Staff operasional / petugas kandang",
-    },
-  });
+  const roleByName = Object.fromEntries(
+    roleRecords.map((role) => [role.name, role]),
+  );
 
   const permissionRecords = await Promise.all(
-    PERMISSIONS.map((name) =>
+    WIRED_PERMISSIONS.map((name) =>
       prisma.permission.upsert({
         where: { name },
         update: {},
@@ -48,64 +37,32 @@ async function main() {
     ),
   );
 
-  for (const permission of permissionRecords) {
-    await prisma.rolePermission.upsert({
-      where: {
-        role_id_permission_id: {
-          role_id: superadminRole.id,
-          permission_id: permission.id,
-        },
-      },
-      update: {},
-      create: {
-        role_id: superadminRole.id,
-        permission_id: permission.id,
-      },
-    });
-  }
-
-  const adminPermissions = permissionRecords.filter(
-    (p) => p.name !== "manage_roles",
+  const permissionByName = Object.fromEntries(
+    permissionRecords.map((p) => [p.name, p]),
   );
 
-  for (const permission of adminPermissions) {
-    await prisma.rolePermission.upsert({
-      where: {
-        role_id_permission_id: {
-          role_id: adminRole.id,
+  for (const definition of Object.values(SYSTEM_ROLES)) {
+    const role = roleByName[definition.name];
+    const permissionNames = resolveRolePermissionNames(definition);
+
+    for (const permissionName of permissionNames) {
+      const permission = permissionByName[permissionName];
+      if (!permission) continue;
+
+      await prisma.rolePermission.upsert({
+        where: {
+          role_id_permission_id: {
+            role_id: role.id,
+            permission_id: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          role_id: role.id,
           permission_id: permission.id,
         },
-      },
-      update: {},
-      create: {
-        role_id: adminRole.id,
-        permission_id: permission.id,
-      },
-    });
-  }
-
-  const staffPermissionNames = new Set([
-    "view_dashboard",
-    "manage_production",
-    "manage_inventory",
-  ]);
-
-  for (const permission of permissionRecords.filter((p) =>
-    staffPermissionNames.has(p.name),
-  )) {
-    await prisma.rolePermission.upsert({
-      where: {
-        role_id_permission_id: {
-          role_id: staffRole.id,
-          permission_id: permission.id,
-        },
-      },
-      update: {},
-      create: {
-        role_id: staffRole.id,
-        permission_id: permission.id,
-      },
-    });
+      });
+    }
   }
 
   const defaultBranch = await prisma.subdomain.upsert({
@@ -117,6 +74,10 @@ async function main() {
       is_active: true,
     },
   });
+
+  const superadminRole = roleByName[SUPERADMIN_ROLE_NAME];
+  const adminRole = roleByName[ADMIN_ROLE_NAME];
+  const staffRole = roleByName[STAFF_ROLE_NAME];
 
   const superadminUsername = "superadmin";
   const existingSuperadmin = await prisma.user.findUnique({

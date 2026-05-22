@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { sortRolesBySystemOrder } from "@/features/roles/config/system-roles";
 import type { PermissionItem, RoleWithPermissions } from "@/features/roles/types";
 
 export async function listRolesWithPermissions(): Promise<{
@@ -19,14 +20,16 @@ export async function listRolesWithPermissions(): Promise<{
     }),
   ]);
 
+  const mapped = roles.map((role) => ({
+    id: role.id,
+    name: role.name,
+    description: role.description,
+    userCount: role._count.users,
+    permissionIds: role.role_permissions.map((rp) => rp.permission_id),
+  }));
+
   return {
-    roles: roles.map((role) => ({
-      id: role.id,
-      name: role.name,
-      description: role.description,
-      userCount: role._count.users,
-      permissionIds: role.role_permissions.map((rp) => rp.permission_id),
-    })),
+    roles: sortRolesBySystemOrder(mapped),
     permissions,
   };
 }

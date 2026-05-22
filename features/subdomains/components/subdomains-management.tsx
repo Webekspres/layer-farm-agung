@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
+import { SubdomainsToolbar } from "@/features/subdomains/components/subdomains-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,63 +68,57 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Kelola cabang peternakan (tenant). Superadmin dapat berpindah konteks
-          cabang dari header.
-        </p>
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="w-full cursor-pointer shrink-0 sm:w-auto hover:bg-primary/90"
-        >
-          <Plus className="size-4" />
-          Tambah cabang
-        </Button>
-      </div>
+      <SubdomainsToolbar onCreateClick={() => setCreateOpen(true)} />
 
       <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <Table containerClassName="overflow-x-auto overscroll-x-contain">
-          <TableHeader>
-            <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead>Nama</TableHead>
-              <TableHead className="hidden sm:table-cell">URL</TableHead>
-              <TableHead>Pengguna</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {subdomains.map((sub) => (
-              <TableRow key={sub.id}>
-                <TableCell className="font-medium">{sub.name}</TableCell>
-                <TableCell className="hidden text-muted-foreground sm:table-cell">
-                  {sub.subdomainUrl}
-                </TableCell>
-                <TableCell>{sub.userCount}</TableCell>
-                <TableCell>
-                  <Badge variant={sub.isActive ? "default" : "secondary"}>
-                    {sub.isActive ? "Aktif" : "Nonaktif"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => {
-                      setEditing(sub);
-                      setIsActiveEdit(sub.isActive);
-                      setEditOpen(true);
-                    }}
-                  >
-                    <Pencil className="size-4" />
-                    <span className="sr-only">Edit</span>
-                  </Button>
-                </TableCell>
+        {subdomains.length === 0 ? (
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            Tidak ada cabang yang cocok dengan filter saat ini.
+          </div>
+        ) : (
+          <Table containerClassName="overflow-x-auto overscroll-x-contain">
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead>Nama</TableHead>
+                <TableHead className="hidden sm:table-cell">URL</TableHead>
+                <TableHead>Pengguna</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {subdomains.map((sub) => (
+                <TableRow key={sub.id}>
+                  <TableCell className="font-medium">{sub.name}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
+                    {sub.subdomainUrl}
+                  </TableCell>
+                  <TableCell>{sub.userCount}</TableCell>
+                  <TableCell>
+                    <Badge variant={sub.isActive ? "default" : "secondary"}>
+                      {sub.isActive ? "Aktif" : "Nonaktif"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => {
+                        setEditing(sub);
+                        setIsActiveEdit(sub.isActive);
+                        setEditOpen(true);
+                      }}
+                    >
+                      <Pencil className="size-4" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

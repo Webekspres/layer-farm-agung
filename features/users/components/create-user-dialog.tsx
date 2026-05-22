@@ -184,19 +184,6 @@ export function CreateUserDialog({
                 </Select>
               </Field>
 
-              {!formOptions.isGlobalAdmin && formOptions.assignableBranchName ? (
-                <Field>
-                  <FieldLabel>Cabang</FieldLabel>
-                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
-                    {formOptions.assignableBranchName}
-                  </div>
-                  <FieldDescription>
-                    Pengguna baru otomatis terdaftar di cabang yang sama dengan
-                    admin Anda (tidak bisa dipilih cabang lain).
-                  </FieldDescription>
-                </Field>
-              ) : null}
-
               {formOptions.isGlobalAdmin ? (
                 <Field>
                   <FieldLabel htmlFor="subdomainId">Cabang</FieldLabel>

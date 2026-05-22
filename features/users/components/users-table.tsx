@@ -27,6 +27,8 @@ type UsersTableProps = {
   users: UserListItem[];
   currentUserId: string;
   pagination: UsersPaginationMeta;
+  /** Superadmin sees cabang column; branch admins are scoped to one cabang. */
+  showBranchColumn?: boolean;
   onEditUser: (user: UserListItem) => void;
   onResetPassword: (user: UserListItem) => void;
   onDeleteUser: (user: UserListItem) => void;
@@ -44,6 +46,7 @@ export function UsersTable({
   users,
   currentUserId,
   pagination,
+  showBranchColumn = false,
   onEditUser,
   onResetPassword,
   onDeleteUser,
@@ -70,7 +73,9 @@ export function UsersTable({
               <TableHead>Username</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Peran</TableHead>
-              <TableHead className="hidden lg:table-cell">Cabang</TableHead>
+              {showBranchColumn ? (
+                <TableHead className="hidden lg:table-cell">Cabang</TableHead>
+              ) : null}
               <TableHead>Status</TableHead>
               <TableHead className="hidden sm:table-cell">Dibuat</TableHead>
               <TableHead className="text-right">Aksi</TableHead>
@@ -91,13 +96,15 @@ export function UsersTable({
                   <TableCell>
                     <Badge variant="secondary">{user.roleName}</Badge>
                   </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    {user.subdomainName ? (
-                      <span className="text-foreground">{user.subdomainName}</span>
-                    ) : (
-                      <Badge variant="outline">Global</Badge>
-                    )}
-                  </TableCell>
+                  {showBranchColumn ? (
+                    <TableCell className="hidden lg:table-cell">
+                      {user.subdomainName ? (
+                        <span className="text-foreground">{user.subdomainName}</span>
+                      ) : (
+                        <Badge variant="outline">Global</Badge>
+                      )}
+                    </TableCell>
+                  ) : null}
                   <TableCell>
                     <Badge variant={user.isActive ? "default" : "secondary"}>
                       {user.isActive ? "Aktif" : "Nonaktif"}

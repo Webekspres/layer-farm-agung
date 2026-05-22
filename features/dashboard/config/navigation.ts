@@ -51,6 +51,13 @@ export const mainNavItems: NavItem[] = [
 
 export const adminNavItems: NavItem[] = [
   {
+    title: "Cabang",
+    href: "/dashboard/branches",
+    icon: Building2,
+    permission: "manage_roles",
+    globalOnly: true,
+  },
+  {
     title: "Pengguna",
     href: "/dashboard/users",
     icon: Users,
@@ -61,13 +68,6 @@ export const adminNavItems: NavItem[] = [
     href: "/dashboard/roles",
     icon: Shield,
     permission: "manage_roles",
-  },
-  {
-    title: "Cabang",
-    href: "/dashboard/branches",
-    icon: Building2,
-    permission: "manage_roles",
-    globalOnly: true,
   },
 ];
 
