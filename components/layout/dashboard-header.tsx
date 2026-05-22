@@ -107,7 +107,7 @@ export function DashboardHeader({
         ) : activeBranchName ? (
           <Badge
             variant="secondary"
-            className="hidden gap-1.5 px-3 py-2 font-normal md:inline-flex"
+            className="hidden font-normal md:inline-flex"
           >
             <Building2 className="size-3.5 shrink-0" />
             {activeBranchName}
