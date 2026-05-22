@@ -131,7 +131,7 @@ export function UsersToolbar({ formOptions, onCreateClick }: UsersToolbarProps) 
         ) : null}
       </div>
 
-      <Button onClick={onCreateClick} className="w-full shrink-0 sm:w-auto lg:self-center">
+      <Button onClick={onCreateClick} className="w-full cursor-pointer shrink-0 sm:w-auto lg:self-center hover:bg-primary/90">
         <UserPlus className="size-4" />
         Tambah pengguna
       </Button>

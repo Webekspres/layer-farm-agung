@@ -74,7 +74,7 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
         </p>
         <Button
           onClick={() => setCreateOpen(true)}
-          className="w-full shrink-0 sm:w-auto"
+          className="w-full cursor-pointer shrink-0 sm:w-auto hover:bg-primary/90"
         >
           <Plus className="size-4" />
           Tambah cabang

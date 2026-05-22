@@ -11,12 +11,14 @@ type BranchOption = { id: string; name: string };
 type DashboardShellProps = {
   session: ServerSession;
   branches?: BranchOption[];
+  activeBranchName?: string | null;
   children: React.ReactNode;
 };
 
 export function DashboardShell({
   session,
   branches = [],
+  activeBranchName = null,
   children,
 }: DashboardShellProps) {
   const isGlobalAdmin = session.user.subdomainId === null;
@@ -32,6 +34,7 @@ export function DashboardShell({
             session={session}
             branches={isGlobalAdmin ? branches : []}
             activeSubdomainId={isGlobalAdmin ? activeSubdomainId : null}
+            activeBranchName={activeBranchName}
           />
           <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
             {children}

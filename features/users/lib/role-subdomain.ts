@@ -10,6 +10,15 @@ export function isSuperadminRole(roleId: string, roles: RoleOption[]) {
   return findRoleById(roleId, roles)?.name === SUPERADMIN_ROLE_NAME;
 }
 
+/** Branch admins cannot assign the superadmin role when creating/editing users. */
+export function filterAssignableRoles(
+  roles: RoleOption[],
+  isGlobalAdmin: boolean,
+) {
+  if (isGlobalAdmin) return roles;
+  return roles.filter((role) => role.name !== SUPERADMIN_ROLE_NAME);
+}
+
 /** UI: superadmin must use global; other roles must pick a branch id. */
 export function subdomainIdAfterRoleChange(
   nextRoleId: string,

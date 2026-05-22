@@ -6,7 +6,8 @@ import {
   adminNavItems,
   mainNavItems,
 } from "@/features/dashboard/config/navigation";
-import { LogOut, User } from "lucide-react";
+import { Building2, LogOut, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Breadcrumb,
@@ -37,6 +38,7 @@ type DashboardHeaderProps = {
   title?: string;
   branches?: BranchOption[];
   activeSubdomainId?: string | null;
+  activeBranchName?: string | null;
 };
 
 function getInitials(name: string) {
@@ -69,6 +71,7 @@ export function DashboardHeader({
   title,
   branches = [],
   activeSubdomainId = null,
+  activeBranchName = null,
 }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -101,12 +104,20 @@ export function DashboardHeader({
             branches={branches}
             activeSubdomainId={activeSubdomainId}
           />
+        ) : activeBranchName ? (
+          <Badge
+            variant="secondary"
+            className="hidden gap-1.5 px-3 py-2 font-normal md:inline-flex"
+          >
+            <Building2 className="size-3.5 shrink-0" />
+            {activeBranchName}
+          </Badge>
         ) : null}
         <ThemeSwitcher />
         <Separator orientation="vertical" className="hidden h-4 sm:block" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-9 gap-2 px-2">
+            <Button variant="ghost" className="gap-2">
               <Avatar size="sm">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
                   {getInitials(displayName)}

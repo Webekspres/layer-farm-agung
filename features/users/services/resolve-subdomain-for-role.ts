@@ -17,6 +17,12 @@ export async function resolveSubdomainForRoleAssignment(params: {
   }
 
   if (role.name === SUPERADMIN_ROLE_NAME) {
+    if (!params.isGlobalAdmin) {
+      return {
+        subdomainId: null,
+        error: "Hanya superadmin yang dapat membuat atau mengubah akun superadmin.",
+      };
+    }
     return { subdomainId: null };
   }
 

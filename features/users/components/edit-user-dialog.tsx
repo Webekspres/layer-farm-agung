@@ -100,7 +100,7 @@ export function EditUserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="dialog-shell">
+      <DialogContent className="dialog-shell-wide">
         <DialogHeader className="dialog-header-padding">
           <DialogTitle>Edit pengguna</DialogTitle>
           <DialogDescription>
@@ -167,6 +167,18 @@ export function EditUserDialog({
                   </SelectContent>
                 </Select>
               </Field>
+              {!formOptions.isGlobalAdmin && formOptions.assignableBranchName ? (
+                <Field>
+                  <FieldLabel>Cabang</FieldLabel>
+                  <div className="rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm">
+                    {formOptions.assignableBranchName}
+                  </div>
+                  <FieldDescription>
+                    Admin cabang hanya dapat mengelola pengguna di cabang ini.
+                  </FieldDescription>
+                </Field>
+              ) : null}
+
               {formOptions.isGlobalAdmin ? (
                 <Field>
                   <FieldLabel htmlFor="edit-subdomainId">Cabang</FieldLabel>

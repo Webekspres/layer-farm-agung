@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageContent } from "@/components/layout/page-content";
 import { getServerSession } from "@/features/auth/lib/session";
@@ -15,13 +16,27 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const branches =
-    session.user.subdomainId === null
-      ? await listActiveSubdomainsForSwitcher()
-      : [];
+  const isGlobalAdmin = session.user.subdomainId === null;
+
+  const branches = isGlobalAdmin
+    ? await listActiveSubdomainsForSwitcher()
+    : [];
+
+  const activeBranchName = isGlobalAdmin
+    ? null
+    : (
+        await prisma.subdomain.findUnique({
+          where: { id: session.user.subdomainId! },
+          select: { name: true },
+        })
+      )?.name ?? null;
 
   return (
-    <DashboardShell session={session} branches={branches}>
+    <DashboardShell
+      session={session}
+      branches={branches}
+      activeBranchName={activeBranchName}
+    >
       <PageContent>{children}</PageContent>
     </DashboardShell>
   );

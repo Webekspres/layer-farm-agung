@@ -16,6 +16,8 @@ export type UserFormOptions = {
   subdomains: { id: string; name: string }[];
   isGlobalAdmin: boolean;
   defaultSubdomainId: string | null;
+  /** Set for branch admins — new users are scoped to this cabang. */
+  assignableBranchName: string | null;
 };
 
 export type UsersListFilters = {

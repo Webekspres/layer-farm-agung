@@ -42,3 +42,6 @@ next-env.d.ts
 
 # prisma
 /generated/
+
+# ignore all files in docs folder
+/docs/**

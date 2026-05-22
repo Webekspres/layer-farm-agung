@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  filterAssignableRoles,
   isSuperadminRole,
   subdomainIdAfterRoleChange,
   SUPERADMIN_ROLE_NAME,
@@ -12,6 +13,17 @@ const roles = [
 ];
 
 const branches = [{ id: "branch-a" }, { id: "branch-b" }];
+
+describe("filterAssignableRoles", () => {
+  test("excludes superadmin for branch admins", () => {
+    const filtered = filterAssignableRoles(roles, false);
+    expect(filtered.map((r) => r.name)).toEqual(["admin", "staff"]);
+  });
+
+  test("keeps all roles for global admin", () => {
+    expect(filterAssignableRoles(roles, true)).toHaveLength(3);
+  });
+});
 
 describe("isSuperadminRole", () => {
   test("detects superadmin role id", () => {
