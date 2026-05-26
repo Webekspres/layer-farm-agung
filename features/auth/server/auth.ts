@@ -4,7 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { customSession, username } from "better-auth/plugins";
 import { APIError } from "better-auth/api";
 import {
-  assertActiveBranchContext,
+  assertActiveTenantContext,
   assertUserMayUseSession,
 } from "@/features/auth/lib/session-guards";
 import prisma from "@/lib/prisma";

@@ -27,7 +27,13 @@ export function assertUserMayUseSession(user: SessionGuardUser) {
  * Superadmin context switch: active_tenant_id must point to an active tenant.
  */
 export function assertActiveTenantContext(tenant: { is_active: boolean } | null) {
-  if (tenant && !tenant.is_active) {
+  if (!tenant) {
+    throw new APIError("UNAUTHORIZED", {
+      message: "Tenant konteks tidak ditemukan. Pilih tenant aktif kembali.",
+    });
+  }
+
+  if (!tenant.is_active) {
     throw new APIError("UNAUTHORIZED", {
       message: "Tenant peternakan tidak aktif.",
     });

@@ -130,6 +130,87 @@ async function main() {
     });
   }
 
+  const strainLohmann = await prisma.strain.upsert({
+    where: { name: "Lohmann Brown" },
+    update: {},
+    create: {
+      name: "Lohmann Brown",
+      description: "Strain layer standar",
+    },
+  });
+
+  await prisma.strain.upsert({
+    where: { name: "Hy-Line" },
+    update: {},
+    create: {
+      name: "Hy-Line",
+      description: "Strain layer alternatif",
+    },
+  });
+
+  for (const [name, description] of [
+    ["A", "Grade A"],
+    ["B", "Grade B"],
+    ["C", "Grade C"],
+  ] as const) {
+    await prisma.eggGrade.upsert({
+      where: { name },
+      update: { description },
+      create: { name, description },
+    });
+  }
+
+  const mainLocation = await prisma.location.upsert({
+    where: { id: "00000000-0000-4000-8000-000000000001" },
+    update: { name: "Kawasan Utama" },
+    create: {
+      id: "00000000-0000-4000-8000-000000000001",
+      tenant_id: defaultTenant.id,
+      name: "Kawasan Utama",
+    },
+  });
+
+  const existingCage = await prisma.cage.findFirst({
+    where: {
+      location_id: mainLocation.id,
+      name: "Kandang 1",
+    },
+  });
+
+  if (!existingCage) {
+    const cage = await prisma.cage.create({
+      data: {
+        location_id: mainLocation.id,
+        strain_id: strainLohmann.id,
+        name: "Kandang 1",
+        cage_type: "Closed house",
+        capacity: 5000,
+        status: "Active",
+      },
+    });
+
+    await prisma.cycleSetting.create({
+      data: {
+        cage_id: cage.id,
+        start_date: new Date("2025-01-01"),
+        initial_population: 4800,
+        status: "Active",
+      },
+    });
+  }
+
+  await prisma.vendor.upsert({
+    where: { id: "00000000-0000-4000-8000-000000000010" },
+    update: { name: "PT Pakan Sejahtera" },
+    create: {
+      id: "00000000-0000-4000-8000-000000000010",
+      tenant_id: defaultTenant.id,
+      name: "PT Pakan Sejahtera",
+      category: "Pakan",
+      address: "Jl. Contoh No. 1",
+    },
+  });
+
   console.log("Seed selesai.");
   console.log("Superadmin: superadmin / password123!");
   console.log("Admin tenant: admin.cabang / password123!");

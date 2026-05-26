@@ -6,6 +6,8 @@ export const WIRED_PERMISSIONS = [
   "view_dashboard",
   "manage_users",
   "manage_roles",
+  "manage_master_data",
+  "manage_global_catalog",
   "view_cashflow",
   "manage_production",
   "manage_inventory",

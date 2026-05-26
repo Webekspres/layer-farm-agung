@@ -3,6 +3,7 @@ import {
   adminNavItems,
   filterNavByPermissions,
   mainNavItems,
+  masterDataNavItems,
 } from "@/features/dashboard/config/navigation";
 
 describe("filterNavByPermissions", () => {
@@ -41,6 +42,40 @@ describe("filterNavByPermissions", () => {
 
   test("hides admin items when manage_users is missing", () => {
     const filtered = filterNavByPermissions(adminNavItems, [], false);
+    expect(filtered).toHaveLength(0);
+  });
+
+  test("tenant admin sees tenant master data only", () => {
+    const filtered = filterNavByPermissions(
+      masterDataNavItems,
+      ["manage_master_data"],
+      false,
+    );
+    const hrefs = filtered.map((item) => item.href);
+    expect(hrefs).toContain("/dashboard/locations");
+    expect(hrefs).toContain("/dashboard/cages");
+    expect(hrefs).toContain("/dashboard/vendors");
+    expect(hrefs).not.toContain("/dashboard/strains");
+    expect(hrefs).not.toContain("/dashboard/egg-grades");
+  });
+
+  test("superadmin sees global catalog in master data nav", () => {
+    const filtered = filterNavByPermissions(
+      masterDataNavItems,
+      ["manage_global_catalog"],
+      true,
+    );
+    const hrefs = filtered.map((item) => item.href);
+    expect(hrefs).toContain("/dashboard/strains");
+    expect(hrefs).toContain("/dashboard/egg-grades");
+  });
+
+  test("hides master data nav for staff without permission", () => {
+    const filtered = filterNavByPermissions(
+      masterDataNavItems,
+      ["manage_production", "manage_inventory"],
+      false,
+    );
     expect(filtered).toHaveLength(0);
   });
 });

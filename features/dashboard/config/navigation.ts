@@ -2,9 +2,12 @@ import type { LucideIcon } from "lucide-react";
 import {
   Building2,
   Egg,
+  Layers,
   LayoutDashboard,
+  MapPin,
   Package,
   Shield,
+  Truck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -46,6 +49,41 @@ export const mainNavItems: NavItem[] = [
     icon: Wallet,
     permission: "view_cashflow",
     badge: "Soon",
+  },
+];
+
+export const masterDataNavItems: NavItem[] = [
+  {
+    title: "Lokasi",
+    href: "/dashboard/locations",
+    icon: MapPin,
+    permission: "manage_master_data",
+  },
+  {
+    title: "Kandang",
+    href: "/dashboard/cages",
+    icon: Layers,
+    permission: "manage_master_data",
+  },
+  {
+    title: "Strain",
+    href: "/dashboard/strains",
+    icon: Egg,
+    permission: "manage_global_catalog",
+    globalOnly: true,
+  },
+  {
+    title: "Grade Telur",
+    href: "/dashboard/egg-grades",
+    icon: Package,
+    permission: "manage_global_catalog",
+    globalOnly: true,
+  },
+  {
+    title: "Vendor",
+    href: "/dashboard/vendors",
+    icon: Truck,
+    permission: "manage_master_data",
   },
 ];
 

@@ -22,6 +22,7 @@ import {
   adminNavItems,
   filterNavByPermissions,
   mainNavItems,
+  masterDataNavItems,
 } from "@/features/dashboard/config/navigation";
 import type { ServerSession } from "@/features/auth/lib/session";
 
@@ -35,6 +36,11 @@ export function AppSidebar({ session }: AppSidebarProps) {
   const isGlobalAdmin = session.user.tenantId === null;
 
   const mainItems = filterNavByPermissions(mainNavItems, permissions, isGlobalAdmin);
+  const masterItems = filterNavByPermissions(
+    masterDataNavItems,
+    permissions,
+    isGlobalAdmin,
+  );
   const adminItems = filterNavByPermissions(adminNavItems, permissions, isGlobalAdmin);
 
   const activeTenant =
@@ -105,6 +111,33 @@ export function AppSidebar({ session }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {masterItems.length > 0 ? (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel className="mb-1">Data master</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="gap-1.5">
+                  {masterItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={item.title}
+                      >
+                        <Link href={item.href}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        ) : null}
 
         {adminItems.length > 0 ? (
           <>

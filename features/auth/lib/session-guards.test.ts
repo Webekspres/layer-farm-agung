@@ -47,4 +47,8 @@ describe("assertActiveTenantContext", () => {
       APIError,
     );
   });
+
+  test("rejects missing tenant context", () => {
+    expect(() => assertActiveTenantContext(null)).toThrow(APIError);
+  });
 });

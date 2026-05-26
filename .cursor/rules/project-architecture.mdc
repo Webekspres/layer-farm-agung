@@ -46,6 +46,10 @@ Example: `features/auth/actions/sign-in.ts`, `features/auth/server/auth.ts`, `fe
 - `prisma.ts`, `utils.ts` (`cn`), etc.
 - **No** domain logic, feature services, or entity CRUD.
 
+## Master data list pages
+
+Search + URL filters on admin tables: see **`master-data-tables.mdc`**.
+
 ## Placement checklist
 
 1. Used across multiple domains? → `components/shared/` or `components/layout/`

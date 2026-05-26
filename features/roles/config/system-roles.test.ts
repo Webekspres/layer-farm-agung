@@ -26,6 +26,7 @@ describe("system-roles", () => {
     ]);
     expect(staff).not.toContain("manage_users");
     expect(staff).not.toContain("manage_roles");
+    expect(staff).not.toContain("manage_master_data");
   });
 
   test("admin excludes manage_roles", () => {
@@ -43,6 +44,13 @@ describe("system-roles", () => {
     const staffIds = defaultPermissionIdsForRole(STAFF_ROLE_NAME, permissions);
     expect(staffIds).toEqual([1, 3]);
     expect(getDefaultPermissionNamesForRole("custom")).toBeNull();
+  });
+
+  test("admin has tenant master data but not global catalog", () => {
+    const admin = resolveRolePermissionNames(SYSTEM_ROLES[ADMIN_ROLE_NAME]);
+    expect(admin).toContain("manage_master_data");
+    expect(admin).not.toContain("manage_global_catalog");
+    expect(admin).not.toContain("manage_roles");
   });
 
   test("sortRolesBySystemOrder lists superadmin, admin, staff", () => {
