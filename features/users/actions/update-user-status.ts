@@ -10,12 +10,12 @@ import {
 
 export async function updateUserStatusAction(userId: string, isActive: boolean) {
   const session = await requireManageUsersSession();
-  const { scopedSubdomainId } = getUsersTenantScope(session);
+  const { scopedTenantId } = getUsersTenantScope(session);
 
   const user = await prisma.user.findFirst({
     where: {
       id: userId,
-      ...(scopedSubdomainId ? { subdomain_id: scopedSubdomainId } : {}),
+      ...(scopedTenantId ? { tenant_id: scopedTenantId } : {}),
     },
     select: { id: true },
   });

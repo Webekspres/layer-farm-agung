@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  getActiveSubdomainId,
+  getActiveTenantId,
   hasPermission,
   type ServerSession,
 } from "@/features/auth/lib/session";
@@ -8,45 +8,45 @@ import {
 function sessionFixture(
   partial: Partial<{
     permissions: string[];
-    subdomainId: string | null;
-    activeSubdomainId: string | null;
+    tenantId: string | null;
+    activeTenantId: string | null;
   }> = {},
 ): ServerSession {
   return {
     user: {
       permissions: partial.permissions ?? [],
-      subdomainId:
-        partial.subdomainId !== undefined ? partial.subdomainId : null,
+      tenantId:
+        partial.tenantId !== undefined ? partial.tenantId : null,
     },
     session: {
-      activeSubdomainId: partial.activeSubdomainId ?? null,
+      activeTenantId: partial.activeTenantId ?? null,
     },
   } as ServerSession;
 }
 
-describe("getActiveSubdomainId", () => {
-  test("prefers session activeSubdomainId over user subdomain", () => {
+describe("getActiveTenantId", () => {
+  test("prefers session activeTenantId over user tenant", () => {
     const session = sessionFixture({
-      subdomainId: "branch-a",
-      activeSubdomainId: "branch-b",
+      tenantId: "branch-a",
+      activeTenantId: "branch-b",
     });
-    expect(getActiveSubdomainId(session)).toBe("branch-b");
+    expect(getActiveTenantId(session)).toBe("branch-b");
   });
 
-  test("falls back to user subdomain when session override is null", () => {
+  test("falls back to user tenant when session override is null", () => {
     const session = sessionFixture({
-      subdomainId: "branch-a",
-      activeSubdomainId: null,
+      tenantId: "branch-a",
+      activeTenantId: null,
     });
-    expect(getActiveSubdomainId(session)).toBe("branch-a");
+    expect(getActiveTenantId(session)).toBe("branch-a");
   });
 
   test("returns null for global user with no override", () => {
     const session = sessionFixture({
-      subdomainId: null,
-      activeSubdomainId: null,
+      tenantId: null,
+      activeTenantId: null,
     });
-    expect(getActiveSubdomainId(session)).toBeNull();
+    expect(getActiveTenantId(session)).toBeNull();
   });
 });
 

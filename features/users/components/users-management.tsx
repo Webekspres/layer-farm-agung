@@ -44,7 +44,7 @@ export function UsersManagement({
         users={users}
         currentUserId={currentUserId}
         pagination={pagination}
-        showBranchColumn={formOptions.isGlobalAdmin}
+        showTenantColumn={formOptions.isGlobalAdmin}
         onEditUser={(user) => {
           setEditingUser(user);
           setEditOpen(true);

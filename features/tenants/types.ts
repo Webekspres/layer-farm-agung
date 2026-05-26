@@ -1,13 +1,13 @@
-export type SubdomainListItem = {
+export type TenantListItem = {
   id: string;
   name: string;
-  subdomainUrl: string;
+  slug: string;
   isActive: boolean;
   userCount: number;
   createdAt: string;
 };
 
-export type SubdomainsListFilters = {
+export type TenantsListFilters = {
   search?: string;
   status?: "all" | "active" | "inactive";
 };

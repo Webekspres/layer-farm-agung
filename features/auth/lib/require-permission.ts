@@ -22,9 +22,9 @@ export async function requirePermission(
   return session;
 }
 
-/** Superadmin global accounts (`subdomain_id` null). */
+/** Superadmin global accounts (`tenant_id` null). */
 export function requireGlobalAdmin(session: ServerSession) {
-  if (session.user.subdomainId !== null) {
+  if (session.user.tenantId !== null) {
     redirect("/dashboard");
   }
   return session;

@@ -2,12 +2,12 @@ import { APIError } from "better-auth/api";
 
 export type SessionGuardUser = {
   is_active: boolean;
-  subdomain_id: string | null;
-  subdomain: { is_active: boolean } | null;
+  tenant_id: string | null;
+  tenant: { is_active: boolean } | null;
 };
 
 /**
- * Validates user + home branch on every session read (not only at login).
+ * Validates user + home tenant on every session read (not only at login).
  */
 export function assertUserMayUseSession(user: SessionGuardUser) {
   if (!user.is_active) {
@@ -16,20 +16,20 @@ export function assertUserMayUseSession(user: SessionGuardUser) {
     });
   }
 
-  if (user.subdomain_id && user.subdomain && !user.subdomain.is_active) {
+  if (user.tenant_id && user.tenant && !user.tenant.is_active) {
     throw new APIError("UNAUTHORIZED", {
-      message: "Cabang peternakan tidak aktif.",
+      message: "Tenant peternakan tidak aktif.",
     });
   }
 }
 
 /**
- * Superadmin context switch: active_subdomain_id must point to an active branch.
+ * Superadmin context switch: active_tenant_id must point to an active tenant.
  */
-export function assertActiveBranchContext(branch: { is_active: boolean } | null) {
-  if (branch && !branch.is_active) {
+export function assertActiveTenantContext(tenant: { is_active: boolean } | null) {
+  if (tenant && !tenant.is_active) {
     throw new APIError("UNAUTHORIZED", {
-      message: "Cabang peternakan tidak aktif.",
+      message: "Tenant peternakan tidak aktif.",
     });
   }
 }

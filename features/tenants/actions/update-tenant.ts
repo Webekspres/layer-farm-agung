@@ -7,24 +7,24 @@ import {
   requirePermission,
 } from "@/features/auth/lib/require-permission";
 import { revokeAllBranchSessions } from "@/features/auth/services/revoke-sessions";
-import { updateSubdomainSchema } from "@/features/subdomains/schemas/subdomain";
+import { updateTenantSchema } from "@/features/tenants/schemas/tenant";
 
-export type SubdomainFormState = {
+export type TenantFormState = {
   error?: string;
   success?: boolean;
 };
 
-export async function updateSubdomainAction(
-  _prev: SubdomainFormState,
+export async function updateTenantAction(
+  _prev: TenantFormState,
   formData: FormData,
-): Promise<SubdomainFormState> {
+): Promise<TenantFormState> {
   const session = await requirePermission("manage_roles");
   requireGlobalAdmin(session);
 
-  const parsed = updateSubdomainSchema.safeParse({
+  const parsed = updateTenantSchema.safeParse({
     id: formData.get("id"),
     name: formData.get("name"),
-    subdomainUrl: formData.get("subdomainUrl"),
+    slug: formData.get("slug"),
     isActive: formData.get("isActive") === "true",
   });
 
@@ -32,21 +32,21 @@ export async function updateSubdomainAction(
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
   }
 
-  const existing = await prisma.subdomain.findUnique({
+  const existing = await prisma.tenant.findUnique({
     where: { id: parsed.data.id },
     select: { is_active: true },
   });
 
   if (!existing) {
-    return { error: "Cabang tidak ditemukan." };
+    return { error: "Tenant tidak ditemukan." };
   }
 
   try {
-    await prisma.subdomain.update({
+    await prisma.tenant.update({
       where: { id: parsed.data.id },
       data: {
         name: parsed.data.name,
-        subdomain_url: parsed.data.subdomainUrl,
+        slug: parsed.data.slug,
         is_active: parsed.data.isActive,
       },
     });
@@ -55,9 +55,9 @@ export async function updateSubdomainAction(
       await revokeAllBranchSessions(parsed.data.id);
     }
   } catch {
-    return { error: "Gagal memperbarui cabang." };
+    return { error: "Gagal memperbarui tenant." };
   }
 
-  revalidatePath("/dashboard/branches");
+  revalidatePath("/dashboard/tenants");
   return { success: true };
 }

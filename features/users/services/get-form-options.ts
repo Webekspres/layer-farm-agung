@@ -1,18 +1,18 @@
 import prisma from "@/lib/prisma";
-import { filterAssignableRoles } from "@/features/users/lib/role-subdomain";
+import { filterAssignableRoles } from "@/features/users/lib/role-tenant";
 import type { UserFormOptions } from "@/features/users/types";
 
 export async function getUserFormOptions(
   isGlobalAdmin: boolean,
-  scopedSubdomainId: string | null,
+  scopedTenantId: string | null,
 ): Promise<UserFormOptions> {
-  const [allRoles, subdomains] = await Promise.all([
+  const [allRoles, tenants] = await Promise.all([
     prisma.role.findMany({
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
     isGlobalAdmin
-      ? prisma.subdomain.findMany({
+      ? prisma.tenant.findMany({
           where: { is_active: true },
           select: { id: true, name: true },
           orderBy: { name: "asc" },
@@ -22,8 +22,8 @@ export async function getUserFormOptions(
 
   return {
     roles: filterAssignableRoles(allRoles, isGlobalAdmin),
-    subdomains,
+    tenants,
     isGlobalAdmin,
-    defaultSubdomainId: scopedSubdomainId,
+    defaultTenantId: scopedTenantId,
   };
 }

@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type SubdomainsToolbarProps = {
+type TenantsToolbarProps = {
   onCreateClick: () => void;
 };
 
@@ -32,7 +32,7 @@ function buildQuery(
   return next;
 }
 
-export function SubdomainsToolbar({ onCreateClick }: SubdomainsToolbarProps) {
+export function TenantsToolbar({ onCreateClick }: TenantsToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -73,7 +73,7 @@ export function SubdomainsToolbar({ onCreateClick }: SubdomainsToolbarProps) {
         <div className="relative min-w-0 sm:col-span-2 lg:max-w-xs lg:flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Cari nama atau URL cabang..."
+            placeholder="Cari nama atau slug tenant..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8"
@@ -97,7 +97,7 @@ export function SubdomainsToolbar({ onCreateClick }: SubdomainsToolbarProps) {
         className="w-full shrink-0 cursor-pointer sm:w-auto lg:self-center hover:bg-primary/90"
       >
         <Plus className="size-4" />
-        Tambah cabang
+        Tambah tenant
       </Button>
     </div>
   );

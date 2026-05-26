@@ -36,15 +36,15 @@ const statCards = [
   {
     title: "Pengguna aktif",
     value: "—",
-    description: "Akun cabang aktif",
+    description: "Akun tenant aktif",
     icon: Users,
   },
 ] as const;
 
 export function DashboardOverview({ session }: DashboardOverviewProps) {
   const displayName = session.user.fullName ?? session.user.name ?? "Pengguna";
-  const activeSubdomain =
-    session.session.activeSubdomainId ?? session.user.subdomainId;
+  const activeTenant =
+    session.session.activeTenantId ?? session.user.tenantId;
 
   return (
     <>
@@ -86,8 +86,8 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
             <InfoRow label="Username" value={session.user.username} />
             <InfoRow label="Role" value={session.user.roleName} />
             <InfoRow
-              label="Subdomain aktif"
-              value={activeSubdomain ?? "Global (superadmin)"}
+              label="Tenant aktif"
+              value={activeTenant ?? "Global (superadmin)"}
             />
           </CardContent>
         </Card>

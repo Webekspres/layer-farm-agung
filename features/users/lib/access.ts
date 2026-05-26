@@ -1,6 +1,6 @@
 import { requirePermission } from "@/features/auth/lib/require-permission";
 import {
-  getActiveSubdomainId,
+  getActiveTenantId,
   type ServerSession,
 } from "@/features/auth/lib/session";
 
@@ -9,14 +9,14 @@ export async function requireManageUsersSession() {
 }
 
 export function getUsersTenantScope(session: ServerSession) {
-  const isGlobalAdmin = session.user.subdomainId === null;
-  const scopedSubdomainId = isGlobalAdmin
+  const isGlobalAdmin = session.user.tenantId === null;
+  const scopedTenantId = isGlobalAdmin
     ? null
-    : getActiveSubdomainId(session);
+    : getActiveTenantId(session);
 
-  if (!isGlobalAdmin && !scopedSubdomainId) {
-    throw new Error("Cabang aktif tidak ditemukan untuk akun ini.");
+  if (!isGlobalAdmin && !scopedTenantId) {
+    throw new Error("Tenant aktif tidak ditemukan untuk akun ini.");
   }
 
-  return { isGlobalAdmin, scopedSubdomainId };
+  return { isGlobalAdmin, scopedTenantId };
 }

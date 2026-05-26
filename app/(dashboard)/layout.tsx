@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { PageContent } from "@/components/layout/page-content";
 import { getServerSession } from "@/features/auth/lib/session";
-import { listActiveSubdomainsForSwitcher } from "@/features/subdomains/services/list-subdomains";
+import { listActiveTenantsForSwitcher } from "@/features/tenants/services/list-tenants";
 
 export default async function DashboardLayout({
   children,
@@ -16,17 +16,15 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const isGlobalAdmin = session.user.subdomainId === null;
+  const isGlobalAdmin = session.user.tenantId === null;
 
-  const branches = isGlobalAdmin
-    ? await listActiveSubdomainsForSwitcher()
-    : [];
+  const tenants = isGlobalAdmin ? await listActiveTenantsForSwitcher() : [];
 
-  const activeBranchName = isGlobalAdmin
+  const activeTenantName = isGlobalAdmin
     ? null
     : (
-        await prisma.subdomain.findUnique({
-          where: { id: session.user.subdomainId! },
+        await prisma.tenant.findUnique({
+          where: { id: session.user.tenantId! },
           select: { name: true },
         })
       )?.name ?? null;
@@ -34,8 +32,8 @@ export default async function DashboardLayout({
   return (
     <DashboardShell
       session={session}
-      branches={branches}
-      activeBranchName={activeBranchName}
+      tenants={tenants}
+      activeTenantName={activeTenantName}
     >
       <PageContent>{children}</PageContent>
     </DashboardShell>

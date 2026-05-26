@@ -32,13 +32,13 @@ type AppSidebarProps = {
 export function AppSidebar({ session }: AppSidebarProps) {
   const pathname = usePathname();
   const permissions = session.user.permissions;
-  const isGlobalAdmin = session.user.subdomainId === null;
+  const isGlobalAdmin = session.user.tenantId === null;
 
   const mainItems = filterNavByPermissions(mainNavItems, permissions, isGlobalAdmin);
   const adminItems = filterNavByPermissions(adminNavItems, permissions, isGlobalAdmin);
 
-  const activeSubdomain =
-    session.session.activeSubdomainId ?? session.user.subdomainId;
+  const activeTenant =
+    session.session.activeTenantId ?? session.user.tenantId;
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -145,7 +145,7 @@ export function AppSidebar({ session }: AppSidebarProps) {
             {session.user.roleName}
           </p>
           <p className="truncate">
-            {activeSubdomain ? "Cabang aktif" : "Akses global"}
+            {activeTenant ? "Tenant aktif" : "Akses global"}
           </p>
         </div>
       </SidebarFooter>

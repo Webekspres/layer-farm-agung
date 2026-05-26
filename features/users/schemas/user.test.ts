@@ -9,14 +9,14 @@ import {
 const validUuid = "550e8400-e29b-41d4-a716-446655440000";
 
 describe("createUserSchema", () => {
-  test("accepts valid payload with global subdomain", () => {
+  test("accepts valid payload with global tenant", () => {
     const result = createUserSchema.safeParse({
       fullName: "Staff Baru",
       username: "staff.baru",
       email: "",
       password: "ChangeMe123!",
       roleId: "2",
-      subdomainId: "global",
+      tenantId: "global",
       isActive: "true",
     });
     expect(result.success).toBe(true);

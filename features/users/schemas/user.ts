@@ -16,7 +16,7 @@ export const createUserSchema = z.object({
     .or(z.literal("")),
   password: z.string().min(8, "Password minimal 8 karakter."),
   roleId: z.coerce.number().int().positive("Role wajib dipilih."),
-  subdomainId: z
+  tenantId: z
     .string()
     .uuid()
     .optional()
@@ -41,7 +41,7 @@ export const updateUserSchema = z.object({
     .optional()
     .or(z.literal("")),
   roleId: z.coerce.number().int().positive("Role wajib dipilih."),
-  subdomainId: z
+  tenantId: z
     .string()
     .uuid()
     .optional()

@@ -6,24 +6,24 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import type { ServerSession } from "@/features/auth/lib/session";
 
-type BranchOption = { id: string; name: string };
+type TenantOption = { id: string; name: string };
 
 type DashboardShellProps = {
   session: ServerSession;
-  branches?: BranchOption[];
-  activeBranchName?: string | null;
+  tenants?: TenantOption[];
+  activeTenantName?: string | null;
   children: React.ReactNode;
 };
 
 export function DashboardShell({
   session,
-  branches = [],
-  activeBranchName = null,
+  tenants = [],
+  activeTenantName = null,
   children,
 }: DashboardShellProps) {
-  const isGlobalAdmin = session.user.subdomainId === null;
-  const activeSubdomainId =
-    session.session.activeSubdomainId ?? session.user.subdomainId;
+  const isGlobalAdmin = session.user.tenantId === null;
+  const activeTenantId =
+    session.session.activeTenantId ?? session.user.tenantId;
 
   return (
     <TooltipProvider>
@@ -32,9 +32,9 @@ export function DashboardShell({
         <SidebarInset className="min-h-svh min-w-0 overflow-x-hidden">
           <DashboardHeader
             session={session}
-            branches={isGlobalAdmin ? branches : []}
-            activeSubdomainId={isGlobalAdmin ? activeSubdomainId : null}
-            activeBranchName={activeBranchName}
+            tenants={isGlobalAdmin ? tenants : []}
+            activeTenantId={isGlobalAdmin ? activeTenantId : null}
+            activeTenantName={activeTenantName}
           />
           <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
             {children}

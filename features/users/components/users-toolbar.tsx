@@ -70,7 +70,7 @@ export function UsersToolbar({ formOptions, onCreateClick }: UsersToolbarProps) 
 
   const roleId = searchParams.get("roleId") ?? "all";
   const status = searchParams.get("status") ?? "all";
-  const subdomainId = searchParams.get("subdomainId") ?? "all";
+  const tenantId = searchParams.get("tenantId") ?? "all";
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -112,16 +112,16 @@ export function UsersToolbar({ formOptions, onCreateClick }: UsersToolbarProps) 
 
         {formOptions.isGlobalAdmin ? (
           <Select
-            value={subdomainId}
-            onValueChange={(v) => updateFilter("subdomainId", v)}
+            value={tenantId}
+            onValueChange={(v) => updateFilter("tenantId", v)}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Semua cabang" />
+              <SelectValue placeholder="Semua tenant" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua cabang</SelectItem>
+              <SelectItem value="all">Semua tenant</SelectItem>
               <SelectItem value="global">Global</SelectItem>
-              {formOptions.subdomains.map((sub) => (
+              {formOptions.tenants.map((sub) => (
                 <SelectItem key={sub.id} value={sub.id}>
                   {sub.name}
                 </SelectItem>

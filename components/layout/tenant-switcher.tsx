@@ -10,28 +10,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { switchActiveSubdomainAction } from "@/features/tenant/actions/switch-active-subdomain";
+import { switchActiveTenantAction } from "@/features/tenants/actions/switch-active-tenant";
 
-type BranchOption = { id: string; name: string };
+type TenantOption = { id: string; name: string };
 
-type BranchSwitcherProps = {
-  branches: BranchOption[];
-  activeSubdomainId: string | null;
+type TenantSwitcherProps = {
+  tenants: TenantOption[];
+  activeTenantId: string | null;
 };
 
-export function BranchSwitcher({
-  branches,
-  activeSubdomainId,
-}: BranchSwitcherProps) {
+export function TenantSwitcher({
+  tenants,
+  activeTenantId,
+}: TenantSwitcherProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const value = activeSubdomainId ?? "global";
+  const value = activeTenantId ?? "global";
 
   function handleChange(next: string) {
-    const subdomainId = next === "global" ? null : next;
+    const tenantId = next === "global" ? null : next;
     startTransition(async () => {
-      const result = await switchActiveSubdomainAction(subdomainId);
+      const result = await switchActiveTenantAction(tenantId);
       if (result.success) {
         router.refresh();
       }
@@ -43,13 +43,13 @@ export function BranchSwitcher({
       <Building2 className="size-4 shrink-0 text-muted-foreground" />
       <Select value={value} onValueChange={handleChange} disabled={isPending}>
         <SelectTrigger className="h-8 w-full min-w-[140px] max-w-[200px]" size="sm">
-          <SelectValue placeholder="Pilih cabang" />
+          <SelectValue placeholder="Pilih tenant" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="global">Global</SelectItem>
-          {branches.map((branch) => (
-            <SelectItem key={branch.id} value={branch.id}>
-              {branch.name}
+          {tenants.map((tenant) => (
+            <SelectItem key={tenant.id} value={tenant.id}>
+              {tenant.name}
             </SelectItem>
           ))}
         </SelectContent>

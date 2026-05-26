@@ -19,7 +19,7 @@ export async function resetUserPasswordAction(
   formData: FormData,
 ): Promise<ResetPasswordState> {
   const session = await requireManageUsersSession();
-  const { scopedSubdomainId } = getUsersTenantScope(session);
+  const { scopedTenantId } = getUsersTenantScope(session);
 
   const parsed = resetUserPasswordSchema.safeParse({
     userId: formData.get("userId"),
@@ -35,7 +35,7 @@ export async function resetUserPasswordAction(
   const user = await prisma.user.findFirst({
     where: {
       id: parsed.data.userId,
-      ...(scopedSubdomainId ? { subdomain_id: scopedSubdomainId } : {}),
+      ...(scopedTenantId ? { tenant_id: scopedTenantId } : {}),
     },
     select: { id: true },
   });

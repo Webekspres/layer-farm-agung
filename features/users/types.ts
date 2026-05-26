@@ -6,22 +6,22 @@ export type UserListItem = {
   isActive: boolean;
   roleId: number;
   roleName: string;
-  subdomainId: string | null;
-  subdomainName: string | null;
+  tenantId: string | null;
+  tenantName: string | null;
   createdAt: string;
 };
 
 export type UserFormOptions = {
   roles: { id: number; name: string }[];
-  subdomains: { id: string; name: string }[];
+  tenants: { id: string; name: string }[];
   isGlobalAdmin: boolean;
-  defaultSubdomainId: string | null;
+  defaultTenantId: string | null;
 };
 
 export type UsersListFilters = {
   search?: string;
   roleId?: number;
-  subdomainId?: string;
+  tenantId?: string;
   status?: "all" | "active" | "inactive";
 };
 

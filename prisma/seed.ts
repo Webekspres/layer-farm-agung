@@ -65,12 +65,12 @@ async function main() {
     }
   }
 
-  const defaultBranch = await prisma.subdomain.upsert({
-    where: { subdomain_url: "cabang-utama" },
-    update: { name: "Cabang Utama" },
+  const defaultTenant = await prisma.tenant.upsert({
+    where: { slug: "cabang-utama" },
+    update: { name: "Tenant Utama" },
     create: {
-      name: "Cabang Utama",
-      subdomain_url: "cabang-utama",
+      name: "Tenant Utama",
+      slug: "cabang-utama",
       is_active: true,
     },
   });
@@ -89,9 +89,9 @@ async function main() {
       fullName: "Super Admin",
       username: superadminUsername,
       email: "superadmin@layerfarm.local",
-      password: "ChangeMe123!",
+      password: "password123",
       roleId: superadminRole.id,
-      subdomainId: null,
+      tenantId: null,
       isActive: true,
     });
   }
@@ -106,9 +106,9 @@ async function main() {
       fullName: "Admin Cabang Utama",
       username: branchAdminUsername,
       email: "admin@cabang-utama.local",
-      password: "ChangeMe123!",
+      password: "password123",
       roleId: adminRole.id,
-      subdomainId: defaultBranch.id,
+      tenantId: defaultTenant.id,
       isActive: true,
     });
   }
@@ -123,17 +123,17 @@ async function main() {
       fullName: "Staff Kandang",
       username: staffUsername,
       email: "staff@cabang-utama.local",
-      password: "ChangeMe123!",
+      password: "password123",
       roleId: staffRole.id,
-      subdomainId: defaultBranch.id,
+      tenantId: defaultTenant.id,
       isActive: true,
     });
   }
 
   console.log("Seed selesai.");
-  console.log("Superadmin: superadmin / ChangeMe123!");
-  console.log("Admin cabang: admin.cabang / ChangeMe123!");
-  console.log("Staff kandang: staff.kandang / ChangeMe123!");
+  console.log("Superadmin: superadmin / password123!");
+  console.log("Admin tenant: admin.cabang / password123!");
+  console.log("Staff kandang: staff.kandang / password123!");
 }
 
 main()

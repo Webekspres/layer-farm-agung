@@ -1,9 +1,9 @@
-import type { SubdomainsListFilters } from "@/features/subdomains/types";
+import type { TenantsListFilters } from "@/features/tenants/types";
 
-export function parseSubdomainListFilters(params: {
+export function parseTenantListFilters(params: {
   q?: string;
   status?: string;
-}): SubdomainsListFilters {
+}): TenantsListFilters {
   const status = params.status;
   const validStatus =
     status === "active" || status === "inactive" ? status : "all";

@@ -34,8 +34,8 @@ import {
 } from "@/features/users/actions/update-user";
 import {
   isSuperadminRole,
-  subdomainIdAfterRoleChange,
-} from "@/features/users/lib/role-subdomain";
+  tenantIdAfterRoleChange,
+} from "@/features/users/lib/role-tenant";
 import type { UserFormOptions, UserListItem } from "@/features/users/types";
 
 const updateInitial: UpdateUserState = {};
@@ -61,10 +61,10 @@ export function EditUserDialog({
   );
 
   const defaultBranchId =
-    formOptions.defaultSubdomainId ?? formOptions.subdomains[0]?.id ?? "";
+    formOptions.defaultTenantId ?? formOptions.tenants[0]?.id ?? "";
 
   const [roleId, setRoleId] = useState("");
-  const [subdomainId, setSubdomainId] = useState("global");
+  const [tenantId, setTenantId] = useState("global");
   const [isActive, setIsActive] = useState(true);
 
   const superadminSelected =
@@ -72,12 +72,12 @@ export function EditUserDialog({
 
   function handleRoleChange(nextRoleId: string) {
     setRoleId(nextRoleId);
-    setSubdomainId((current) =>
-      subdomainIdAfterRoleChange(
+    setTenantId((current) =>
+      tenantIdAfterRoleChange(
         nextRoleId,
         current,
         formOptions.roles,
-        formOptions.subdomains,
+        formOptions.tenants,
         defaultBranchId,
       ),
     );
@@ -86,7 +86,7 @@ export function EditUserDialog({
   useEffect(() => {
     if (!user || !open) return;
     setRoleId(String(user.roleId));
-    setSubdomainId(user.subdomainId ?? "global");
+    setTenantId(user.tenantId ?? "global");
     setIsActive(user.isActive);
   }, [user, open]);
 
@@ -114,7 +114,7 @@ export function EditUserDialog({
           <form action={updateAction} id="edit-user-form" className="dialog-form-fields">
             <input type="hidden" name="userId" value={user.id} />
             <input type="hidden" name="roleId" value={roleId} />
-            <input type="hidden" name="subdomainId" value={subdomainId} />
+            <input type="hidden" name="tenantId" value={tenantId} />
             <input type="hidden" name="isActive" value={isActive ? "true" : "false"} />
 
             <FieldGroup className="gap-5">
@@ -169,11 +169,11 @@ export function EditUserDialog({
               </Field>
               {formOptions.isGlobalAdmin ? (
                 <Field>
-                  <FieldLabel htmlFor="edit-subdomainId">Cabang</FieldLabel>
+                  <FieldLabel htmlFor="edit-tenantId">Tenant</FieldLabel>
                   {superadminSelected ? (
                     <>
                       <Select value="global" disabled>
-                        <SelectTrigger id="edit-subdomainId" className="w-full">
+                        <SelectTrigger id="edit-tenantId" className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -187,16 +187,16 @@ export function EditUserDialog({
                   ) : (
                     <>
                       <Select
-                        value={subdomainId}
-                        onValueChange={setSubdomainId}
+                        value={tenantId}
+                        onValueChange={setTenantId}
                         disabled={updatePending}
                         required
                       >
-                        <SelectTrigger id="edit-subdomainId" className="w-full">
-                          <SelectValue placeholder="Pilih cabang" />
+                        <SelectTrigger id="edit-tenantId" className="w-full">
+                          <SelectValue placeholder="Pilih tenant" />
                         </SelectTrigger>
                         <SelectContent>
-                          {formOptions.subdomains.map((sub) => (
+                          {formOptions.tenants.map((sub) => (
                             <SelectItem key={sub.id} value={sub.id}>
                               {sub.name}
                             </SelectItem>
@@ -204,7 +204,7 @@ export function EditUserDialog({
                         </SelectContent>
                       </Select>
                       <FieldDescription>
-                        Admin dan staff harus dipetakan ke satu cabang.
+                        Admin dan staff harus dipetakan ke satu tenant.
                       </FieldDescription>
                     </>
                   )}

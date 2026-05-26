@@ -16,13 +16,13 @@ datasource db {
 // DOMAIN 1: AUTH & TENANT (MODUL 1)
 // ==========================================
 
-model Subdomain {
-  id            String   @id @default(uuid()) @db.Uuid
-  name          String
-  subdomain_url String   @unique
-  is_active     Boolean  @default(true)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+model Tenant {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  slug       String   @unique
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   // Relations
   users                 User[]
@@ -67,7 +67,7 @@ model RolePermission {
 
 model User {
   id               String   @id @default(uuid()) @db.Uuid
-  subdomain_id     String?  @db.Uuid
+  tenant_id        String?  @db.Uuid
   role_id          Int
   full_name        String
   username         String   @unique
@@ -81,7 +81,7 @@ model User {
   updated_at       DateTime @updatedAt
 
   // Relations
-  subdomain         Subdomain?        @relation(fields: [subdomain_id], references: [id], onDelete: SetNull)
+  tenant            Tenant?           @relation(fields: [tenant_id], references: [id], onDelete: SetNull)
   role              Role              @relation(fields: [role_id], references: [id], onDelete: Restrict)
   daily_productions DailyProduction[]
   feed_consumptions FeedConsumption[]
@@ -98,7 +98,7 @@ model Session {
   ip_address          String?
   user_agent          String?
   user_id             String   @db.Uuid
-  active_subdomain_id String?  @map("active_subdomain_id") @db.Uuid
+  active_tenant_id    String?  @map("active_tenant_id") @db.Uuid
 
   user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -144,12 +144,12 @@ model Verification {
 
 model Location {
   id           String   @id @default(uuid()) @db.Uuid
-  subdomain_id String   @db.Uuid
+  tenant_id    String   @db.Uuid
   name         String
   created_at   DateTime @default(now())
 
   // Relations
-  subdomain        Subdomain        @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   cages            Cage[]
   inventory_stocks InventoryStock[]
 }
@@ -221,14 +221,14 @@ model EggGrade {
 
 model Vendor {
   id           String   @id @default(uuid()) @db.Uuid
-  subdomain_id String   @db.Uuid
+  tenant_id    String   @db.Uuid
   name         String
   category     String
   address      String?
   created_at   DateTime @default(now())
 
   // Relations
-  subdomain         Subdomain         @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant            Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   supplier_contacts SupplierContact[]
   purchase_orders   PurchaseOrder[]
 }
@@ -262,7 +262,7 @@ model PurchaseOrder {
 
 model Item {
   id              String   @id @default(uuid()) @db.Uuid
-  subdomain_id    String   @db.Uuid
+  tenant_id       String   @db.Uuid
   name            String
   type            String
   unit            String
@@ -270,7 +270,7 @@ model Item {
   created_at      DateTime @default(now())
 
   // Relations
-  subdomain            Subdomain           @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant               Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   inventory_stocks     InventoryStock[]
   stock_mutations      StockMutation[]
   purchase_order_items PurchaseOrderItem[]
@@ -316,7 +316,7 @@ model PurchaseOrderItem {
 
 model DailyProduction {
   id           String   @id @default(uuid()) @db.Uuid
-  subdomain_id String   @db.Uuid
+  tenant_id    String   @db.Uuid
   cage_id      String   @db.Uuid
   user_id      String   @db.Uuid
   record_date  DateTime @db.Date
@@ -327,7 +327,7 @@ model DailyProduction {
   created_at   DateTime @default(now())
 
   // Relations
-  subdomain Subdomain @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   cage      Cage      @relation(fields: [cage_id], references: [id], onDelete: Restrict)
   user      User      @relation(fields: [user_id], references: [id], onDelete: Restrict)
   egg_grade EggGrade  @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
@@ -390,13 +390,13 @@ model MedicalRecord {
 
 model SyncQueue {
   id           String   @id @default(uuid()) @db.Uuid
-  subdomain_id String   @db.Uuid
+  tenant_id    String   @db.Uuid
   payload      String   @db.Text
   status       String   @default("Pending")
   created_at   DateTime @default(now())
 
   // Relations
-  subdomain Subdomain @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
 }
 
 // ==========================================
@@ -405,20 +405,20 @@ model SyncQueue {
 
 model Customer {
   id           String   @id @default(uuid()) @db.Uuid
-  subdomain_id String   @db.Uuid
+  tenant_id    String   @db.Uuid
   name         String
   phone        String?
   address      String?
   created_at   DateTime @default(now())
 
   // Relations
-  subdomain    Subdomain    @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   sales_orders SalesOrder[]
 }
 
 model SalesOrder {
   id           String   @id @default(uuid()) @db.Uuid
-  subdomain_id String   @db.Uuid
+  tenant_id    String   @db.Uuid
   customer_id  String   @db.Uuid
   sale_date    DateTime @db.Date
   status       String   @default("Paid")
@@ -426,7 +426,7 @@ model SalesOrder {
   created_at   DateTime @default(now())
 
   // Relations
-  subdomain         Subdomain        @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant            Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   customer          Customer         @relation(fields: [customer_id], references: [id], onDelete: Restrict)
   sales_order_items SalesOrderItem[]
 }
@@ -446,17 +446,17 @@ model SalesOrderItem {
 
 model OpexCategory {
   id           Int    @id @default(autoincrement())
-  subdomain_id String @db.Uuid
+  tenant_id    String @db.Uuid
   name         String
 
   // Relations
-  subdomain             Subdomain             @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant                Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   cashflow_transactions CashflowTransaction[]
 }
 
 model CashflowTransaction {
   id               String   @id @default(uuid()) @db.Uuid
-  subdomain_id     String   @db.Uuid
+  tenant_id        String   @db.Uuid
   transaction_date DateTime @db.Date
   type             String
   category_id      Int?
@@ -466,6 +466,6 @@ model CashflowTransaction {
   created_at       DateTime @default(now())
 
   // Relations
-  subdomain     Subdomain     @relation(fields: [subdomain_id], references: [id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   opex_category OpexCategory? @relation(fields: [category_id], references: [id], onDelete: SetNull)
 }

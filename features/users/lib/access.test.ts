@@ -4,40 +4,40 @@ import { getUsersTenantScope } from "@/features/users/lib/access";
 
 function sessionFixture(
   partial: Partial<{
-    subdomainId: string | null;
-    activeSubdomainId: string | null;
+    tenantId: string | null;
+    activeTenantId: string | null;
   }> = {},
 ): ServerSession {
   return {
     user: {
-      subdomainId:
-        partial.subdomainId !== undefined ? partial.subdomainId : null,
+      tenantId:
+        partial.tenantId !== undefined ? partial.tenantId : null,
     },
     session: {
-      activeSubdomainId: partial.activeSubdomainId ?? null,
+      activeTenantId: partial.activeTenantId ?? null,
     },
   } as ServerSession;
 }
 
 describe("getUsersTenantScope", () => {
-  test("global admin has null scoped subdomain (all branches)", () => {
+  test("global admin has null scoped tenant (all tenants)", () => {
     const result = getUsersTenantScope(
-      sessionFixture({ subdomainId: null, activeSubdomainId: "any-branch" }),
+      sessionFixture({ tenantId: null, activeTenantId: "any-branch" }),
     );
     expect(result.isGlobalAdmin).toBe(true);
-    expect(result.scopedSubdomainId).toBeNull();
+    expect(result.scopedTenantId).toBeNull();
   });
 
-  test("branch admin is scoped to active subdomain", () => {
+  test("branch admin is scoped to active tenant", () => {
     const branchId = "550e8400-e29b-41d4-a716-446655440000";
     const result = getUsersTenantScope(
       sessionFixture({
-        subdomainId: branchId,
-        activeSubdomainId: branchId,
+        tenantId: branchId,
+        activeTenantId: branchId,
       }),
     );
     expect(result.isGlobalAdmin).toBe(false);
-    expect(result.scopedSubdomainId).toBe(branchId);
+    expect(result.scopedTenantId).toBe(branchId);
   });
 
   test("branch admin uses session override when superadmin switched branch", () => {
@@ -45,21 +45,21 @@ describe("getUsersTenantScope", () => {
     const activeBranch = "550e8400-e29b-41d4-a716-446655440002";
     const result = getUsersTenantScope(
       sessionFixture({
-        subdomainId: homeBranch,
-        activeSubdomainId: activeBranch,
+        tenantId: homeBranch,
+        activeTenantId: activeBranch,
       }),
     );
     expect(result.isGlobalAdmin).toBe(false);
-    expect(result.scopedSubdomainId).toBe(activeBranch);
+    expect(result.scopedTenantId).toBe(activeBranch);
   });
 
-  test("throws when non-global user has no resolvable subdomain", () => {
+  test("throws when non-global user has no resolvable tenant", () => {
     const session = {
-      user: { subdomainId: undefined },
-      session: { activeSubdomainId: null },
+      user: { tenantId: undefined },
+      session: { activeTenantId: null },
     } as ServerSession;
     expect(() => getUsersTenantScope(session)).toThrow(
-      "Cabang aktif tidak ditemukan untuk akun ini.",
+      "Tenant aktif tidak ditemukan untuk akun ini.",
     );
   });
 });

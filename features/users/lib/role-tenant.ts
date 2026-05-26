@@ -25,21 +25,21 @@ export function filterAssignableRoles(
   return roles.filter((role) => role.name !== SUPERADMIN_ROLE_NAME);
 }
 
-/** UI: superadmin must use global; other roles must pick a branch id. */
-export function subdomainIdAfterRoleChange(
+/** UI: superadmin must use global; other roles must pick a tenant id. */
+export function tenantIdAfterRoleChange(
   nextRoleId: string,
-  currentSubdomainId: string,
+  currentTenantId: string,
   roles: RoleOption[],
-  branches: { id: string }[],
-  fallbackBranchId?: string | null,
+  tenants: { id: string }[],
+  fallbackTenantId?: string | null,
 ): string {
   if (isSuperadminRole(nextRoleId, roles)) {
     return "global";
   }
 
-  if (currentSubdomainId && currentSubdomainId !== "global") {
-    return currentSubdomainId;
+  if (currentTenantId && currentTenantId !== "global") {
+    return currentTenantId;
   }
 
-  return fallbackBranchId ?? branches[0]?.id ?? "";
+  return fallbackTenantId ?? tenants[0]?.id ?? "";
 }

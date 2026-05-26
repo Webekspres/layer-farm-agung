@@ -17,7 +17,7 @@ describe("filterNavByPermissions", () => {
     expect(hrefs).not.toContain("/dashboard/finance");
   });
 
-  test("hides global-only cabang nav for branch admin", () => {
+  test("hides global-only tenant nav for branch admin", () => {
     const filtered = filterNavByPermissions(
       adminNavItems,
       ["manage_users", "manage_roles"],
@@ -25,16 +25,16 @@ describe("filterNavByPermissions", () => {
     );
     const hrefs = filtered.map((item) => item.href);
     expect(hrefs).toContain("/dashboard/users");
-    expect(hrefs).not.toContain("/dashboard/branches");
+    expect(hrefs).not.toContain("/dashboard/tenants");
   });
 
-  test("shows cabang nav for global superadmin", () => {
+  test("shows tenant nav for global superadmin", () => {
     const filtered = filterNavByPermissions(
       adminNavItems,
       ["manage_roles"],
       true,
     );
-    expect(filtered.some((item) => item.href === "/dashboard/branches")).toBe(
+    expect(filtered.some((item) => item.href === "/dashboard/tenants")).toBe(
       true,
     );
   });

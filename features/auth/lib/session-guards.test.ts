@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { APIError } from "better-auth/api";
 import {
-  assertActiveBranchContext,
+  assertActiveTenantContext,
   assertUserMayUseSession,
 } from "@/features/auth/lib/session-guards";
 
@@ -10,8 +10,8 @@ describe("assertUserMayUseSession", () => {
     expect(() =>
       assertUserMayUseSession({
         is_active: true,
-        subdomain_id: null,
-        subdomain: null,
+        tenant_id: null,
+        tenant: null,
       }),
     ).not.toThrow();
   });
@@ -20,8 +20,8 @@ describe("assertUserMayUseSession", () => {
     expect(() =>
       assertUserMayUseSession({
         is_active: false,
-        subdomain_id: null,
-        subdomain: null,
+        tenant_id: null,
+        tenant: null,
       }),
     ).toThrow(APIError);
   });
@@ -30,20 +30,20 @@ describe("assertUserMayUseSession", () => {
     expect(() =>
       assertUserMayUseSession({
         is_active: true,
-        subdomain_id: "branch-1",
-        subdomain: { is_active: false },
+        tenant_id: "branch-1",
+        tenant: { is_active: false },
       }),
     ).toThrow(APIError);
   });
 });
 
-describe("assertActiveBranchContext", () => {
+describe("assertActiveTenantContext", () => {
   test("allows active branch context", () => {
-    expect(() => assertActiveBranchContext({ is_active: true })).not.toThrow();
+    expect(() => assertActiveTenantContext({ is_active: true })).not.toThrow();
   });
 
   test("rejects inactive branch context", () => {
-    expect(() => assertActiveBranchContext({ is_active: false })).toThrow(
+    expect(() => assertActiveTenantContext({ is_active: false })).toThrow(
       APIError,
     );
   });

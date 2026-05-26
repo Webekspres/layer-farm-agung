@@ -9,7 +9,7 @@ export default async function InventoryPage() {
     <>
       <PageHeader
         title="Inventori"
-        description="Stok pakan, obat, dan mutasi persediaan per cabang."
+        description="Stok pakan, obat, dan mutasi persediaan per tenant."
       />
       <ComingSoonPanel />
     </>

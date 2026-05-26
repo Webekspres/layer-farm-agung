@@ -11,9 +11,9 @@ export type ServerSession = NonNullable<
   Awaited<ReturnType<typeof getServerSession>>
 >;
 
-/** Effective tenant scope: session override for superadmin, else user's branch. */
-export function getActiveSubdomainId(session: ServerSession) {
-  return session.session.activeSubdomainId ?? session.user.subdomainId ?? null;
+/** Effective tenant scope: session override for superadmin, else user's tenant. */
+export function getActiveTenantId(session: ServerSession) {
+  return session.session.activeTenantId ?? session.user.tenantId ?? null;
 }
 
 export function hasPermission(session: ServerSession, permission: string) {

@@ -15,7 +15,7 @@ export type NavItem = {
   icon: LucideIcon;
   permission?: string;
   badge?: string;
-  /** Only visible when user has null subdomain_id (global superadmin). */
+  /** Only visible when user has null tenant_id (global superadmin). */
   globalOnly?: boolean;
 };
 
@@ -51,8 +51,8 @@ export const mainNavItems: NavItem[] = [
 
 export const adminNavItems: NavItem[] = [
   {
-    title: "Cabang",
-    href: "/dashboard/branches",
+    title: "Tenant",
+    href: "/dashboard/tenants",
     icon: Building2,
     permission: "manage_roles",
     globalOnly: true,

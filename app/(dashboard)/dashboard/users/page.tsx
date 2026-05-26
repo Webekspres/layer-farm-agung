@@ -17,7 +17,7 @@ type UsersPageProps = {
   searchParams: Promise<{
     q?: string;
     roleId?: string;
-    subdomainId?: string;
+    tenantId?: string;
     status?: string;
     page?: string;
     pageSize?: string;
@@ -34,14 +34,14 @@ function parseFilters(
   return {
     search: params.q,
     roleId: params.roleId ? Number(params.roleId) : undefined,
-    subdomainId: params.subdomainId,
+    tenantId: params.tenantId,
     status: validStatus,
   };
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const session = await requireManageUsersSession();
-  const { isGlobalAdmin, scopedSubdomainId } = getUsersTenantScope(session);
+  const { isGlobalAdmin, scopedTenantId } = getUsersTenantScope(session);
   const params = await searchParams;
   const filters = parseFilters(params);
   const page = parseUserPage(params.page);
@@ -50,18 +50,18 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const [result, formOptions] = await Promise.all([
     listUsersPaginated({
       ...filters,
-      scopedSubdomainId,
+      scopedTenantId,
       page,
       pageSize,
     }),
-    getUserFormOptions(isGlobalAdmin, scopedSubdomainId),
+    getUserFormOptions(isGlobalAdmin, scopedTenantId),
   ]);
 
   return (
     <>
       <PageHeader
         title="Manajemen Pengguna"
-        description="Kelola akun staff dan admin per cabang. Buat pengguna baru, filter daftar, dan aktifkan atau nonaktifkan akses login."
+        description="Kelola akun staff dan admin per tenant. Buat pengguna baru, filter daftar, dan aktifkan atau nonaktifkan akses login."
       />
 
       <Suspense fallback={null}>

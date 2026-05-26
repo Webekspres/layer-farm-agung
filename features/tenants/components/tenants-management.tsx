@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { Loader2, Pencil } from "lucide-react";
-import { SubdomainsToolbar } from "@/features/subdomains/components/subdomains-toolbar";
+import { TenantsToolbar } from "@/features/tenants/components/tenants-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,30 +29,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  createSubdomainAction,
-  type SubdomainFormState,
-} from "@/features/subdomains/actions/create-subdomain";
-import {
-  updateSubdomainAction,
-} from "@/features/subdomains/actions/update-subdomain";
-import type { SubdomainListItem } from "@/features/subdomains/types";
+  createTenantAction,
+  type TenantFormState,
+} from "@/features/tenants/actions/create-tenant";
+import { updateTenantAction } from "@/features/tenants/actions/update-tenant";
+import type { TenantListItem } from "@/features/tenants/types";
 
-const formInitial: SubdomainFormState = {};
+const formInitial: TenantFormState = {};
 
-type SubdomainsManagementProps = {
-  subdomains: SubdomainListItem[];
+type TenantsManagementProps = {
+  tenants: TenantListItem[];
 };
 
-export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) {
+export function TenantsManagement({ tenants }: TenantsManagementProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editing, setEditing] = useState<SubdomainListItem | null>(null);
+  const [editing, setEditing] = useState<TenantListItem | null>(null);
   const [createState, createAction, createPending] = useActionState(
-    createSubdomainAction,
+    createTenantAction,
     formInitial,
   );
   const [updateState, updateAction, updatePending] = useActionState(
-    updateSubdomainAction,
+    updateTenantAction,
     formInitial,
   );
   const [isActiveCreate, setIsActiveCreate] = useState(true);
@@ -68,35 +66,35 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <SubdomainsToolbar onCreateClick={() => setCreateOpen(true)} />
+      <TenantsToolbar onCreateClick={() => setCreateOpen(true)} />
 
       <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        {subdomains.length === 0 ? (
+        {tenants.length === 0 ? (
           <div className="p-10 text-center text-sm text-muted-foreground">
-            Tidak ada cabang yang cocok dengan filter saat ini.
+            Tidak ada tenant yang cocok dengan filter saat ini.
           </div>
         ) : (
           <Table containerClassName="overflow-x-auto overscroll-x-contain">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead>Nama</TableHead>
-                <TableHead className="hidden sm:table-cell">URL</TableHead>
+                <TableHead className="hidden sm:table-cell">Slug</TableHead>
                 <TableHead>Pengguna</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {subdomains.map((sub) => (
-                <TableRow key={sub.id}>
-                  <TableCell className="font-medium">{sub.name}</TableCell>
+              {tenants.map((tenant) => (
+                <TableRow key={tenant.id}>
+                  <TableCell className="font-medium">{tenant.name}</TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
-                    {sub.subdomainUrl}
+                    {tenant.slug}
                   </TableCell>
-                  <TableCell>{sub.userCount}</TableCell>
+                  <TableCell>{tenant.userCount}</TableCell>
                   <TableCell>
-                    <Badge variant={sub.isActive ? "default" : "secondary"}>
-                      {sub.isActive ? "Aktif" : "Nonaktif"}
+                    <Badge variant={tenant.isActive ? "default" : "secondary"}>
+                      {tenant.isActive ? "Aktif" : "Nonaktif"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -105,8 +103,8 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
                       variant="ghost"
                       size="icon-sm"
                       onClick={() => {
-                        setEditing(sub);
-                        setIsActiveEdit(sub.isActive);
+                        setEditing(tenant);
+                        setIsActiveEdit(tenant.isActive);
                         setEditOpen(true);
                       }}
                     >
@@ -124,21 +122,21 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Tambah cabang</DialogTitle>
+            <DialogTitle>Tambah tenant</DialogTitle>
           </DialogHeader>
           <form action={createAction} className="flex flex-col gap-4">
             <input type="hidden" name="isActive" value={isActiveCreate ? "true" : "false"} />
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="create-name">Nama cabang</FieldLabel>
+                <FieldLabel htmlFor="create-name">Nama tenant</FieldLabel>
                 <Input id="create-name" name="name" required disabled={createPending} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="create-url">URL subdomain</FieldLabel>
+                <FieldLabel htmlFor="create-slug">Slug tenant</FieldLabel>
                 <Input
-                  id="create-url"
-                  name="subdomainUrl"
-                  placeholder="cabang-utama"
+                  id="create-slug"
+                  name="slug"
+                  placeholder="tenant-utama"
                   required
                   disabled={createPending}
                 />
@@ -166,7 +164,7 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit cabang</DialogTitle>
+            <DialogTitle>Edit tenant</DialogTitle>
           </DialogHeader>
           {editing ? (
             <form action={updateAction} className="flex flex-col gap-4">
@@ -174,7 +172,7 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
               <input type="hidden" name="isActive" value={isActiveEdit ? "true" : "false"} />
               <FieldGroup>
                 <Field>
-                  <FieldLabel htmlFor="edit-name">Nama cabang</FieldLabel>
+                  <FieldLabel htmlFor="edit-name">Nama tenant</FieldLabel>
                   <Input
                     id="edit-name"
                     name="name"
@@ -184,11 +182,11 @@ export function SubdomainsManagement({ subdomains }: SubdomainsManagementProps) 
                   />
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="edit-url">URL subdomain</FieldLabel>
+                  <FieldLabel htmlFor="edit-slug">Slug tenant</FieldLabel>
                   <Input
-                    id="edit-url"
-                    name="subdomainUrl"
-                    defaultValue={editing.subdomainUrl}
+                    id="edit-slug"
+                    name="slug"
+                    defaultValue={editing.slug}
                     required
                     disabled={updatePending}
                   />

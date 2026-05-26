@@ -8,7 +8,7 @@ export type CreateUserInput = {
   email?: string | null;
   password: string;
   roleId: number;
-  subdomainId?: string | null;
+  tenantId?: string | null;
   isActive?: boolean;
 };
 
@@ -34,7 +34,7 @@ export async function createUserWithCredential(input: CreateUserInput) {
         email_verified: Boolean(input.email),
         password_hash: passwordHash,
         role_id: input.roleId,
-        subdomain_id: input.subdomainId ?? null,
+        tenant_id: input.tenantId ?? null,
         is_active: input.isActive ?? false,
       },
     });

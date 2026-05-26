@@ -6,7 +6,7 @@ export type SyncAuthUserIdentityInput = {
   username: string;
   email: string | null;
   roleId: number;
-  subdomainId: string | null;
+  tenantId: string | null;
   isActive: boolean;
 };
 
@@ -24,7 +24,7 @@ export async function syncAuthUserIdentity(input: SyncAuthUserIdentityInput) {
       email: input.email,
       email_verified: Boolean(input.email),
       role_id: input.roleId,
-      subdomain_id: input.subdomainId,
+      tenant_id: input.tenantId,
       is_active: input.isActive,
     },
   });

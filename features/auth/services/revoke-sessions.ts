@@ -8,12 +8,12 @@ export async function revokeAllUserSessions(userId: string) {
 /**
  * Ends sessions for branch members and superadmin contexts switched to this branch.
  */
-export async function revokeAllBranchSessions(subdomainId: string) {
+export async function revokeAllBranchSessions(tenantId: string) {
   await prisma.session.deleteMany({
     where: {
       OR: [
-        { user: { subdomain_id: subdomainId } },
-        { active_subdomain_id: subdomainId },
+        { user: { tenant_id: tenantId } },
+        { active_tenant_id: tenantId },
       ],
     },
   });

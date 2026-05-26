@@ -25,19 +25,19 @@ export type SystemRoleDefinition = {
 /**
  * Default RBAC for Agung Petelur.
  * - superadmin: global, full access
- * - admin: cabang admin (no manage_roles)
+ * - admin: tenant admin (no manage_roles)
  * - staff: operasional (produksi + inventori), for Domain 2+ field workflows
  */
 export const SYSTEM_ROLES: Record<SystemRoleName, SystemRoleDefinition> = {
   [SUPERADMIN_ROLE_NAME]: {
     name: SUPERADMIN_ROLE_NAME,
-    description: "Superadmin global (semua cabang)",
+    description: "Superadmin global (semua tenant)",
     permissions: "all",
     permissionsReadOnly: true,
   },
   [ADMIN_ROLE_NAME]: {
     name: ADMIN_ROLE_NAME,
-    description: "Admin cabang",
+    description: "Admin tenant",
     permissions: WIRED_PERMISSIONS.filter((p) => p !== "manage_roles"),
   },
   [STAFF_ROLE_NAME]: {

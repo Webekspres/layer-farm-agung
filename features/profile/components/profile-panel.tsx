@@ -36,8 +36,8 @@ export function ProfilePanel({ session }: ProfilePanelProps) {
     initialState,
   );
 
-  const activeSubdomain =
-    session.session.activeSubdomainId ?? session.user.subdomainId;
+  const activeTenant =
+    session.session.activeTenantId ?? session.user.tenantId;
 
   return (
     <div className="grid min-w-0 gap-4 lg:grid-cols-2 lg:gap-6">
@@ -53,7 +53,7 @@ export function ProfilePanel({ session }: ProfilePanelProps) {
           <Row label="Peran" value={session.user.roleName} />
           <Row
             label="Cabang aktif"
-            value={activeSubdomain ? "Cabang terikat" : "Global"}
+            value={activeTenant ? "Tenant terikat" : "Global"}
           />
           <div className="flex flex-wrap gap-2 pt-1">
             {session.user.permissions?.map((p) => (

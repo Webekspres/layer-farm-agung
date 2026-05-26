@@ -34,8 +34,8 @@ import {
 } from "@/features/users/actions/create-user";
 import {
   isSuperadminRole,
-  subdomainIdAfterRoleChange,
-} from "@/features/users/lib/role-subdomain";
+  tenantIdAfterRoleChange,
+} from "@/features/users/lib/role-tenant";
 import type { UserFormOptions } from "@/features/users/types";
 
 const initialState: CreateUserState = {};
@@ -57,10 +57,10 @@ export function CreateUserDialog({
   );
 
   const defaultBranchId =
-    formOptions.defaultSubdomainId ?? formOptions.subdomains[0]?.id ?? "";
+    formOptions.defaultTenantId ?? formOptions.tenants[0]?.id ?? "";
 
   const [roleId, setRoleId] = useState("");
-  const [subdomainId, setSubdomainId] = useState(defaultBranchId);
+  const [tenantId, setTenantId] = useState(defaultBranchId);
   const [isActive, setIsActive] = useState(true);
 
   const superadminSelected =
@@ -68,12 +68,12 @@ export function CreateUserDialog({
 
   function handleRoleChange(nextRoleId: string) {
     setRoleId(nextRoleId);
-    setSubdomainId((current) =>
-      subdomainIdAfterRoleChange(
+    setTenantId((current) =>
+      tenantIdAfterRoleChange(
         nextRoleId,
         current,
         formOptions.roles,
-        formOptions.subdomains,
+        formOptions.tenants,
         defaultBranchId,
       ),
     );
@@ -83,7 +83,7 @@ export function CreateUserDialog({
     if (state.success) {
       onOpenChange(false);
       setRoleId("");
-      setSubdomainId(defaultBranchId);
+      setTenantId(defaultBranchId);
       setIsActive(true);
     }
   }, [state.success, onOpenChange, defaultBranchId]);
@@ -91,7 +91,7 @@ export function CreateUserDialog({
   useEffect(() => {
     if (open) {
       setRoleId("");
-      setSubdomainId(defaultBranchId);
+      setTenantId(defaultBranchId);
     }
   }, [open, defaultBranchId]);
 
@@ -109,7 +109,7 @@ export function CreateUserDialog({
         <div className="dialog-body-scroll">
           <form action={formAction} id="create-user-form" className="dialog-form-fields">
             <input type="hidden" name="roleId" value={roleId} />
-            <input type="hidden" name="subdomainId" value={subdomainId} />
+            <input type="hidden" name="tenantId" value={tenantId} />
             <input type="hidden" name="isActive" value={isActive ? "true" : "false"} />
 
             <FieldGroup className="gap-5">
@@ -186,11 +186,11 @@ export function CreateUserDialog({
 
               {formOptions.isGlobalAdmin ? (
                 <Field>
-                  <FieldLabel htmlFor="subdomainId">Cabang</FieldLabel>
+                  <FieldLabel htmlFor="tenantId">Tenant</FieldLabel>
                   {superadminSelected ? (
                     <>
                       <Select value="global" disabled>
-                        <SelectTrigger id="subdomainId" className="w-full">
+                        <SelectTrigger id="tenantId" className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -198,23 +198,23 @@ export function CreateUserDialog({
                         </SelectContent>
                       </Select>
                       <FieldDescription>
-                        Peran superadmin selalu terikat akses global, bukan cabang
+                        Peran superadmin selalu terikat akses global, bukan tenant
                         tertentu.
                       </FieldDescription>
                     </>
                   ) : (
                     <>
                       <Select
-                        value={subdomainId}
-                        onValueChange={setSubdomainId}
+                        value={tenantId}
+                        onValueChange={setTenantId}
                         disabled={isPending || !roleId}
                         required
                       >
-                        <SelectTrigger id="subdomainId" className="w-full">
-                          <SelectValue placeholder="Pilih cabang" />
+                        <SelectTrigger id="tenantId" className="w-full">
+                          <SelectValue placeholder="Pilih tenant" />
                         </SelectTrigger>
                         <SelectContent>
-                          {formOptions.subdomains.map((sub) => (
+                          {formOptions.tenants.map((sub) => (
                             <SelectItem key={sub.id} value={sub.id}>
                               {sub.name}
                             </SelectItem>
@@ -222,7 +222,7 @@ export function CreateUserDialog({
                         </SelectContent>
                       </Select>
                       <FieldDescription>
-                        Admin dan staff harus dipetakan ke satu cabang.
+                        Admin dan staff harus dipetakan ke satu tenant.
                       </FieldDescription>
                     </>
                   )}

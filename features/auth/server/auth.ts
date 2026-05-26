@@ -40,11 +40,11 @@ export const auth = betterAuth({
       userId: "user_id",
     },
     additionalFields: {
-      activeSubdomainId: {
+      activeTenantId: {
         type: "string",
         required: false,
         input: false,
-        fieldName: "active_subdomain_id",
+        fieldName: "active_tenant_id",
       },
     },
   },
@@ -87,7 +87,7 @@ export const auth = betterAuth({
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
         include: {
-          subdomain: true,
+          tenant: true,
           role: {
             include: {
               role_permissions: {
@@ -105,18 +105,18 @@ export const auth = betterAuth({
       assertUserMayUseSession(dbUser);
 
       const sessionRecord = session as typeof session & {
-        activeSubdomainId?: string | null;
+        activeTenantId?: string | null;
       };
 
-      const activeSubdomainId =
-        sessionRecord.activeSubdomainId ?? dbUser.subdomain_id;
+      const activeTenantId =
+        sessionRecord.activeTenantId ?? dbUser.tenant_id;
 
-      if (activeSubdomainId) {
-        const contextBranch = await prisma.subdomain.findUnique({
-          where: { id: activeSubdomainId },
+      if (activeTenantId) {
+        const contextTenant = await prisma.tenant.findUnique({
+          where: { id: activeTenantId },
           select: { is_active: true },
         });
-        assertActiveBranchContext(contextBranch);
+        assertActiveTenantContext(contextTenant);
       }
 
       const permissions = dbUser.role.role_permissions.map(
@@ -130,12 +130,12 @@ export const auth = betterAuth({
           username: dbUser.username,
           roleId: dbUser.role_id,
           roleName: dbUser.role.name,
-          subdomainId: dbUser.subdomain_id,
+          tenantId: dbUser.tenant_id,
           permissions,
         },
         session: {
           ...session,
-          activeSubdomainId,
+          activeTenantId,
         },
       };
     }),
@@ -147,7 +147,7 @@ export const auth = betterAuth({
         before: async (session) => {
           const user = await prisma.user.findUnique({
             where: { id: session.userId },
-            include: { subdomain: true },
+            include: { tenant: true },
           });
 
           if (!user?.is_active) {
@@ -157,19 +157,19 @@ export const auth = betterAuth({
           }
 
           if (
-            user.subdomain_id &&
-            user.subdomain &&
-            !user.subdomain.is_active
+            user.tenant_id &&
+            user.tenant &&
+            !user.tenant.is_active
           ) {
             throw new APIError("FORBIDDEN", {
-              message: "Cabang peternakan tidak aktif.",
+              message: "Tenant peternakan tidak aktif.",
             });
           }
 
           return {
             data: {
               ...session,
-              activeSubdomainId: user.subdomain_id,
+              activeTenantId: user.tenant_id,
             },
           };
         },

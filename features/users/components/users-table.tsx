@@ -27,8 +27,8 @@ type UsersTableProps = {
   users: UserListItem[];
   currentUserId: string;
   pagination: UsersPaginationMeta;
-  /** Superadmin sees cabang column; branch admins are scoped to one cabang. */
-  showBranchColumn?: boolean;
+  /** Superadmin sees tenant column; branch admins are scoped to one tenant. */
+  showTenantColumn?: boolean;
   onEditUser: (user: UserListItem) => void;
   onResetPassword: (user: UserListItem) => void;
   onDeleteUser: (user: UserListItem) => void;
@@ -46,7 +46,7 @@ export function UsersTable({
   users,
   currentUserId,
   pagination,
-  showBranchColumn = false,
+  showTenantColumn = false,
   onEditUser,
   onResetPassword,
   onDeleteUser,
@@ -73,8 +73,8 @@ export function UsersTable({
               <TableHead>Username</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
               <TableHead>Peran</TableHead>
-              {showBranchColumn ? (
-                <TableHead className="hidden lg:table-cell">Cabang</TableHead>
+              {showTenantColumn ? (
+                <TableHead className="hidden lg:table-cell">Tenant</TableHead>
               ) : null}
               <TableHead>Status</TableHead>
               <TableHead className="hidden sm:table-cell">Dibuat</TableHead>
@@ -96,10 +96,10 @@ export function UsersTable({
                   <TableCell>
                     <Badge variant="secondary">{user.roleName}</Badge>
                   </TableCell>
-                  {showBranchColumn ? (
+                  {showTenantColumn ? (
                     <TableCell className="hidden lg:table-cell">
-                      {user.subdomainName ? (
-                        <span className="text-foreground">{user.subdomainName}</span>
+                      {user.tenantName ? (
+                        <span className="text-foreground">{user.tenantName}</span>
                       ) : (
                         <Badge variant="outline">Global</Badge>
                       )}

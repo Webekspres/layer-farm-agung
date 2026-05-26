@@ -5,7 +5,7 @@ export type UpdateUserData = {
   username: string;
   email: string | null;
   roleId: number;
-  subdomainId: string | null;
+  tenantId: string | null;
   isActive: boolean;
 };
 
@@ -16,7 +16,7 @@ export async function updateUserRecord(userId: string, data: UpdateUserData) {
     username: data.username,
     email: data.email,
     roleId: data.roleId,
-    subdomainId: data.subdomainId,
+    tenantId: data.tenantId,
     isActive: data.isActive,
   });
 }

@@ -26,19 +26,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { BranchSwitcher } from "@/components/layout/branch-switcher";
+import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { authClient } from "@/features/auth/client/auth-client";
 import type { ServerSession } from "@/features/auth/lib/session";
 
-type BranchOption = { id: string; name: string };
+type TenantOption = { id: string; name: string };
 
 type DashboardHeaderProps = {
   session: ServerSession;
   title?: string;
-  branches?: BranchOption[];
-  activeSubdomainId?: string | null;
-  activeBranchName?: string | null;
+  tenants?: TenantOption[];
+  activeTenantId?: string | null;
+  activeTenantName?: string | null;
 };
 
 function getInitials(name: string) {
@@ -54,7 +54,7 @@ const allNavItems = [
   ...mainNavItems,
   ...adminNavItems,
   { title: "Profil", href: "/dashboard/profile" },
-  { title: "Cabang", href: "/dashboard/branches" },
+  { title: "Tenant", href: "/dashboard/tenants" },
 ];
 
 function resolvePageTitle(pathname: string, fallback = "Dashboard") {
@@ -69,9 +69,9 @@ function resolvePageTitle(pathname: string, fallback = "Dashboard") {
 export function DashboardHeader({
   session,
   title,
-  branches = [],
-  activeSubdomainId = null,
-  activeBranchName = null,
+  tenants = [],
+  activeTenantId = null,
+  activeTenantName = null,
 }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -99,18 +99,18 @@ export function DashboardHeader({
       </Breadcrumb>
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
-        {branches.length > 0 ? (
-          <BranchSwitcher
-            branches={branches}
-            activeSubdomainId={activeSubdomainId}
+        {tenants.length > 0 ? (
+          <TenantSwitcher
+            tenants={tenants}
+            activeTenantId={activeTenantId}
           />
-        ) : activeBranchName ? (
+        ) : activeTenantName ? (
           <Badge
             variant="secondary"
             className="hidden font-normal md:inline-flex"
           >
             <Building2 className="size-3.5 shrink-0" />
-            {activeBranchName}
+            {activeTenantName}
           </Badge>
         ) : null}
         <ThemeSwitcher />

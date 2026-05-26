@@ -14,6 +14,7 @@
     "docker:db": "docker compose up db -d",
     "db:generate": "bun --bun prisma generate",
     "db:migrate": "bun --bun prisma migrate dev",
+    "db:reset": "bun --bun prisma migrate reset",
     "db:studio": "bun --bun prisma studio",
     "db:push": "bun --bun prisma db push",
     "db:seed": "bun --bun prisma/seed.ts",

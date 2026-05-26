@@ -8,7 +8,7 @@ import {
   requireManageUsersSession,
 } from "@/features/users/lib/access";
 import { updateUserSchema } from "@/features/users/schemas/user";
-import { resolveSubdomainForRoleAssignment } from "@/features/users/services/resolve-subdomain-for-role";
+import { resolveTenantForRoleAssignment } from "@/features/users/services/resolve-tenant-for-role";
 import { updateUserRecord } from "@/features/users/services/update-user";
 
 export type UpdateUserState = {
@@ -21,7 +21,7 @@ export async function updateUserAction(
   formData: FormData,
 ): Promise<UpdateUserState> {
   const session = await requireManageUsersSession();
-  const { isGlobalAdmin, scopedSubdomainId } = getUsersTenantScope(session);
+  const { isGlobalAdmin, scopedTenantId } = getUsersTenantScope(session);
 
   const parsed = updateUserSchema.safeParse({
     userId: formData.get("userId"),
@@ -29,7 +29,7 @@ export async function updateUserAction(
     username: formData.get("username"),
     email: formData.get("email"),
     roleId: formData.get("roleId"),
-    subdomainId: formData.get("subdomainId"),
+    tenantId: formData.get("tenantId"),
     isActive: formData.get("isActive") === "true",
   });
 
@@ -48,7 +48,7 @@ export async function updateUserAction(
   const existing = await prisma.user.findFirst({
     where: {
       id: data.userId,
-      ...(scopedSubdomainId ? { subdomain_id: scopedSubdomainId } : {}),
+      ...(scopedTenantId ? { tenant_id: scopedTenantId } : {}),
     },
     select: { id: true },
   });
@@ -57,11 +57,11 @@ export async function updateUserAction(
     return { error: "Pengguna tidak ditemukan." };
   }
 
-  const resolved = await resolveSubdomainForRoleAssignment({
+  const resolved = await resolveTenantForRoleAssignment({
     roleId: data.roleId,
-    subdomainIdFromForm: data.subdomainId,
+    tenantIdFromForm: data.tenantId,
     isGlobalAdmin,
-    scopedSubdomainId,
+    scopedTenantId,
   });
 
   if (resolved.error) {
@@ -74,7 +74,7 @@ export async function updateUserAction(
       username: data.username,
       email: data.email || null,
       roleId: data.roleId,
-      subdomainId: resolved.subdomainId,
+      tenantId: resolved.tenantId,
       isActive: data.isActive,
     });
 

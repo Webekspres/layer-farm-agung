@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 import { requireGlobalAdmin } from "@/features/auth/lib/require-permission";
 import { getServerSession } from "@/features/auth/lib/session";
 
-export async function switchActiveSubdomainAction(subdomainId: string | null) {
+export async function switchActiveTenantAction(tenantId: string | null) {
   const session = await getServerSession();
   if (!session) {
     return { error: "Sesi tidak ditemukan." };
@@ -13,12 +13,12 @@ export async function switchActiveSubdomainAction(subdomainId: string | null) {
 
   requireGlobalAdmin(session);
 
-  if (subdomainId) {
-    const branch = await prisma.subdomain.findFirst({
-      where: { id: subdomainId, is_active: true },
+  if (tenantId) {
+    const tenant = await prisma.tenant.findFirst({
+      where: { id: tenantId, is_active: true },
     });
-    if (!branch) {
-      return { error: "Cabang tidak ditemukan atau nonaktif." };
+    if (!tenant) {
+      return { error: "Tenant tidak ditemukan atau nonaktif." };
     }
   }
 
@@ -29,7 +29,7 @@ export async function switchActiveSubdomainAction(subdomainId: string | null) {
 
   await prisma.session.update({
     where: { id: sessionId },
-    data: { active_subdomain_id: subdomainId },
+    data: { active_tenant_id: tenantId },
   });
 
   revalidatePath("/", "layout");

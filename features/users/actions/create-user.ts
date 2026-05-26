@@ -7,7 +7,7 @@ import {
   requireManageUsersSession,
 } from "@/features/users/lib/access";
 import { createUserSchema } from "@/features/users/schemas/user";
-import { resolveSubdomainForRoleAssignment } from "@/features/users/services/resolve-subdomain-for-role";
+import { resolveTenantForRoleAssignment } from "@/features/users/services/resolve-tenant-for-role";
 
 export type CreateUserState = {
   error?: string;
@@ -19,7 +19,7 @@ export async function createUserAction(
   formData: FormData,
 ): Promise<CreateUserState> {
   const session = await requireManageUsersSession();
-  const { isGlobalAdmin, scopedSubdomainId } = getUsersTenantScope(session);
+  const { isGlobalAdmin, scopedTenantId } = getUsersTenantScope(session);
 
   const parsed = createUserSchema.safeParse({
     fullName: formData.get("fullName"),
@@ -27,7 +27,7 @@ export async function createUserAction(
     email: formData.get("email"),
     password: formData.get("password"),
     roleId: formData.get("roleId"),
-    subdomainId: formData.get("subdomainId"),
+    tenantId: formData.get("tenantId"),
     isActive: formData.get("isActive") === "on" || formData.get("isActive") === "true",
   });
 
@@ -39,11 +39,11 @@ export async function createUserAction(
 
   const data = parsed.data;
 
-  const resolved = await resolveSubdomainForRoleAssignment({
+  const resolved = await resolveTenantForRoleAssignment({
     roleId: data.roleId,
-    subdomainIdFromForm: data.subdomainId,
+    tenantIdFromForm: data.tenantId,
     isGlobalAdmin,
-    scopedSubdomainId,
+    scopedTenantId,
   });
 
   if (resolved.error) {
@@ -57,7 +57,7 @@ export async function createUserAction(
       email: data.email || null,
       password: data.password,
       roleId: data.roleId,
-      subdomainId: resolved.subdomainId,
+      tenantId: resolved.tenantId,
       isActive: data.isActive ?? true,
     });
   } catch {

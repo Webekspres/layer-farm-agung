@@ -3,16 +3,16 @@ import type { UserListItem } from "@/features/users/types";
 
 export async function getUserById(
   userId: string,
-  scopedSubdomainId?: string | null,
+  scopedTenantId?: string | null,
 ): Promise<UserListItem | null> {
   const row = await prisma.user.findFirst({
     where: {
       id: userId,
-      ...(scopedSubdomainId ? { subdomain_id: scopedSubdomainId } : {}),
+      ...(scopedTenantId ? { tenant_id: scopedTenantId } : {}),
     },
     include: {
       role: { select: { id: true, name: true } },
-      subdomain: { select: { id: true, name: true } },
+      tenant: { select: { id: true, name: true } },
     },
   });
 
@@ -26,8 +26,8 @@ export async function getUserById(
     isActive: row.is_active,
     roleId: row.role_id,
     roleName: row.role.name,
-    subdomainId: row.subdomain_id,
-    subdomainName: row.subdomain?.name ?? null,
+    tenantId: row.tenant_id,
+    tenantName: row.tenant?.name ?? null,
     createdAt: row.created_at.toISOString(),
   };
 }

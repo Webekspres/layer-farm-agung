@@ -3,7 +3,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { UserListItem, UsersListFilters } from "@/features/users/types";
 
 type ListUsersParams = UsersListFilters & {
-  scopedSubdomainId?: string | null;
+  scopedTenantId?: string | null;
   page?: number;
   pageSize?: number;
 };
@@ -19,18 +19,18 @@ export type PaginatedUsersResult = {
 function buildUserWhere({
   search,
   roleId,
-  subdomainId,
+  tenantId,
   status = "all",
-  scopedSubdomainId,
+  scopedTenantId,
 }: Omit<ListUsersParams, "page" | "pageSize">): Prisma.UserWhereInput {
   const where: Prisma.UserWhereInput = {};
 
-  if (scopedSubdomainId) {
-    where.subdomain_id = scopedSubdomainId;
-  } else if (subdomainId === "global") {
-    where.subdomain_id = null;
-  } else if (subdomainId) {
-    where.subdomain_id = subdomainId;
+  if (scopedTenantId) {
+    where.tenant_id = scopedTenantId;
+  } else if (tenantId === "global") {
+    where.tenant_id = null;
+  } else if (tenantId) {
+    where.tenant_id = tenantId;
   }
 
   if (roleId) {
@@ -57,7 +57,7 @@ function buildUserWhere({
 
 const userInclude = {
   role: { select: { id: true, name: true } },
-  subdomain: { select: { id: true, name: true } },
+  tenant: { select: { id: true, name: true } },
 } as const satisfies Prisma.UserInclude;
 
 type UserWithRelations = Prisma.UserGetPayload<{
@@ -73,8 +73,8 @@ function mapUserRows(rows: UserWithRelations[]): UserListItem[] {
     isActive: row.is_active,
     roleId: row.role_id,
     roleName: row.role.name,
-    subdomainId: row.subdomain_id,
-    subdomainName: row.subdomain?.name ?? null,
+    tenantId: row.tenant_id,
+    tenantName: row.tenant?.name ?? null,
     createdAt: row.created_at.toISOString(),
   }));
 }

@@ -4,23 +4,23 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { requireGlobalAdmin } from "@/features/auth/lib/require-permission";
 import { requirePermission } from "@/features/auth/lib/require-permission";
-import { subdomainSchema } from "@/features/subdomains/schemas/subdomain";
+import { tenantSchema } from "@/features/tenants/schemas/tenant";
 
-export type SubdomainFormState = {
+export type TenantFormState = {
   error?: string;
   success?: boolean;
 };
 
-export async function createSubdomainAction(
-  _prev: SubdomainFormState,
+export async function createTenantAction(
+  _prev: TenantFormState,
   formData: FormData,
-): Promise<SubdomainFormState> {
+): Promise<TenantFormState> {
   const session = await requirePermission("manage_roles");
   requireGlobalAdmin(session);
 
-  const parsed = subdomainSchema.safeParse({
+  const parsed = tenantSchema.safeParse({
     name: formData.get("name"),
-    subdomainUrl: formData.get("subdomainUrl"),
+    slug: formData.get("slug"),
     isActive: formData.get("isActive") === "true",
   });
 
@@ -29,17 +29,17 @@ export async function createSubdomainAction(
   }
 
   try {
-    await prisma.subdomain.create({
+    await prisma.tenant.create({
       data: {
         name: parsed.data.name,
-        subdomain_url: parsed.data.subdomainUrl,
+        slug: parsed.data.slug,
         is_active: parsed.data.isActive ?? true,
       },
     });
   } catch {
-    return { error: "Gagal membuat cabang. URL mungkin sudah dipakai." };
+    return { error: "Gagal membuat tenant. Slug mungkin sudah dipakai." };
   }
 
-  revalidatePath("/dashboard/branches");
+  revalidatePath("/dashboard/tenants");
   return { success: true };
 }

@@ -17,7 +17,7 @@ export async function deleteUserAction(
   userId: string,
 ): Promise<DeleteUserState> {
   const session = await requireManageUsersSession();
-  const { scopedSubdomainId } = getUsersTenantScope(session);
+  const { scopedTenantId } = getUsersTenantScope(session);
 
   const parsed = deleteUserSchema.safeParse({ userId });
   if (!parsed.success) {
@@ -32,7 +32,7 @@ export async function deleteUserAction(
     where: {
       id: parsed.data.userId,
       is_active: false,
-      ...(scopedSubdomainId ? { subdomain_id: scopedSubdomainId } : {}),
+      ...(scopedTenantId ? { tenant_id: scopedTenantId } : {}),
     },
     select: {
       id: true,
@@ -48,7 +48,7 @@ export async function deleteUserAction(
   if (!user) {
     return {
       error:
-        "Pengguna tidak ditemukan, masih aktif, atau di luar cabang Anda.",
+        "Pengguna tidak ditemukan, masih aktif, atau di luar tenant Anda.",
     };
   }
 

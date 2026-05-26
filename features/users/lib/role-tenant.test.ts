@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   filterAssignableRoles,
   isSuperadminRole,
-  subdomainIdAfterRoleChange,
+  tenantIdAfterRoleChange,
   SUPERADMIN_ROLE_NAME,
-} from "@/features/users/lib/role-subdomain";
+} from "@/features/users/lib/role-tenant";
 
 const roles = [
   { id: 1, name: SUPERADMIN_ROLE_NAME },
@@ -32,21 +32,21 @@ describe("isSuperadminRole", () => {
   });
 });
 
-describe("subdomainIdAfterRoleChange", () => {
+describe("tenantIdAfterRoleChange", () => {
   test("forces global for superadmin", () => {
-    expect(subdomainIdAfterRoleChange("1", "branch-a", roles, branches)).toBe(
+    expect(tenantIdAfterRoleChange("1", "branch-a", roles, branches)).toBe(
       "global",
     );
   });
 
   test("clears global when switching to admin", () => {
     expect(
-      subdomainIdAfterRoleChange("2", "global", roles, branches, "branch-b"),
+      tenantIdAfterRoleChange("2", "global", roles, branches, "branch-b"),
     ).toBe("branch-b");
   });
 
   test("keeps branch when switching between non-superadmin roles", () => {
-    expect(subdomainIdAfterRoleChange("3", "branch-a", roles, branches)).toBe(
+    expect(tenantIdAfterRoleChange("3", "branch-a", roles, branches)).toBe(
       "branch-a",
     );
   });
