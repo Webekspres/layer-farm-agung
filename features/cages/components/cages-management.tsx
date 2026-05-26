@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil } from "lucide-react";
 import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-message";
 import { listFiltersAreActive } from "@/features/master-data/lib/url-list-params";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { CagesToolbar } from "@/features/cages/components/cages-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -212,13 +213,17 @@ export function CagesManagement({ cages, formOptions }: CagesManagementProps) {
     }
   }, [createOpen, formOptions.locations, formOptions.strains]);
 
-  useEffect(() => {
-    if (createState.success) setCreateOpen(false);
-  }, [createState.success]);
+  useActionFeedback(createState, {
+    successMessage: "Kandang berhasil ditambahkan.",
+    onSuccess: () => setCreateOpen(false),
+    when: createOpen,
+  });
 
-  useEffect(() => {
-    if (updateState.success) setEditOpen(false);
-  }, [updateState.success]);
+  useActionFeedback(updateState, {
+    successMessage: "Kandang berhasil diperbarui.",
+    onSuccess: () => setEditOpen(false),
+    when: editOpen,
+  });
 
   const canCreate =
     formOptions.locations.length > 0 && formOptions.strains.length > 0;

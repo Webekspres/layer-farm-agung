@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2, Pencil } from "lucide-react";
 import { TenantsToolbar } from "@/features/tenants/components/tenants-toolbar";
 import { Badge } from "@/components/ui/badge";
@@ -56,13 +57,17 @@ export function TenantsManagement({ tenants }: TenantsManagementProps) {
   const [isActiveCreate, setIsActiveCreate] = useState(true);
   const [isActiveEdit, setIsActiveEdit] = useState(true);
 
-  useEffect(() => {
-    if (createState.success) setCreateOpen(false);
-  }, [createState.success]);
+  useActionFeedback(createState, {
+    successMessage: "Tenant berhasil ditambahkan.",
+    onSuccess: () => setCreateOpen(false),
+    when: createOpen,
+  });
 
-  useEffect(() => {
-    if (updateState.success) setEditOpen(false);
-  }, [updateState.success]);
+  useActionFeedback(updateState, {
+    successMessage: "Tenant berhasil diperbarui.",
+    onSuccess: () => setEditOpen(false),
+    when: editOpen,
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">

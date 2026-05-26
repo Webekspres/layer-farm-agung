@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { Check, Loader2, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import {
   updateRolePermissionsAction,
   type UpdateRolePermissionsState,
 } from "@/features/roles/actions/update-role-permissions";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { PermissionsRegistry } from "@/features/permissions/components/permissions-registry";
 import {
   defaultPermissionIdsForRole,
@@ -108,6 +109,16 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
       setChecked(new Set(defaults));
     }
   }, [resetState.success, selectedRole, permissions]);
+
+  useActionFeedback(state, {
+    successMessage: "Permission peran berhasil disimpan.",
+    when: saveFeedbackRoleId === selectedRoleId,
+  });
+
+  useActionFeedback(resetState, {
+    successMessage: "Permission dikembalikan ke default.",
+    when: resetFeedbackRoleId === selectedRoleId,
+  });
 
   function selectRole(role: RoleWithPermissions) {
     setSelectedRoleId(role.id);
@@ -210,20 +221,8 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
                 {state.error && saveFeedbackRoleId === selectedRoleId ? (
                   <FieldError>{state.error}</FieldError>
                 ) : null}
-                {state.success && saveFeedbackRoleId === selectedRoleId ? (
-                  <p className="flex items-center gap-1.5 text-sm text-primary">
-                    <Check className="size-4" />
-                    Permission berhasil disimpan.
-                  </p>
-                ) : null}
                 {resetState.error && resetFeedbackRoleId === selectedRoleId ? (
                   <FieldError>{resetState.error}</FieldError>
-                ) : null}
-                {resetState.success && resetFeedbackRoleId === selectedRoleId ? (
-                  <p className="flex items-center gap-1.5 text-sm text-primary">
-                    <Check className="size-4" />
-                    Permission dikembalikan ke default.
-                  </p>
                 ) : null}
               </form>
 

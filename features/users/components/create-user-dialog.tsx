@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,14 +80,16 @@ export function CreateUserDialog({
     );
   }
 
-  useEffect(() => {
-    if (state.success) {
+  useActionFeedback(state, {
+    successMessage: "Pengguna berhasil ditambahkan.",
+    when: open,
+    onSuccess: () => {
       onOpenChange(false);
       setRoleId("");
       setTenantId(defaultBranchId);
       setIsActive(true);
-    }
-  }, [state.success, onOpenChange, defaultBranchId]);
+    },
+  });
 
   useEffect(() => {
     if (open) {

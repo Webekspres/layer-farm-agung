@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -35,6 +36,10 @@ export function ProfilePanel({ session }: ProfilePanelProps) {
     changeOwnPasswordAction,
     initialState,
   );
+
+  useActionFeedback(state, {
+    successMessage: "Password berhasil diubah.",
+  });
 
   const activeTenant =
     session.session.activeTenantId ?? session.user.tenantId;
@@ -111,9 +116,6 @@ export function ProfilePanel({ session }: ProfilePanelProps) {
                 />
               </Field>
               {state.error ? <FieldError>{state.error}</FieldError> : null}
-              {state.success ? (
-                <p className="text-sm text-primary">Password berhasil diubah.</p>
-              ) : null}
             </FieldGroup>
             <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
               {isPending ? (

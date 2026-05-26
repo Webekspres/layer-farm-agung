@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UsersPagination } from "@/features/users/components/users-pagination";
+import { notifyActionResult } from "@/components/shared/action-feedback";
 import { updateUserStatusAction } from "@/features/users/actions/update-user-status";
 import type { UserListItem, UsersPaginationMeta } from "@/features/users/types";
 
@@ -55,7 +56,12 @@ export function UsersTable({
 
   function handleStatusChange(userId: string, checked: boolean) {
     startTransition(async () => {
-      await updateUserStatusAction(userId, checked);
+      const result = await updateUserStatusAction(userId, checked);
+      notifyActionResult(result, {
+        success: checked
+          ? "Pengguna diaktifkan."
+          : "Pengguna dinonaktifkan.",
+      });
     });
   }
 

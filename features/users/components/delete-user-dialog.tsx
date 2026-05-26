@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { notifyActionResult } from "@/components/shared/action-feedback";
 import { deleteUserAction } from "@/features/users/actions/delete-user";
 import type { UserListItem } from "@/features/users/types";
 
@@ -37,9 +38,9 @@ export function DeleteUserDialog({
   function handleDelete() {
     setError(undefined);
     startTransition(async () => {
-      const result = await deleteUserAction(user.id);
-      if (result.error) {
-        setError(result.error);
+      const result = await deleteUserAction(user!.id);
+      if (!notifyActionResult(result, { success: "Pengguna berhasil dihapus." })) {
+        if (result.error) setError(result.error);
         return;
       }
       onOpenChange(false);

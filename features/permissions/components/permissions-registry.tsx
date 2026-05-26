@@ -1,6 +1,10 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
+import {
+  notifyActionResult,
+  useActionFeedback,
+} from "@/components/shared/action-feedback";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +43,11 @@ export function PermissionsRegistry({ permissions }: PermissionsRegistryProps) {
     createInitial,
   );
   const [deletePending, startDelete] = useTransition();
+
+  useActionFeedback(createState, {
+    successMessage: "Permission berhasil ditambahkan.",
+    onSuccess: () => router.refresh(),
+  });
 
   return (
     <Card className="border-border/80 shadow-sm lg:col-span-2">
@@ -79,9 +88,6 @@ export function PermissionsRegistry({ permissions }: PermissionsRegistryProps) {
           </Button>
         </form>
         {createState.error ? <FieldError>{createState.error}</FieldError> : null}
-        {createState.success ? (
-          <p className="text-sm text-primary">Permission berhasil ditambahkan.</p>
-        ) : null}
 
         <ul className="flex flex-col gap-2">
           {permissions.map((permission) => {
@@ -115,7 +121,11 @@ export function PermissionsRegistry({ permissions }: PermissionsRegistryProps) {
                   onClick={() => {
                     startDelete(async () => {
                       const result = await deletePermissionAction(permission.id);
-                      if (result.success) {
+                      if (
+                        notifyActionResult(result, {
+                          success: "Permission berhasil dihapus.",
+                        })
+                      ) {
                         router.refresh();
                       }
                     });

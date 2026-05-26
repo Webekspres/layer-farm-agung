@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-message";
@@ -66,17 +67,26 @@ export function LocationsManagement({ locations }: LocationsManagementProps) {
     formInitial,
   );
 
-  useEffect(() => {
-    if (createState.success) setCreateOpen(false);
-  }, [createState.success]);
+  useActionFeedback(createState, {
+    successMessage: "Lokasi berhasil ditambahkan.",
+    onSuccess: () => setCreateOpen(false),
+    when: createOpen,
+  });
 
-  useEffect(() => {
-    if (updateState.success) setEditOpen(false);
-  }, [updateState.success]);
+  useActionFeedback(updateState, {
+    successMessage: "Lokasi berhasil diperbarui.",
+    onSuccess: () => setEditOpen(false),
+    when: editOpen,
+  });
 
-  useEffect(() => {
-    if (deleteState.success) setDeleteOpen(false);
-  }, [deleteState.success]);
+  useActionFeedback(deleteState, {
+    successMessage: "Lokasi berhasil dihapus.",
+    onSuccess: () => {
+      setDeleteOpen(false);
+      setDeleting(null);
+    },
+    when: deleteOpen,
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">

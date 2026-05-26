@@ -37,6 +37,23 @@
   --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
   --sidebar-border: oklch(0.925 0.005 214.3);
   --sidebar-ring: oklch(0.723 0.014 214.4);
+
+  /* Sonner — light */
+  --sonner-normal-bg: var(--popover);
+  --sonner-normal-text: var(--popover-foreground);
+  --sonner-normal-border: var(--border);
+  --sonner-success-bg: color-mix(in oklch, var(--primary) 16%, var(--popover));
+  --sonner-success-text: color-mix(in oklch, var(--primary) 72%, var(--foreground));
+  --sonner-success-border: color-mix(in oklch, var(--primary) 32%, var(--border));
+  --sonner-error-bg: color-mix(in oklch, var(--destructive) 14%, var(--popover));
+  --sonner-error-text: var(--destructive);
+  --sonner-error-border: color-mix(in oklch, var(--destructive) 34%, var(--border));
+  --sonner-warning-bg: color-mix(in oklch, var(--chart-4) 18%, var(--popover));
+  --sonner-warning-text: color-mix(in oklch, var(--chart-4) 72%, var(--foreground));
+  --sonner-warning-border: color-mix(in oklch, var(--chart-4) 34%, var(--border));
+  --sonner-info-bg: color-mix(in oklch, var(--muted-foreground) 10%, var(--popover));
+  --sonner-info-text: var(--foreground);
+  --sonner-info-border: var(--border);
 }
 
 .dark {
@@ -71,6 +88,31 @@
   --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.56 0.021 213.5);
+
+  /* Sonner — dark */
+  --sonner-normal-bg: var(--popover);
+  --sonner-normal-text: var(--popover-foreground);
+  --sonner-normal-border: var(--border);
+  --sonner-success-bg: color-mix(in oklch, var(--primary) 38%, var(--card));
+  --sonner-success-text: color-mix(
+    in oklch,
+    var(--primary-foreground) 88%,
+    var(--primary)
+  );
+  --sonner-success-border: color-mix(in oklch, var(--primary) 48%, var(--border));
+  --sonner-error-bg: color-mix(in oklch, var(--destructive) 34%, var(--card));
+  --sonner-error-text: color-mix(
+    in oklch,
+    var(--destructive) 68%,
+    var(--primary-foreground)
+  );
+  --sonner-error-border: color-mix(in oklch, var(--destructive) 46%, var(--border));
+  --sonner-warning-bg: color-mix(in oklch, var(--chart-4) 36%, var(--card));
+  --sonner-warning-text: color-mix(in oklch, var(--chart-1) 82%, var(--foreground));
+  --sonner-warning-border: color-mix(in oklch, var(--chart-4) 44%, var(--border));
+  --sonner-info-bg: var(--muted);
+  --sonner-info-text: var(--accent-foreground);
+  --sonner-info-border: var(--border);
 }
 
 @theme inline {

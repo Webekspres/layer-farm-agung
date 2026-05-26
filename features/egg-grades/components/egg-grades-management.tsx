@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil } from "lucide-react";
 import { EggGradesToolbar } from "@/features/egg-grades/components/egg-grades-toolbar";
@@ -59,13 +60,17 @@ export function EggGradesManagement({ grades }: EggGradesManagementProps) {
     formInitial,
   );
 
-  useEffect(() => {
-    if (createState.success) setCreateOpen(false);
-  }, [createState.success]);
+  useActionFeedback(createState, {
+    successMessage: "Grade telur berhasil ditambahkan.",
+    onSuccess: () => setCreateOpen(false),
+    when: createOpen,
+  });
 
-  useEffect(() => {
-    if (updateState.success) setEditOpen(false);
-  }, [updateState.success]);
+  useActionFeedback(updateState, {
+    successMessage: "Grade telur berhasil diperbarui.",
+    onSuccess: () => setEditOpen(false),
+    when: editOpen,
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">

@@ -4,6 +4,7 @@ import { NavigationProgress } from "@/components/providers/navigation-progress";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/ui/sonner";
 
 const instrumentSansHeading = Instrument_Sans({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({
         <ThemeProvider>
           <NavigationProgress />
           {children}
+          <Toaster position="top-center" />
         </ThemeProvider>
       </body>
     </html>

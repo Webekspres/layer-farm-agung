@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import Image from "next/image";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ export default function LoginSplitScreen() {
     signInWithIdentifier,
     initialState,
   );
+
+  useActionFeedback(state);
 
   return (
     <main className="grid min-h-svh w-full md:grid-cols-2">

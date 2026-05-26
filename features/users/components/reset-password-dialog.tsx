@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,11 +44,11 @@ export function ResetPasswordDialog({
     initialState,
   );
 
-  useEffect(() => {
-    if (state.success) {
-      onOpenChange(false);
-    }
-  }, [state.success, onOpenChange]);
+  useActionFeedback(state, {
+    successMessage: "Password berhasil diperbarui.",
+    when: open,
+    onSuccess: () => onOpenChange(false),
+  });
 
   if (!user) return null;
 
@@ -83,9 +84,6 @@ export function ResetPasswordDialog({
                 </FieldDescription>
               </Field>
               {state.error ? <FieldError>{state.error}</FieldError> : null}
-              {state.success ? (
-                <p className="text-sm text-primary">Password berhasil diperbarui.</p>
-              ) : null}
             </FieldGroup>
           </form>
         </div>

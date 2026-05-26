@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { notifyActionResult } from "@/components/shared/action-feedback";
 import { switchActiveTenantAction } from "@/features/tenants/actions/switch-active-tenant";
 
 type TenantOption = { id: string; name: string };
@@ -32,7 +33,13 @@ export function TenantSwitcher({
     const tenantId = next === "global" ? null : next;
     startTransition(async () => {
       const result = await switchActiveTenantAction(tenantId);
-      if (result.success) {
+      if (
+        notifyActionResult(result, {
+          success: tenantId
+            ? "Tenant aktif diperbarui."
+            : "Konteks global (semua tenant) aktif.",
+        })
+      ) {
         router.refresh();
       }
     });

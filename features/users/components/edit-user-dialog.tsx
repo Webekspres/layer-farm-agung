@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,11 +91,11 @@ export function EditUserDialog({
     setIsActive(user.isActive);
   }, [user, open]);
 
-  useEffect(() => {
-    if (updateState.success) {
-      onOpenChange(false);
-    }
-  }, [updateState.success, onOpenChange]);
+  useActionFeedback(updateState, {
+    successMessage: "Pengguna berhasil diperbarui.",
+    when: open,
+    onSuccess: () => onOpenChange(false),
+  });
 
   if (!user) return null;
 

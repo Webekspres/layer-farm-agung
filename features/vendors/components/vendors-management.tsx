@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil } from "lucide-react";
 import { VendorsToolbar } from "@/features/vendors/components/vendors-toolbar";
@@ -125,13 +126,17 @@ export function VendorsManagement({ vendors }: VendorsManagementProps) {
     formInitial,
   );
 
-  useEffect(() => {
-    if (createState.success) setCreateOpen(false);
-  }, [createState.success]);
+  useActionFeedback(createState, {
+    successMessage: "Vendor berhasil ditambahkan.",
+    onSuccess: () => setCreateOpen(false),
+    when: createOpen,
+  });
 
-  useEffect(() => {
-    if (updateState.success) setEditOpen(false);
-  }, [updateState.success]);
+  useActionFeedback(updateState, {
+    successMessage: "Vendor berhasil diperbarui.",
+    onSuccess: () => setEditOpen(false),
+    when: editOpen,
+  });
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
