@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const cageStatusValues = ["Active", "Inactive"] as const;
 
-export const cageSchema = z.object({
+const cageBaseSchema = z.object({
   locationId: z.string().uuid("Pilih lokasi yang valid."),
   strainId: z.coerce.number().int().positive("Pilih strain yang valid."),
   name: z.string().trim().min(2, "Nama kandang minimal 2 karakter."),
@@ -20,12 +20,16 @@ export const cageSchema = z.object({
     .string()
     .optional()
     .transform((v) => (v === "" ? undefined : v)),
-  initialPopulation: z.coerce
-    .number()
-    .int()
-    .positive()
-    .optional(),
-}).superRefine((data, ctx) => {
+  initialPopulation: z.preprocess(
+    (value) => (value === "" || value == null ? undefined : value),
+    z.coerce.number().int().positive().optional(),
+  ),
+});
+
+function refineCycleFields(
+  data: z.infer<typeof cageBaseSchema>,
+  ctx: z.RefinementCtx,
+) {
   const hasDate = Boolean(data.cycleStartDate);
   const hasPop = data.initialPopulation !== undefined;
 
@@ -37,9 +41,11 @@ export const cageSchema = z.object({
       path: ["initialPopulation"],
     });
   }
-});
+}
 
-export const updateCageSchema = cageSchema
+export const cageSchema = cageBaseSchema.superRefine(refineCycleFields);
+
+export const updateCageSchema = cageBaseSchema
   .omit({ cycleStartDate: true, initialPopulation: true })
   .extend({
     id: z.string().uuid(),
