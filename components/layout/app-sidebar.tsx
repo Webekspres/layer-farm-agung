@@ -55,8 +55,8 @@ export function AppSidebar({ session, tenantBranding = null }: AppSidebarProps) 
 
   // Resolve white-labeled branding parameters safely
   const brandLogo = tenantBranding?.logo_url || "/assets/logos/aapm-default.png";
-  const brandTitle = tenantBranding?.brand_name || tenantBranding?.name || "Layer Farm";
-  const brandSubtitle = tenantBranding ? "Layer Farm Partner" : "Agung Petelur";
+  const brandTitle = tenantBranding?.brand_name || tenantBranding?.name || "AAPM";
+  const brandSubtitle = tenantBranding ? "Layer Farm Partner" : "Management System";
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
