@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil } from "lucide-react";
 import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-message";
@@ -314,7 +315,14 @@ export function CagesManagement({ cages, formOptions }: CagesManagementProps) {
             <TableBody>
               {cages.map((cage) => (
                 <TableRow key={cage.id}>
-                  <TableCell className="font-medium">{cage.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`/dashboard/cages/${cage.id}`}
+                      className="hover:underline text-primary"
+                    >
+                      {cage.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{cage.locationName}</TableCell>
                   <TableCell>{cage.strainName}</TableCell>
                   <TableCell>{cage.capacity.toLocaleString("id-ID")}</TableCell>

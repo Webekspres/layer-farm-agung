@@ -28,11 +28,11 @@ export async function createCageAction(
     locationId: formData.get("locationId"),
     strainId: formData.get("strainId"),
     name: formData.get("name"),
-    cageType: formData.get("cageType"),
-    cageTypeCustom: formData.get("cageTypeCustom"),
+    cageType: formData.get("cageType") || undefined,
+    cageTypeCustom: formData.get("cageTypeCustom") || undefined,
     capacity: formData.get("capacity"),
     status: formData.get("status") ?? "Active",
-    cycleStartDate: formData.get("cycleStartDate"),
+    cycleStartDate: formData.get("cycleStartDate") || undefined,
     initialPopulation: formData.get("initialPopulation") || undefined,
   });
 

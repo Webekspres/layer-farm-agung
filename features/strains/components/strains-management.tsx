@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Pencil } from "lucide-react";
+import { Loader2, Pencil, TrendingUp, Plus, Trash2 } from "lucide-react";
 import { StrainsToolbar } from "@/features/strains/components/strains-toolbar";
 import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-message";
 import { listFiltersAreActive } from "@/features/master-data/lib/url-list-params";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,9 @@ import {
   type StrainFormState,
 } from "@/features/strains/actions/create-strain";
 import { updateStrainAction } from "@/features/strains/actions/update-strain";
+import { createProductionTargetAction } from "@/features/strains/actions/create-target";
+import { deleteProductionTargetAction } from "@/features/strains/actions/delete-target";
+import { getProductionTargetsAction } from "@/features/strains/actions/get-targets";
 import type { StrainListItem } from "@/features/strains/types";
 
 const formInitial: StrainFormState = {};
@@ -50,7 +54,12 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [targetOpen, setTargetOpen] = useState(false);
   const [editing, setEditing] = useState<StrainListItem | null>(null);
+  const [targetingStrain, setTargetingStrain] = useState<StrainListItem | null>(null);
+  const [targets, setTargets] = useState<any[]>([]);
+  const [loadingTargets, setLoadingTargets] = useState(false);
+
   const [createState, createAction, createPending] = useActionState(
     createStrainAction,
     formInitial,
@@ -59,6 +68,32 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
     updateStrainAction,
     formInitial,
   );
+  const [addTargetState, addTargetAction, addTargetPending] = useActionState(
+    createProductionTargetAction,
+    formInitial,
+  );
+  const [deleteTargetState, deleteTargetAction, deleteTargetPending] = useActionState(
+    deleteProductionTargetAction,
+    formInitial,
+  );
+
+  const fetchTargets = async (strainId: number) => {
+    setLoadingTargets(true);
+    try {
+      const data = await getProductionTargetsAction(strainId);
+      setTargets(data);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingTargets(false);
+    }
+  };
+
+  useEffect(() => {
+    if (targetOpen && targetingStrain) {
+      fetchTargets(targetingStrain.id);
+    }
+  }, [targetOpen, targetingStrain]);
 
   useActionFeedback(createState, {
     successMessage: "Strain berhasil ditambahkan.",
@@ -70,6 +105,22 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
     successMessage: "Strain berhasil diperbarui.",
     onSuccess: () => setEditOpen(false),
     when: editOpen,
+  });
+
+  useActionFeedback(addTargetState, {
+    successMessage: "Target performa berhasil ditambahkan.",
+    onSuccess: () => {
+      if (targetingStrain) fetchTargets(targetingStrain.id);
+    },
+    when: targetOpen,
+  });
+
+  useActionFeedback(deleteTargetState, {
+    successMessage: "Target performa berhasil dihapus.",
+    onSuccess: () => {
+      if (targetingStrain) fetchTargets(targetingStrain.id);
+    },
+    when: targetOpen,
   });
 
   return (
@@ -90,6 +141,7 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead>Nama</TableHead>
                 <TableHead className="hidden md:table-cell">Deskripsi</TableHead>
+                <TableHead>Target Performa</TableHead>
                 <TableHead>Kandang</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -101,20 +153,40 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
                   <TableCell className="hidden max-w-xs truncate text-muted-foreground md:table-cell">
                     {strain.description ?? "—"}
                   </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-medium">
+                      {strain.targetCount} Target
+                    </Badge>
+                  </TableCell>
                   <TableCell>{strain.cageCount}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => {
-                        setEditing(strain);
-                        setEditOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setTargetingStrain(strain);
+                          setTargetOpen(true);
+                        }}
+                        title="Target Performa"
+                      >
+                        <TrendingUp className="size-4 text-emerald-600 dark:text-emerald-400" />
+                        <span className="sr-only">Target Performa</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setEditing(strain);
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -191,6 +263,132 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
               </DialogFooter>
             </form>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={targetOpen} onOpenChange={setTargetOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>
+              Target Performa — {targetingStrain?.name}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-foreground">Daftar Target Umur</h3>
+              {loadingTargets ? (
+                <div className="flex items-center justify-center p-6">
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : targets.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center border border-dashed border-border rounded-lg">
+                  Belum ada target performa. Tambahkan target di bawah.
+                </p>
+              ) : (
+                <div className="border border-border rounded-lg max-h-48 overflow-y-auto">
+                  <Table>
+                    <TableHeader className="bg-muted/40">
+                      <TableRow>
+                        <TableHead>Umur</TableHead>
+                        <TableHead>Target HDP (%)</TableHead>
+                        <TableHead>Target FCR</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {targets.map((t) => (
+                        <TableRow key={t.id}>
+                          <TableCell className="font-semibold">{t.age_in_weeks} Minggu</TableCell>
+                          <TableCell>{t.target_hdp}%</TableCell>
+                          <TableCell>{t.target_fcr}</TableCell>
+                          <TableCell className="text-right">
+                            <form action={deleteTargetAction} className="inline">
+                              <input type="hidden" name="id" value={t.id} />
+                              <input type="hidden" name="strainId" value={t.strain_id} />
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="text-destructive hover:text-destructive/80"
+                                disabled={deleteTargetPending}
+                              >
+                                <Trash2 className="size-4" />
+                                <span className="sr-only">Hapus</span>
+                              </Button>
+                            </form>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+
+            <form action={addTargetAction} className="border-t border-border pt-4">
+              {targetingStrain ? (
+                <input type="hidden" name="strainId" value={targetingStrain.id} />
+              ) : null}
+              <h3 className="text-sm font-semibold text-foreground mb-3">Tambah Target Baru</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field>
+                  <FieldLabel htmlFor="target-age">Umur (Minggu)</FieldLabel>
+                  <Input
+                    id="target-age"
+                    name="ageInWeeks"
+                    type="number"
+                    min={1}
+                    required
+                    placeholder="Contoh: 18"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="target-hdp">Target HDP (%)</FieldLabel>
+                  <Input
+                    id="target-hdp"
+                    name="targetHdp"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={100}
+                    required
+                    placeholder="Contoh: 90.5"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="target-fcr">Target FCR</FieldLabel>
+                  <Input
+                    id="target-fcr"
+                    name="targetFcr"
+                    type="number"
+                    step="0.01"
+                    min={0.01}
+                    required
+                    placeholder="Contoh: 2.15"
+                  />
+                </Field>
+              </div>
+              
+              {addTargetState.error ? (
+                <FieldError className="mt-2">{addTargetState.error}</FieldError>
+              ) : null}
+              {deleteTargetState.error ? (
+                <FieldError className="mt-2">{deleteTargetState.error}</FieldError>
+              ) : null}
+
+              <div className="mt-4 flex justify-end">
+                <Button type="submit" disabled={addTargetPending || deleteTargetPending}>
+                  {addTargetPending ? (
+                    <Loader2 className="size-4 animate-spin mr-2" />
+                  ) : (
+                    <Plus className="size-4 mr-2" />
+                  )}
+                  Tambah Target
+                </Button>
+              </div>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -92,6 +92,24 @@ function VendorFields({
         </Select>
       </Field>
       <Field>
+        <FieldLabel htmlFor="vendor-pic-name">Nama PIC (opsional)</FieldLabel>
+        <Input
+          id="vendor-pic-name"
+          name="picName"
+          defaultValue={editing?.picName ?? ""}
+          placeholder="Nama contact person..."
+        />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="vendor-pic-phone">Telepon PIC (opsional)</FieldLabel>
+        <Input
+          id="vendor-pic-phone"
+          name="picPhone"
+          defaultValue={editing?.picPhone ?? ""}
+          placeholder="No. telepon contact person..."
+        />
+      </Field>
+      <Field>
         <FieldLabel htmlFor="vendor-address">Alamat (opsional)</FieldLabel>
         <Textarea
           id="vendor-address"
@@ -156,6 +174,7 @@ export function VendorsManagement({ vendors }: VendorsManagementProps) {
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead>Nama</TableHead>
                 <TableHead>Kategori</TableHead>
+                <TableHead>PIC / Telepon</TableHead>
                 <TableHead>PO</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
@@ -166,6 +185,20 @@ export function VendorsManagement({ vendors }: VendorsManagementProps) {
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{vendor.category}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {vendor.picName ? (
+                      <span className="block text-foreground font-medium">
+                        {vendor.picName}
+                        {vendor.picPhone && (
+                          <span className="block text-xs text-muted-foreground">
+                            {vendor.picPhone}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell>{vendor.purchaseOrderCount}</TableCell>
                   <TableCell className="text-right">

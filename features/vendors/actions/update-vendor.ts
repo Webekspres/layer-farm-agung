@@ -29,6 +29,8 @@ export async function updateVendorAction(
     name: formData.get("name"),
     category: formData.get("category"),
     address: formData.get("address"),
+    picName: formData.get("picName") || undefined,
+    picPhone: formData.get("picPhone") || undefined,
   });
 
   if (!parsed.success) {
@@ -44,14 +46,48 @@ export async function updateVendorAction(
     return { error: "Vendor tidak ditemukan." };
   }
 
+  const existingContact = await prisma.supplierContact.findFirst({
+    where: { vendor_id: parsed.data.id },
+    select: { id: true },
+  });
+
   try {
-    await prisma.vendor.update({
-      where: { id: parsed.data.id },
-      data: {
-        name: parsed.data.name,
-        category: parsed.data.category,
-        address: parsed.data.address ?? null,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.vendor.update({
+        where: { id: parsed.data.id },
+        data: {
+          name: parsed.data.name,
+          category: parsed.data.category,
+          address: parsed.data.address ?? null,
+        },
+      });
+
+      const hasPic = Boolean(parsed.data.picName?.trim());
+      if (hasPic) {
+        if (existingContact) {
+          await tx.supplierContact.update({
+            where: { id: existingContact.id },
+            data: {
+              pic_name: parsed.data.picName!,
+              phone: parsed.data.picPhone ?? "",
+            },
+          });
+        } else {
+          await tx.supplierContact.create({
+            data: {
+              vendor_id: parsed.data.id,
+              pic_name: parsed.data.picName!,
+              phone: parsed.data.picPhone ?? "",
+            },
+          });
+        }
+      } else {
+        if (existingContact) {
+          await tx.supplierContact.delete({
+            where: { id: existingContact.id },
+          });
+        }
+      }
     });
   } catch {
     return { error: "Gagal memperbarui vendor." };

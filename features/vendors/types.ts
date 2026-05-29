@@ -10,5 +10,7 @@ export type VendorListItem = {
   address: string | null;
   contactCount: number;
   purchaseOrderCount: number;
+  picName: string | null;
+  picPhone: string | null;
   createdAt: string;
 };

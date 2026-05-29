@@ -32,6 +32,10 @@ export async function listVendors(
     where: buildWhere(tenantId, filters),
     include: {
       _count: { select: { supplier_contacts: true, purchase_orders: true } },
+      supplier_contacts: {
+        take: 1,
+        orderBy: { pic_name: "asc" },
+      },
     },
     orderBy: { name: "asc" },
   });
@@ -43,6 +47,8 @@ export async function listVendors(
     address: row.address,
     contactCount: row._count.supplier_contacts,
     purchaseOrderCount: row._count.purchase_orders,
+    picName: row.supplier_contacts[0]?.pic_name ?? null,
+    picPhone: row.supplier_contacts[0]?.phone ?? null,
     createdAt: row.created_at.toISOString(),
   }));
 }

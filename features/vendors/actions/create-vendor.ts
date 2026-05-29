@@ -28,6 +28,8 @@ export async function createVendorAction(
     name: formData.get("name"),
     category: formData.get("category"),
     address: formData.get("address"),
+    picName: formData.get("picName") || undefined,
+    picPhone: formData.get("picPhone") || undefined,
   });
 
   if (!parsed.success) {
@@ -35,13 +37,25 @@ export async function createVendorAction(
   }
 
   try {
-    await prisma.vendor.create({
-      data: {
-        tenant_id: tenantId,
-        name: parsed.data.name,
-        category: parsed.data.category,
-        address: parsed.data.address ?? null,
-      },
+    await prisma.$transaction(async (tx) => {
+      const vendor = await tx.vendor.create({
+        data: {
+          tenant_id: tenantId,
+          name: parsed.data.name,
+          category: parsed.data.category,
+          address: parsed.data.address ?? null,
+        },
+      });
+
+      if (parsed.data.picName?.trim()) {
+        await tx.supplierContact.create({
+          data: {
+            vendor_id: vendor.id,
+            pic_name: parsed.data.picName,
+            phone: parsed.data.picPhone ?? "",
+          },
+        });
+      }
     });
   } catch {
     return { error: "Gagal membuat vendor." };
