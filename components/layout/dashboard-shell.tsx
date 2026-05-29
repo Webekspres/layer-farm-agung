@@ -29,14 +29,14 @@ export function DashboardShell({
     <TooltipProvider>
       <SidebarProvider defaultOpen>
         <AppSidebar session={session} />
-        <SidebarInset className="min-h-svh min-w-0 overflow-x-hidden">
+        <SidebarInset className="h-svh min-w-0 overflow-hidden">
           <DashboardHeader
             session={session}
             tenants={isGlobalAdmin ? tenants : []}
             activeTenantId={isGlobalAdmin ? activeTenantId : null}
             activeTenantName={activeTenantName}
           />
-          <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
             {children}
           </div>
         </SidebarInset>
