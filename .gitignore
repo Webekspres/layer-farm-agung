@@ -45,3 +45,7 @@ next-env.d.ts
 
 # ignore all files in docs folder
 /docs/**
+
+# user uploads (keep directory via .gitkeep)
+/public/uploads/**
+!/public/uploads/**/.gitkeep

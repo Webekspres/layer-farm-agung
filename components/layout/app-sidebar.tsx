@@ -26,11 +26,18 @@ import {
 } from "@/features/dashboard/config/navigation";
 import type { ServerSession } from "@/features/auth/lib/session";
 
-type AppSidebarProps = {
-  session: ServerSession;
+type TenantBranding = {
+  name: string;
+  brand_name: string | null;
+  logo_url: string | null;
 };
 
-export function AppSidebar({ session }: AppSidebarProps) {
+type AppSidebarProps = {
+  session: ServerSession;
+  tenantBranding?: TenantBranding | null;
+};
+
+export function AppSidebar({ session, tenantBranding = null }: AppSidebarProps) {
   const pathname = usePathname();
   const permissions = session.user.permissions;
   const isGlobalAdmin = session.user.tenantId === null;
@@ -46,6 +53,11 @@ export function AppSidebar({ session }: AppSidebarProps) {
   const activeTenant =
     session.session.activeTenantId ?? session.user.tenantId;
 
+  // Resolve white-labeled branding parameters safely
+  const brandLogo = tenantBranding?.logo_url || "/assets/logos/aapm-default.png";
+  const brandTitle = tenantBranding?.brand_name || tenantBranding?.name || "Layer Farm";
+  const brandSubtitle = tenantBranding ? "Layer Farm Partner" : "Agung Petelur";
+
   return (
     <Sidebar collapsible="icon" variant="sidebar">
       <SidebarHeader className="border-b border-sidebar-border">
@@ -59,19 +71,19 @@ export function AppSidebar({ session }: AppSidebarProps) {
               <Link href="/dashboard">
                 <div className="flex aspect-square mr-2 size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
                   <Image
-                    src="/image/Logo.png"
-                    alt="AAPM"
+                    src={brandLogo}
+                    alt={brandTitle}
                     width={32}
                     height={32}
                     className="size-8 rounded-lg object-contain"
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold font-heading">
-                    Layer Farm
+                  <span className="truncate font-semibold font-heading max-w-[150px]">
+                    {brandTitle}
                   </span>
                   <span className="truncate text-xs text-sidebar-foreground/70">
-                    Agung Petelur
+                    {brandSubtitle}
                   </span>
                 </div>
               </Link>

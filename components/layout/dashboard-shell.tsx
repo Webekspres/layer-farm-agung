@@ -8,10 +8,17 @@ import type { ServerSession } from "@/features/auth/lib/session";
 
 type TenantOption = { id: string; name: string };
 
+type TenantBranding = {
+  name: string;
+  brand_name: string | null;
+  logo_url: string | null;
+};
+
 type DashboardShellProps = {
   session: ServerSession;
   tenants?: TenantOption[];
   activeTenantName?: string | null;
+  tenantBranding?: TenantBranding | null;
   children: React.ReactNode;
 };
 
@@ -19,6 +26,7 @@ export function DashboardShell({
   session,
   tenants = [],
   activeTenantName = null,
+  tenantBranding = null,
   children,
 }: DashboardShellProps) {
   const isGlobalAdmin = session.user.tenantId === null;
@@ -28,7 +36,7 @@ export function DashboardShell({
   return (
     <TooltipProvider>
       <SidebarProvider defaultOpen>
-        <AppSidebar session={session} />
+        <AppSidebar session={session} tenantBranding={tenantBranding} />
         <SidebarInset className="h-svh min-w-0 overflow-hidden">
           <DashboardHeader
             session={session}

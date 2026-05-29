@@ -4,7 +4,7 @@ export const createCycleSchema = z.object({
   cageId: z.string().uuid("Kandang tidak valid."),
   startDate: z.coerce
     .date({
-      errorMap: () => ({ message: "Pilih tanggal mulai yang valid." }),
+      message: "Pilih tanggal mulai yang valid.",
     })
     .refine((date) => {
       const today = new Date();
@@ -20,6 +20,6 @@ export const createCycleSchema = z.object({
 export const closeCycleSchema = z.object({
   cycleId: z.string().uuid("Siklus tidak valid."),
   endDate: z.coerce.date({
-    errorMap: () => ({ message: "Pilih tanggal selesai yang valid." }),
+    message: "Pilih tanggal selesai yang valid.",
   }),
 });

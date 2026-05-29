@@ -67,11 +67,17 @@ async function main() {
 
   const defaultTenant = await prisma.tenant.upsert({
     where: { slug: "cabang-utama" },
-    update: { name: "Tenant Utama" },
+    update: {
+      name: "Tenant Utama",
+      brand_name: "Utama Poultry",
+      logo_url: "/assets/logos/aapm-default.png",
+    },
     create: {
       name: "Tenant Utama",
       slug: "cabang-utama",
       is_active: true,
+      brand_name: "Utama Poultry",
+      logo_url: "/assets/logos/aapm-default.png",
     },
   });
 
