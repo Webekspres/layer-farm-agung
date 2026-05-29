@@ -17,13 +17,15 @@ import {
   BreadcrumbLink,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Fragment } from "react";
+import { Fragment, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -32,6 +34,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { authClient } from "@/features/auth/client/auth-client";
+import { notifyActionResult } from "@/components/shared/action-feedback";
+import { switchActiveTenantAction } from "@/features/tenants/actions/switch-active-tenant";
 import type { ServerSession } from "@/features/auth/lib/session";
 
 type TenantOption = { id: string; name: string };
@@ -118,6 +122,7 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [isSwitching, startSwitching] = useTransition();
   const displayName = session.user.fullName ?? session.user.name ?? "User";
 
   const crumbs = getBreadcrumbs(pathname);
@@ -129,6 +134,22 @@ export function DashboardHeader({
     await authClient.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  function handleTenantSwitch(next: string) {
+    const tenantId = next === "global" ? null : next;
+    startSwitching(async () => {
+      const result = await switchActiveTenantAction(tenantId);
+      if (
+        notifyActionResult(result, {
+          success: tenantId
+            ? "Tenant aktif diperbarui."
+            : "Konteks global (semua tenant) aktif.",
+        })
+      ) {
+        router.refresh();
+      }
+    });
   }
 
   return (
@@ -206,6 +227,42 @@ export function DashboardHeader({
                 </p>
               </div>
             </DropdownMenuLabel>
+
+            {/* Mobile-only tenant switcher — hidden on md+ where the header switcher is visible */}
+            {tenants.length > 0 && (
+              <>
+                <DropdownMenuSeparator className="md:hidden" />
+                <DropdownMenuLabel className="text-xs flex items-center text-muted-foreground font-normal md:hidden">
+                  <Building2 className="mr-1.5 inline size-3.5" />
+                  Tenant Switcher
+                </DropdownMenuLabel>
+                {/* Scrollable zone — caps at ~5 items so Profile & Keluar stay pinned */}
+                <div className="md:hidden max-h-[180px] overflow-y-auto">
+                  <DropdownMenuRadioGroup
+                    value={activeTenantId ?? "global"}
+                    onValueChange={handleTenantSwitch}
+                  >
+                    <DropdownMenuRadioItem
+                      value="global"
+                      disabled={isSwitching}
+                    >
+                      Global (Semua Tenant)
+                    </DropdownMenuRadioItem>
+                    {tenants.map((tenant) => (
+                      <DropdownMenuRadioItem
+                        key={tenant.id}
+                        value={tenant.id}
+                        disabled={isSwitching}
+                        className="truncate"
+                      >
+                        {tenant.name}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </div>
+              </>
+            )}
+
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/dashboard/profile">
