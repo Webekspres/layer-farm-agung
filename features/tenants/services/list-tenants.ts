@@ -5,6 +5,8 @@ import type {
   TenantsListFilters,
 } from "@/features/tenants/types";
 
+import type { PaginationMeta } from "@/lib/pagination";
+
 function buildTenantWhere({
   search,
   status = "all",
@@ -28,16 +30,53 @@ function buildTenantWhere({
   return where;
 }
 
+export type PaginatedTenantsResult = {
+  items: TenantListItem[];
+} & PaginationMeta;
+
 export async function listTenants(
-  filters: TenantsListFilters = {},
-): Promise<TenantListItem[]> {
+  filters: TenantsListFilters & { page?: number; pageSize?: number } = {},
+): Promise<PaginatedTenantsResult> {
+  const { page, pageSize, ...searchFilters } = filters;
+  const where = buildTenantWhere(searchFilters);
+
+  if (page !== undefined && pageSize !== undefined) {
+    const total = await prisma.tenant.count({ where });
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const skip = (safePage - 1) * pageSize;
+
+    const rows = await prisma.tenant.findMany({
+      where,
+      include: { _count: { select: { users: true } } },
+      orderBy: { name: "asc" },
+      skip,
+      take: pageSize,
+    });
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        isActive: row.is_active,
+        userCount: row._count.users,
+        createdAt: row.created_at.toISOString(),
+      })),
+      total,
+      page: safePage,
+      pageSize,
+      totalPages,
+    };
+  }
+
   const rows = await prisma.tenant.findMany({
-    where: buildTenantWhere(filters),
+    where,
     include: { _count: { select: { users: true } } },
     orderBy: { name: "asc" },
   });
 
-  return rows.map((row) => ({
+  const mapped = rows.map((row) => ({
     id: row.id,
     name: row.name,
     slug: row.slug,
@@ -45,6 +84,14 @@ export async function listTenants(
     userCount: row._count.users,
     createdAt: row.created_at.toISOString(),
   }));
+
+  return {
+    items: mapped,
+    total: mapped.length,
+    page: 1,
+    pageSize: mapped.length || 10,
+    totalPages: 1,
+  };
 }
 
 export async function listActiveTenantsForSwitcher() {

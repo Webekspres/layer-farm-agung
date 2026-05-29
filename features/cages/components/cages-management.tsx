@@ -45,12 +45,15 @@ import {
 } from "@/features/cages/actions/create-cage";
 import { updateCageAction } from "@/features/cages/actions/update-cage";
 import type { CageFormOptions, CageListItem } from "@/features/cages/types";
+import { TablePagination } from "@/components/shared/table-pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: CageFormState = {};
 
 type CagesManagementProps = {
   cages: CageListItem[];
   formOptions: CageFormOptions;
+  pagination: PaginationMeta;
 };
 
 function CageFormFields({
@@ -225,7 +228,11 @@ function CageFormFields({
   );
 }
 
-export function CagesManagement({ cages, formOptions }: CagesManagementProps) {
+export function CagesManagement({
+  cages,
+  formOptions,
+  pagination,
+}: CagesManagementProps) {
   const searchParams = useSearchParams();
   const hasActiveFilter = listFiltersAreActive(searchParams, [
     "location",
@@ -355,6 +362,7 @@ export function CagesManagement({ cages, formOptions }: CagesManagementProps) {
             </TableBody>
           </Table>
         )}
+        <TablePagination {...pagination} entityName="kandang" />
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

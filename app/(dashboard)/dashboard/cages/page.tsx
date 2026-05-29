@@ -11,12 +11,16 @@ import { getCageFormOptions } from "@/features/cages/services/get-cage-form-opti
 import { listCages } from "@/features/cages/services/list-cages";
 import { listStrainOptions } from "@/features/strains/services/list-strains";
 
+import { parsePage, parsePageSize } from "@/lib/pagination";
+
 type CagesPageProps = {
   searchParams: Promise<{
     q?: string;
     location?: string;
     strain?: string;
     status?: string;
+    page?: string;
+    pageSize?: string;
   }>;
 };
 
@@ -25,9 +29,14 @@ export default async function CagesPage({ searchParams }: CagesPageProps) {
   const { tenantId, needsTenantSelection } = getMasterDataTenantScope(session);
   const params = await searchParams;
   const filters = parseCageListFilters(params);
+  const page = parsePage(params.page);
+  const pageSize = parsePageSize(params.pageSize);
 
   const hasTenant = Boolean(tenantId && !needsTenantSelection);
-  const cages = hasTenant ? await listCages(tenantId!, filters) : [];
+  const result = hasTenant
+    ? await listCages(tenantId!, { ...filters, page, pageSize })
+    : { items: [], total: 0, page: 1, pageSize: 10, totalPages: 1 };
+
   const formOptions = hasTenant
     ? await getCageFormOptions(tenantId!)
     : { locations: [], strains: await listStrainOptions() };
@@ -42,7 +51,16 @@ export default async function CagesPage({ searchParams }: CagesPageProps) {
         <TenantRequiredPanel />
       ) : (
         <Suspense fallback={null}>
-          <CagesManagement cages={cages} formOptions={formOptions} />
+          <CagesManagement
+            cages={result.items}
+            formOptions={formOptions}
+            pagination={{
+              page: result.page,
+              pageSize: result.pageSize,
+              total: result.total,
+              totalPages: result.totalPages,
+            }}
+          />
         </Suspense>
       )}
     </>

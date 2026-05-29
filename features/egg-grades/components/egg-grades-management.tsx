@@ -37,14 +37,20 @@ import {
 } from "@/features/egg-grades/actions/create-egg-grade";
 import { updateEggGradeAction } from "@/features/egg-grades/actions/update-egg-grade";
 import type { EggGradeListItem } from "@/features/egg-grades/types";
+import { TablePagination } from "@/components/shared/table-pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: EggGradeFormState = {};
 
 type EggGradesManagementProps = {
   grades: EggGradeListItem[];
+  pagination: PaginationMeta;
 };
 
-export function EggGradesManagement({ grades }: EggGradesManagementProps) {
+export function EggGradesManagement({
+  grades,
+  pagination,
+}: EggGradesManagementProps) {
   const searchParams = useSearchParams();
   const hasActiveFilter = listFiltersAreActive(searchParams, ["usage"]);
 
@@ -119,6 +125,7 @@ export function EggGradesManagement({ grades }: EggGradesManagementProps) {
             </TableBody>
           </Table>
         )}
+        <TablePagination {...pagination} entityName="grade telur" />
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

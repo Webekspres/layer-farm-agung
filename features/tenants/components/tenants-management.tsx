@@ -35,14 +35,20 @@ import {
 } from "@/features/tenants/actions/create-tenant";
 import { updateTenantAction } from "@/features/tenants/actions/update-tenant";
 import type { TenantListItem } from "@/features/tenants/types";
+import { TablePagination } from "@/components/shared/table-pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: TenantFormState = {};
 
 type TenantsManagementProps = {
   tenants: TenantListItem[];
+  pagination: PaginationMeta;
 };
 
-export function TenantsManagement({ tenants }: TenantsManagementProps) {
+export function TenantsManagement({
+  tenants,
+  pagination,
+}: TenantsManagementProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<TenantListItem | null>(null);
@@ -122,6 +128,7 @@ export function TenantsManagement({ tenants }: TenantsManagementProps) {
             </TableBody>
           </Table>
         )}
+        <TablePagination {...pagination} entityName="tenant" />
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

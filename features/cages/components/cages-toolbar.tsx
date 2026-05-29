@@ -52,10 +52,23 @@ export function CagesToolbar({
 
   const locationFilter = searchParams.get("location") ?? "all";
   const strainFilter = searchParams.get("strain") ?? "all";
-  const statusFilter = searchParams.get("status") ?? "all";
+  const statusFilter = searchParams.get("status") ?? "Active";
 
   function updateFilter(key: string, value: string) {
-    const next = buildListSearchParams(searchParams, { [key]: value });
+    const next = new URLSearchParams(searchParams.toString());
+    if (key === "status") {
+      if (value === "Active") {
+        next.delete("status");
+      } else {
+        next.set("status", value);
+      }
+    } else {
+      if (!value || value === "all") {
+        next.delete(key);
+      } else {
+        next.set(key, value);
+      }
+    }
     startTransition(() => {
       router.replace(`${pathname}?${next.toString()}`);
     });

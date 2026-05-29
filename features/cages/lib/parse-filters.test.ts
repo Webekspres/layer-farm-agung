@@ -18,6 +18,20 @@ describe("parseCageListFilters", () => {
     });
   });
 
+  test("defaults status to Active if not provided", () => {
+    expect(
+      parseCageListFilters({
+        location: "all",
+        strain: "all",
+      }),
+    ).toEqual({
+      search: undefined,
+      locationId: undefined,
+      strainId: undefined,
+      status: "Active",
+    });
+  });
+
   test("treats all as no filter", () => {
     expect(
       parseCageListFilters({

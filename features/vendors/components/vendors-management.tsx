@@ -46,11 +46,14 @@ import {
 import { updateVendorAction } from "@/features/vendors/actions/update-vendor";
 import { vendorCategories } from "@/features/vendors/schemas/vendor";
 import type { VendorListItem } from "@/features/vendors/types";
+import { TablePagination } from "@/components/shared/table-pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: VendorFormState = {};
 
 type VendorsManagementProps = {
   vendors: VendorListItem[];
+  pagination: PaginationMeta;
 };
 
 function VendorFields({
@@ -123,7 +126,10 @@ function VendorFields({
   );
 }
 
-export function VendorsManagement({ vendors }: VendorsManagementProps) {
+export function VendorsManagement({
+  vendors,
+  pagination,
+}: VendorsManagementProps) {
   const searchParams = useSearchParams();
   const hasActiveFilter = listFiltersAreActive(searchParams, ["category"]);
 
@@ -221,6 +227,7 @@ export function VendorsManagement({ vendors }: VendorsManagementProps) {
             </TableBody>
           </Table>
         )}
+        <TablePagination {...pagination} entityName="vendor" />
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

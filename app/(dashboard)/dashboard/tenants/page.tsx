@@ -8,10 +8,14 @@ import { TenantsManagement } from "@/features/tenants/components/tenants-managem
 import { parseTenantListFilters } from "@/features/tenants/lib/parse-filters";
 import { listTenants } from "@/features/tenants/services/list-tenants";
 
+import { parsePage, parsePageSize } from "@/lib/pagination";
+
 type TenantsPageProps = {
   searchParams: Promise<{
     q?: string;
     status?: string;
+    page?: string;
+    pageSize?: string;
   }>;
 };
 
@@ -21,7 +25,14 @@ export default async function TenantsPage({ searchParams }: TenantsPageProps) {
 
   const params = await searchParams;
   const filters = parseTenantListFilters(params);
-  const tenants = await listTenants(filters);
+  const page = parsePage(params.page);
+  const pageSize = parsePageSize(params.pageSize);
+
+  const result = await listTenants({
+    ...filters,
+    page,
+    pageSize,
+  });
 
   return (
     <>
@@ -30,7 +41,15 @@ export default async function TenantsPage({ searchParams }: TenantsPageProps) {
         description="Kelola tenant peternakan. Superadmin dapat beralih konteks tenant dari header."
       />
       <Suspense fallback={null}>
-        <TenantsManagement tenants={tenants} />
+        <TenantsManagement
+          tenants={result.items}
+          pagination={{
+            page: result.page,
+            pageSize: result.pageSize,
+            total: result.total,
+            totalPages: result.totalPages,
+          }}
+        />
       </Suspense>
     </>
   );

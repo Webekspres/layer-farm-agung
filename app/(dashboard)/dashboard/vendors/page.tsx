@@ -9,8 +9,15 @@ import { VendorsManagement } from "@/features/vendors/components/vendors-managem
 import { parseVendorListFilters } from "@/features/vendors/lib/parse-filters";
 import { listVendors } from "@/features/vendors/services/list-vendors";
 
+import { parsePage, parsePageSize } from "@/lib/pagination";
+
 type VendorsPageProps = {
-  searchParams: Promise<{ q?: string; category?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    category?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
 };
 
 export default async function VendorsPage({ searchParams }: VendorsPageProps) {
@@ -18,11 +25,13 @@ export default async function VendorsPage({ searchParams }: VendorsPageProps) {
   const { tenantId, needsTenantSelection } = getMasterDataTenantScope(session);
   const params = await searchParams;
   const filters = parseVendorListFilters(params);
+  const page = parsePage(params.page);
+  const pageSize = parsePageSize(params.pageSize);
 
-  const vendors =
-    tenantId && !needsTenantSelection
-      ? await listVendors(tenantId, filters)
-      : [];
+  const hasTenant = Boolean(tenantId && !needsTenantSelection);
+  const result = hasTenant
+    ? await listVendors(tenantId!, { ...filters, page, pageSize })
+    : { items: [], total: 0, page: 1, pageSize: 10, totalPages: 1 };
 
   return (
     <>
@@ -34,7 +43,15 @@ export default async function VendorsPage({ searchParams }: VendorsPageProps) {
         <TenantRequiredPanel />
       ) : (
         <Suspense fallback={null}>
-          <VendorsManagement vendors={vendors} />
+          <VendorsManagement
+            vendors={result.items}
+            pagination={{
+              page: result.page,
+              pageSize: result.pageSize,
+              total: result.total,
+              totalPages: result.totalPages,
+            }}
+          />
         </Suspense>
       )}
     </>

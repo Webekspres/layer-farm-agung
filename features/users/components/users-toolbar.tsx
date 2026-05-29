@@ -26,7 +26,13 @@ function buildQuery(
   const next = new URLSearchParams(base.toString());
   next.delete("page");
   for (const [key, value] of Object.entries(updates)) {
-    if (!value || value === "all") {
+    if (key === "status") {
+      if (value === "active") {
+        next.delete("status");
+      } else {
+        next.set("status", value ?? "active");
+      }
+    } else if (!value || value === "all") {
       next.delete(key);
     } else {
       next.set(key, value);
@@ -69,7 +75,7 @@ export function UsersToolbar({ formOptions, onCreateClick }: UsersToolbarProps) 
   }
 
   const roleId = searchParams.get("roleId") ?? "all";
-  const status = searchParams.get("status") ?? "all";
+  const status = searchParams.get("status") ?? "active";
   const tenantId = searchParams.get("tenantId") ?? "all";
 
   return (

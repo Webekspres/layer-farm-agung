@@ -41,14 +41,20 @@ import { createProductionTargetAction } from "@/features/strains/actions/create-
 import { deleteProductionTargetAction } from "@/features/strains/actions/delete-target";
 import { getProductionTargetsAction } from "@/features/strains/actions/get-targets";
 import type { StrainListItem } from "@/features/strains/types";
+import { TablePagination } from "@/components/shared/table-pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: StrainFormState = {};
 
 type StrainsManagementProps = {
   strains: StrainListItem[];
+  pagination: PaginationMeta;
 };
 
-export function StrainsManagement({ strains }: StrainsManagementProps) {
+export function StrainsManagement({
+  strains,
+  pagination,
+}: StrainsManagementProps) {
   const searchParams = useSearchParams();
   const hasActiveFilter = listFiltersAreActive(searchParams, ["usage"]);
 
@@ -193,6 +199,7 @@ export function StrainsManagement({ strains }: StrainsManagementProps) {
             </TableBody>
           </Table>
         )}
+        <TablePagination {...pagination} entityName="strain" />
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

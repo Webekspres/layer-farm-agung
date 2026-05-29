@@ -5,6 +5,8 @@ import type {
   LocationsListFilters,
 } from "@/features/locations/types";
 
+import type { PaginationMeta } from "@/lib/pagination";
+
 function buildWhere(
   tenantId: string,
   { search, occupancy }: LocationsListFilters,
@@ -24,22 +26,65 @@ function buildWhere(
   return where;
 }
 
+export type PaginatedLocationsResult = {
+  items: LocationListItem[];
+} & PaginationMeta;
+
 export async function listLocations(
   tenantId: string,
-  filters: LocationsListFilters = {},
-): Promise<LocationListItem[]> {
+  filters: LocationsListFilters & { page?: number; pageSize?: number } = {},
+): Promise<PaginatedLocationsResult> {
+  const { page, pageSize, ...searchFilters } = filters;
+  const where = buildWhere(tenantId, searchFilters);
+
+  if (page !== undefined && pageSize !== undefined) {
+    const total = await prisma.location.count({ where });
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const skip = (safePage - 1) * pageSize;
+
+    const rows = await prisma.location.findMany({
+      where,
+      include: { _count: { select: { cages: true } } },
+      orderBy: { name: "asc" },
+      skip,
+      take: pageSize,
+    });
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        cageCount: row._count.cages,
+        createdAt: row.created_at.toISOString(),
+      })),
+      total,
+      page: safePage,
+      pageSize,
+      totalPages,
+    };
+  }
+
   const rows = await prisma.location.findMany({
-    where: buildWhere(tenantId, filters),
+    where,
     include: { _count: { select: { cages: true } } },
     orderBy: { name: "asc" },
   });
 
-  return rows.map((row) => ({
+  const mapped = rows.map((row) => ({
     id: row.id,
     name: row.name,
     cageCount: row._count.cages,
     createdAt: row.created_at.toISOString(),
   }));
+
+  return {
+    items: mapped,
+    total: mapped.length,
+    page: 1,
+    pageSize: mapped.length || 10,
+    totalPages: 1,
+  };
 }
 
 export async function listLocationOptions(tenantId: string) {

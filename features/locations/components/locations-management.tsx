@@ -37,14 +37,20 @@ import {
 import { deleteLocationAction } from "@/features/locations/actions/delete-location";
 import { updateLocationAction } from "@/features/locations/actions/update-location";
 import type { LocationListItem } from "@/features/locations/types";
+import { TablePagination } from "@/components/shared/table-pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: LocationFormState = {};
 
 type LocationsManagementProps = {
   locations: LocationListItem[];
+  pagination: PaginationMeta;
 };
 
-export function LocationsManagement({ locations }: LocationsManagementProps) {
+export function LocationsManagement({
+  locations,
+  pagination,
+}: LocationsManagementProps) {
   const searchParams = useSearchParams();
   const hasActiveFilter = listFiltersAreActive(searchParams, ["occupancy"]);
 
@@ -145,6 +151,7 @@ export function LocationsManagement({ locations }: LocationsManagementProps) {
             </TableBody>
           </Table>
         )}
+        <TablePagination {...pagination} entityName="lokasi" />
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

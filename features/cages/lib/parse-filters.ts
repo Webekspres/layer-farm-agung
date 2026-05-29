@@ -7,11 +7,11 @@ export function parseCageListFilters(params: {
   status?: string;
 }): CagesListFilters {
   const status = params.status;
-  const validStatus: CageStatusFilter[] = ["Active", "Inactive"];
+  const validStatus: CageStatusFilter[] = ["Active", "Inactive", "all"];
   const statusFilter: CageStatusFilter =
     status && validStatus.includes(status as CageStatusFilter)
       ? (status as CageStatusFilter)
-      : "all";
+      : "Active";
 
   const strainRaw = params.strain?.trim();
   const strainId =

@@ -23,7 +23,13 @@ function buildQuery(
 ) {
   const next = new URLSearchParams(base.toString());
   for (const [key, value] of Object.entries(updates)) {
-    if (!value || value === "all") {
+    if (key === "status") {
+      if (value === "active") {
+        next.delete("status");
+      } else {
+        next.set("status", value ?? "active");
+      }
+    } else if (!value || value === "all") {
       next.delete(key);
     } else {
       next.set(key, value);
@@ -65,7 +71,7 @@ export function TenantsToolbar({ onCreateClick }: TenantsToolbarProps) {
     });
   }
 
-  const status = searchParams.get("status") ?? "all";
+  const status = searchParams.get("status") ?? "active";
 
   return (
     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

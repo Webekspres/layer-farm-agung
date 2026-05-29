@@ -14,7 +14,10 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbLink,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -50,20 +53,60 @@ function getInitials(name: string) {
     .toUpperCase();
 }
 
-const allNavItems = [
-  ...mainNavItems,
-  ...adminNavItems,
-  { title: "Profil", href: "/dashboard/profile" },
-  { title: "Tenant", href: "/dashboard/tenants" },
-];
+const breadcrumbMapping: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/dashboard/locations": "Lokasi",
+  "/dashboard/cages": "Kandang",
+  "/dashboard/strains": "Strain",
+  "/dashboard/egg-grades": "Grade Telur",
+  "/dashboard/vendors": "Vendor",
+  "/dashboard/tenants": "Tenant",
+  "/dashboard/users": "Pengguna",
+  "/dashboard/roles": "Peran & Akses",
+  "/dashboard/profile": "Profil",
+  "/dashboard/production": "Produksi",
+  "/dashboard/inventory": "Inventori",
+  "/dashboard/finance": "Keuangan",
+};
 
-function resolvePageTitle(pathname: string, fallback = "Dashboard") {
-  const match = allNavItems.find(
-    (item) =>
-      pathname === item.href ||
-      (item.href !== "/dashboard" && pathname.startsWith(item.href)),
-  );
-  return match?.title ?? fallback;
+type BreadcrumbCrumb = {
+  title: string;
+  href?: string;
+  isLast: boolean;
+};
+
+function getBreadcrumbs(pathname: string): BreadcrumbCrumb[] {
+  const cleanPath = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+
+  if (cleanPath === "/dashboard") {
+    return [{ title: "Dashboard", isLast: true }];
+  }
+
+  const segments = cleanPath.split("/").filter(Boolean);
+  const crumbs: BreadcrumbCrumb[] = [];
+
+  let currentPath = "";
+  for (let i = 0; i < segments.length; i++) {
+    currentPath += `/${segments[i]}`;
+    const isLast = i === segments.length - 1;
+
+    let title = breadcrumbMapping[currentPath];
+    if (!title) {
+      if (segments[i - 1] === "cages") {
+        title = "Detail";
+      } else {
+        title = segments[i].charAt(0).toUpperCase() + segments[i].slice(1);
+      }
+    }
+
+    crumbs.push({
+      title,
+      href: isLast ? undefined : currentPath,
+      isLast,
+    });
+  }
+
+  return crumbs;
 }
 
 export function DashboardHeader({
@@ -75,8 +118,12 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const pageTitle = title ?? resolvePageTitle(pathname);
   const displayName = session.user.fullName ?? session.user.name ?? "User";
+
+  const crumbs = getBreadcrumbs(pathname);
+  if (title && crumbs.length > 0) {
+    crumbs[crumbs.length - 1].title = title;
+  }
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -90,11 +137,30 @@ export function DashboardHeader({
       <Separator orientation="vertical" className="mr-1 hidden h-4 sm:block" />
       <Breadcrumb className="min-w-0 flex-1">
         <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbPage className="truncate font-heading">
-              {pageTitle}
-            </BreadcrumbPage>
-          </BreadcrumbItem>
+          {crumbs.map((crumb, index) => {
+            const key = `${crumb.title}-${index}`;
+            return (
+              <Fragment key={key}>
+                {index > 0 && <BreadcrumbSeparator />}
+                <BreadcrumbItem>
+                  {crumb.isLast ? (
+                    <BreadcrumbPage className="truncate font-heading font-semibold text-foreground">
+                      {crumb.title}
+                    </BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link
+                        href={crumb.href!}
+                        className="truncate text-muted-foreground transition-colors hover:text-foreground font-medium"
+                      >
+                        {crumb.title}
+                      </Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </Fragment>
+            );
+          })}
         </BreadcrumbList>
       </Breadcrumb>
 

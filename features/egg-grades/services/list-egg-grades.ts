@@ -5,6 +5,8 @@ import type {
   EggGradesListFilters,
 } from "@/features/egg-grades/types";
 
+import type { PaginationMeta } from "@/lib/pagination";
+
 function buildWhere({
   search,
   usage,
@@ -38,21 +40,66 @@ function buildWhere({
   return { AND: and };
 }
 
+export type PaginatedEggGradesResult = {
+  items: EggGradeListItem[];
+} & PaginationMeta;
+
 export async function listEggGrades(
-  filters: EggGradesListFilters = {},
-): Promise<EggGradeListItem[]> {
+  filters: EggGradesListFilters & { page?: number; pageSize?: number } = {},
+): Promise<PaginatedEggGradesResult> {
+  const { page, pageSize, ...searchFilters } = filters;
+  const where = buildWhere(searchFilters);
+
+  const includeClause = {
+    _count: { select: { daily_productions: true, sales_order_items: true } },
+  } as const;
+
+  if (page !== undefined && pageSize !== undefined) {
+    const total = await prisma.eggGrade.count({ where });
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const skip = (safePage - 1) * pageSize;
+
+    const rows = await prisma.eggGrade.findMany({
+      where,
+      include: includeClause,
+      orderBy: { name: "asc" },
+      skip,
+      take: pageSize,
+    });
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        usageCount: row._count.daily_productions + row._count.sales_order_items,
+      })),
+      total,
+      page: safePage,
+      pageSize,
+      totalPages,
+    };
+  }
+
   const rows = await prisma.eggGrade.findMany({
-    where: buildWhere(filters),
-    include: {
-      _count: { select: { daily_productions: true, sales_order_items: true } },
-    },
+    where,
+    include: includeClause,
     orderBy: { name: "asc" },
   });
 
-  return rows.map((row) => ({
+  const mapped = rows.map((row) => ({
     id: row.id,
     name: row.name,
     description: row.description,
     usageCount: row._count.daily_productions + row._count.sales_order_items,
   }));
+
+  return {
+    items: mapped,
+    total: mapped.length,
+    page: 1,
+    pageSize: mapped.length || 10,
+    totalPages: 1,
+  };
 }

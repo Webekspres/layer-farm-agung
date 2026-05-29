@@ -5,15 +5,25 @@ import { EggGradesManagement } from "@/features/egg-grades/components/egg-grades
 import { parseEggGradeListFilters } from "@/features/egg-grades/lib/parse-filters";
 import { listEggGrades } from "@/features/egg-grades/services/list-egg-grades";
 
+import { parsePage, parsePageSize } from "@/lib/pagination";
+
 type EggGradesPageProps = {
-  searchParams: Promise<{ q?: string; usage?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    usage?: string;
+    page?: string;
+    pageSize?: string;
+  }>;
 };
 
 export default async function EggGradesPage({ searchParams }: EggGradesPageProps) {
   await requireManageGlobalCatalogSession();
   const params = await searchParams;
   const filters = parseEggGradeListFilters(params);
-  const grades = await listEggGrades(filters);
+  const page = parsePage(params.page);
+  const pageSize = parsePageSize(params.pageSize);
+
+  const result = await listEggGrades({ ...filters, page, pageSize });
 
   return (
     <>
@@ -22,7 +32,15 @@ export default async function EggGradesPage({ searchParams }: EggGradesPageProps
         description="Katalog grade telur global (AAPM / superadmin). Admin tenant memakai grade ini di operasional nanti."
       />
       <Suspense fallback={null}>
-        <EggGradesManagement grades={grades} />
+        <EggGradesManagement
+          grades={result.items}
+          pagination={{
+            page: result.page,
+            pageSize: result.pageSize,
+            total: result.total,
+            totalPages: result.totalPages,
+          }}
+        />
       </Suspense>
     </>
   );

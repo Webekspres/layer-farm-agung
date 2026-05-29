@@ -29,7 +29,9 @@ function parseFilters(
 ): UsersListFilters {
   const status = params.status;
   const validStatus =
-    status === "active" || status === "inactive" ? status : "all";
+    status === "active" || status === "inactive" || status === "all"
+      ? status
+      : "active";
 
   return {
     search: params.q,
