@@ -61,6 +61,7 @@ export function StrainsManagement({
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [targetOpen, setTargetOpen] = useState(false);
+  const [viewTargetOpen, setViewTargetOpen] = useState(false);
   const [editing, setEditing] = useState<StrainListItem | null>(null);
   const [targetingStrain, setTargetingStrain] = useState<StrainListItem | null>(null);
   const [targets, setTargets] = useState<any[]>([]);
@@ -96,10 +97,10 @@ export function StrainsManagement({
   };
 
   useEffect(() => {
-    if (targetOpen && targetingStrain) {
+    if ((targetOpen || viewTargetOpen) && targetingStrain) {
       fetchTargets(targetingStrain.id);
     }
-  }, [targetOpen, targetingStrain]);
+  }, [targetOpen, viewTargetOpen, targetingStrain]);
 
   useActionFeedback(createState, {
     successMessage: "Strain berhasil ditambahkan.",
@@ -160,9 +161,22 @@ export function StrainsManagement({
                     {strain.description ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="font-medium">
-                      {strain.targetCount} Target
-                    </Badge>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetingStrain(strain);
+                        setViewTargetOpen(true);
+                      }}
+                      title="Lihat target performa"
+                      className="cursor-pointer"
+                    >
+                      <Badge
+                        variant="outline"
+                        className="font-medium transition-colors hover:bg-accent hover:border-primary/50"
+                      >
+                        {strain.targetCount} Target
+                      </Badge>
+                    </button>
                   </TableCell>
                   <TableCell>{strain.cageCount}</TableCell>
                   <TableCell className="text-right">
@@ -395,6 +409,54 @@ export function StrainsManagement({
                 </Button>
               </div>
             </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Read-only target view — opened by clicking the badge */}
+      <Dialog open={viewTargetOpen} onOpenChange={setViewTargetOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Target Performa — {targetingStrain?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {loadingTargets ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : targets.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground border border-dashed border-border rounded-lg">
+                Belum ada target performa yang ditambahkan untuk strain ini.
+              </p>
+            ) : (
+              <div className="border border-border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader className="bg-muted/40">
+                    <TableRow>
+                      <TableHead>Umur</TableHead>
+                      <TableHead>Target HDP (%)</TableHead>
+                      <TableHead>Target FCR</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {targets.map((t) => (
+                      <TableRow key={t.id}>
+                        <TableCell className="font-semibold">{t.age_in_weeks} Minggu</TableCell>
+                        <TableCell>{t.target_hdp}%</TableCell>
+                        <TableCell>{t.target_fcr}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            {/* <p className="text-xs text-muted-foreground">
+              Gunakan ikon{" "}
+              <TrendingUp className="inline size-3.5 text-emerald-600 dark:text-emerald-400" />{" "}
+              di baris tabel untuk menambah atau menghapus target.
+            </p> */}
           </div>
         </DialogContent>
       </Dialog>
