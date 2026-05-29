@@ -16,6 +16,8 @@
 
 ## 🏗️ Domain 2: Master Data & Infrastructure
 - **Cage Deletion Safety:** A `Cage` cannot be deleted if it has an active or historic `CycleSetting` tied to it (`onDelete: Restrict` level logic in backend middleware).
+- **Standardisasi Tipe Kandang (`cage_type`):** Jangan gunakan text-input bebas. Form UI wajib menggunakan dropdown dengan preset standard industri: `Closed House (Battery)`, `Open House (Battery)`, `Open House (Floor/Postal)`, dan `Lainnya`. 
+- **Rasionalisasi:** Mencegah kontaminasi data string di database agar kalkulasi otomatis Modul Analytics (HDP & FCR) tidak mengalami deviasi/error saat membandingkan performa antar tipe infrastruktur kandang.
 - **Active Cycle Constraint:** A single `Cage` can only have ONE cycle with `status: "Active"` at any given timestamp. Initiating a new cycle requires explicitly closing or archiving the previous one.
 - **QR Identifiers:** QR codes printed for farm gates contain a URL wrapping the unique UUID of the `Cage`. 
   - Format: `https://[subdomain].aapm.co.id/kandang/[cage_id]/produksi`

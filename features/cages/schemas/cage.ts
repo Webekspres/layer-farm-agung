@@ -7,10 +7,15 @@ const cageBaseSchema = z.object({
   strainId: z.coerce.number().int().positive("Pilih strain yang valid."),
   name: z.string().trim().min(2, "Nama kandang minimal 2 karakter."),
   cageType: z
-    .string()
-    .trim()
+    .enum([
+      "Closed House (Battery)",
+      "Open House (Battery)",
+      "Open House (Floor/Postal)",
+      "Lainnya",
+    ])
     .optional()
-    .transform((v) => (v === "" ? undefined : v)),
+    .or(z.literal("")),
+  cageTypeCustom: z.string().trim().optional(),
   capacity: z.coerce
     .number()
     .int("Kapasitas harus bilangan bulat.")
@@ -43,10 +48,28 @@ function refineCycleFields(
   }
 }
 
-export const cageSchema = cageBaseSchema.superRefine(refineCycleFields);
+function refineCageTypeFields(
+  data: Pick<z.infer<typeof cageBaseSchema>, "cageType" | "cageTypeCustom">,
+  ctx: z.RefinementCtx,
+) {
+  if (data.cageType === "Lainnya") {
+    if (!data.cageTypeCustom || data.cageTypeCustom.trim() === "") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Masukkan tipe kustom Anda.",
+        path: ["cageTypeCustom"],
+      });
+    }
+  }
+}
+
+export const cageSchema = cageBaseSchema
+  .superRefine(refineCycleFields)
+  .superRefine(refineCageTypeFields);
 
 export const updateCageSchema = cageBaseSchema
   .omit({ cycleStartDate: true, initialPopulation: true })
   .extend({
     id: z.string().uuid(),
-  });
+  })
+  .superRefine(refineCageTypeFields);

@@ -73,6 +73,28 @@ function CageFormFields({
   onStrainChange: (value: string) => void;
   onStatusChange: (value: string) => void;
 }) {
+  const presets = [
+    "Closed House (Battery)",
+    "Open House (Battery)",
+    "Open House (Floor/Postal)",
+  ];
+
+  const [selectedType, setSelectedType] = useState(() => {
+    if (!editing?.cageType) return "";
+    if (presets.includes(editing.cageType)) {
+      return editing.cageType;
+    }
+    return "Lainnya";
+  });
+
+  const [customType, setCustomType] = useState(() => {
+    if (!editing?.cageType) return "";
+    if (presets.includes(editing.cageType)) {
+      return "";
+    }
+    return editing.cageType;
+  });
+
   return (
     <FieldGroup>
       <input type="hidden" name="locationId" value={locationId} />
@@ -119,13 +141,38 @@ function CageFormFields({
       </Field>
       <Field>
         <FieldLabel htmlFor="cage-type">Tipe (opsional)</FieldLabel>
-        <Input
-          id="cage-type"
-          name="cageType"
-          defaultValue={editing?.cageType ?? ""}
-          placeholder="Closed house, open, dll."
-        />
+        <input type="hidden" name="cageType" value={selectedType} />
+        <input type="hidden" name="cageTypeCustom" value={customType} />
+        <Select value={selectedType} onValueChange={setSelectedType}>
+          <SelectTrigger id="cage-type">
+            <SelectValue placeholder="Pilih tipe kandang" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Closed House (Battery)">
+              Closed House (Battery)
+            </SelectItem>
+            <SelectItem value="Open House (Battery)">
+              Open House (Battery)
+            </SelectItem>
+            <SelectItem value="Open House (Floor/Postal)">
+              Open House (Floor/Postal)
+            </SelectItem>
+            <SelectItem value="Lainnya">Lainnya</SelectItem>
+          </SelectContent>
+        </Select>
       </Field>
+      {selectedType === "Lainnya" && (
+        <Field>
+          <FieldLabel htmlFor="cage-type-custom">Tipe Kustom</FieldLabel>
+          <Input
+            id="cage-type-custom"
+            value={customType}
+            onChange={(e) => setCustomType(e.target.value)}
+            placeholder="Masukkan tipe kustom Anda..."
+            required
+          />
+        </Field>
+      )}
       <Field>
         <FieldLabel htmlFor="cage-capacity">Kapasitas (ekor)</FieldLabel>
         <Input
@@ -149,6 +196,7 @@ function CageFormFields({
           </SelectContent>
         </Select>
       </Field>
+      {/* Temporarily bypass cycle inputs because backend is under development
       {!editing ? (
         <>
           <Field>
@@ -170,6 +218,7 @@ function CageFormFields({
           </Field>
         </>
       ) : null}
+      */}
       {error ? <FieldError>{error}</FieldError> : null}
     </FieldGroup>
   );
@@ -307,6 +356,7 @@ export function CagesManagement({ cages, formOptions }: CagesManagementProps) {
           </DialogHeader>
           <form action={createAction}>
             <CageFormFields
+              key="create"
               formOptions={formOptions}
               error={createState.error}
               locationId={createLocationId}
@@ -337,6 +387,7 @@ export function CagesManagement({ cages, formOptions }: CagesManagementProps) {
             <form action={updateAction}>
               <input type="hidden" name="id" value={editing.id} />
               <CageFormFields
+                key={editing.id}
                 formOptions={formOptions}
                 editing={editing}
                 error={updateState.error}

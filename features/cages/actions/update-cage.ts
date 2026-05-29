@@ -30,6 +30,7 @@ export async function updateCageAction(
     strainId: formData.get("strainId"),
     name: formData.get("name"),
     cageType: formData.get("cageType"),
+    cageTypeCustom: formData.get("cageTypeCustom"),
     capacity: formData.get("capacity"),
     status: formData.get("status"),
   });
@@ -61,6 +62,8 @@ export async function updateCageAction(
     return { error: "Lokasi tidak valid untuk tenant ini." };
   }
 
+  const finalCageType = data.cageType === "Lainnya" ? data.cageTypeCustom : data.cageType;
+
   try {
     await prisma.cage.update({
       where: { id: data.id },
@@ -68,7 +71,7 @@ export async function updateCageAction(
         location_id: data.locationId,
         strain_id: data.strainId,
         name: data.name,
-        cage_type: data.cageType ?? null,
+        cage_type: finalCageType || null,
         capacity: data.capacity,
         status: data.status,
       },

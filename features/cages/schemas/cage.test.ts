@@ -35,4 +35,54 @@ describe("cageSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  test("accepts cageType with valid presets", () => {
+    const result = cageSchema.safeParse({
+      locationId: "00000000-0000-4000-8000-000000000001",
+      strainId: "1",
+      name: "Kandang A",
+      capacity: "1000",
+      status: "Active",
+      cageType: "Closed House (Battery)",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("accepts cageType as 'Lainnya' with non-empty cageTypeCustom", () => {
+    const result = cageSchema.safeParse({
+      locationId: "00000000-0000-4000-8000-000000000001",
+      strainId: "1",
+      name: "Kandang A",
+      capacity: "1000",
+      status: "Active",
+      cageType: "Lainnya",
+      cageTypeCustom: "Semi-closed House",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects cageType as 'Lainnya' with empty cageTypeCustom", () => {
+    const result = cageSchema.safeParse({
+      locationId: "00000000-0000-4000-8000-000000000001",
+      strainId: "1",
+      name: "Kandang A",
+      capacity: "1000",
+      status: "Active",
+      cageType: "Lainnya",
+      cageTypeCustom: "   ",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("accepts empty or missing cageType", () => {
+    const result = cageSchema.safeParse({
+      locationId: "00000000-0000-4000-8000-000000000001",
+      strainId: "1",
+      name: "Kandang A",
+      capacity: "1000",
+      status: "Active",
+      cageType: "",
+    });
+    expect(result.success).toBe(true);
+  });
 });

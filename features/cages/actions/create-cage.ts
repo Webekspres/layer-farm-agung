@@ -29,6 +29,7 @@ export async function createCageAction(
     strainId: formData.get("strainId"),
     name: formData.get("name"),
     cageType: formData.get("cageType"),
+    cageTypeCustom: formData.get("cageTypeCustom"),
     capacity: formData.get("capacity"),
     status: formData.get("status") ?? "Active",
     cycleStartDate: formData.get("cycleStartDate"),
@@ -59,19 +60,23 @@ export async function createCageAction(
     return { error: "Strain tidak ditemukan." };
   }
 
+  const finalCageType = data.cageType === "Lainnya" ? data.cageTypeCustom : data.cageType;
+
   try {
     await prisma.$transaction(async (tx) => {
-      const cage = await tx.cage.create({
+      await tx.cage.create({
         data: {
           location_id: data.locationId,
           strain_id: data.strainId,
           name: data.name,
-          cage_type: data.cageType ?? null,
+          cage_type: finalCageType || null,
           capacity: data.capacity,
           status: data.status,
         },
       });
 
+      // Temporarily bypassed CycleSetting insertion because backend infrastructure is under development
+      /*
       if (data.cycleStartDate && data.initialPopulation) {
         await tx.cycleSetting.create({
           data: {
@@ -82,6 +87,7 @@ export async function createCageAction(
           },
         });
       }
+      */
     });
   } catch {
     return { error: "Gagal membuat kandang." };
