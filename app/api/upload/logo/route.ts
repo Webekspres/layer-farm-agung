@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
-import { writeFile, mkdir, unlink } from "fs/promises";
+import { unlink } from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { getServerSession } from "@/features/auth/lib/session";
 import { revalidatePath } from "next/cache";
+import { s3Client, BUCKET_NAME, ensureBucketExists } from "@/lib/storage";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -63,36 +65,59 @@ export async function POST(request: NextRequest) {
   const ext = extMap[file.type] ?? "png";
 
   const tenantId = session.user.tenantId!;
-  const fileName = `tenant-${tenantId}.${ext}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "logos");
-  const filePath = path.join(uploadDir, fileName);
-  const publicPath = `/uploads/logos/${fileName}`;
+  const s3Key = `logos/tenant-${tenantId}.${ext}`;
+  const publicPath = `/api/storage/${s3Key}`;
 
-  // Delete the previous logo file if it exists and is a different path
+  // Ensure our MinIO bucket exists before we start uploading
+  try {
+    await ensureBucketExists();
+  } catch (error) {
+    console.error("[Storage] Failed to assert storage bucket exists:", error);
+    return Response.json({ error: "Gagal menginisialisasi penyimpanan." }, { status: 500 });
+  }
+
+  // Delete the previous logo file or object if it exists and is a different path
   // (covers cross-extension replacements: e.g. old .png replaced by new .webp)
   try {
     const existing = await prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { logo_url: true },
     });
-    if (
-      existing?.logo_url &&
-      existing.logo_url.startsWith("/uploads/logos/") &&
-      existing.logo_url !== publicPath
-    ) {
-      const oldFilePath = path.join(process.cwd(), "public", existing.logo_url);
-      await unlink(oldFilePath);
+
+    if (existing?.logo_url && existing.logo_url !== publicPath) {
+      if (existing.logo_url.startsWith("/api/storage/")) {
+        // Clean up from S3/MinIO
+        const oldKey = existing.logo_url.replace("/api/storage/", "");
+        await s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: oldKey,
+          })
+        );
+      } else if (existing.logo_url.startsWith("/uploads/logos/")) {
+        // Clean up old local file if migrating
+        const oldFilePath = path.join(process.cwd(), "public", existing.logo_url);
+        await unlink(oldFilePath).catch(() => {});
+      }
     }
-  } catch {
-    // Non-fatal — old file may already be gone, continue with upload
+  } catch (error) {
+    console.error("[Storage] Non-fatal error cleaning up old logo:", error);
   }
 
   try {
-    await mkdir(uploadDir, { recursive: true });
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
-  } catch {
-    return Response.json({ error: "Gagal menyimpan file." }, { status: 500 });
+    
+    await s3Client.send(
+      new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: s3Key,
+        Body: buffer,
+        ContentType: file.type,
+      })
+    );
+  } catch (error) {
+    console.error("[Storage] S3 PutObject failed:", error);
+    return Response.json({ error: "Gagal menyimpan file ke penyimpanan." }, { status: 500 });
   }
 
   try {

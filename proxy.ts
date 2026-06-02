@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 const AUTH_ROUTES = ["/login"];
-const PUBLIC_ROUTES = ["/login", "/api/auth"];
+// 🎯 Menambahkan "/manifest.json" dan "/serwist" agar browser bisa membaca Service Worker tanpa terhadang login
+const PUBLIC_ROUTES = ["/login", "/api/auth", "/manifest.json", "/serwist"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_ROUTES.some(

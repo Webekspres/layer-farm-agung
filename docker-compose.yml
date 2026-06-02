@@ -20,8 +20,28 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: "postgresql://layerfarm_user:secretpassword@db:5432/layerfarm_agung_db?schema=public"
+      STORAGE_ENDPOINT: "http://minio:9000"
+      STORAGE_ACCESS_KEY: "aapm_access_key"
+      STORAGE_SECRET_KEY: "aapm_secret_key_123"
+      STORAGE_BUCKET: "aapm-storage"
     depends_on:
       - db
+      - minio
+
+  minio:
+    image: minio/minio:latest
+    container_name: layerfarm-agung-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "aapm_access_key"
+      MINIO_ROOT_PASSWORD: "aapm_secret_key_123"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
 
 volumes:
   postgres_data:
+  minio_data:
