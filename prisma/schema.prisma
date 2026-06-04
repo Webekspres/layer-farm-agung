@@ -324,6 +324,7 @@ model DailyProduction {
   record_date  DateTime @db.Date
   egg_grade_id Int
   quantity     Int
+  egg_crack    Int      @default(0)
   weight       Float?
   is_synced    Boolean  @default(true)
   created_at   DateTime @default(now())
