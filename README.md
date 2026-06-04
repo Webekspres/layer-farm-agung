@@ -76,6 +76,8 @@ Cross-domain relationships (for example flock → inventory consumption → ledg
 |----------|---------|
 | **[DESIGN.md](./DESIGN.md)** | Brand & UI source of truth (colors, typography, components, copy) |
 | **[AGENTS.md](./AGENTS.md)** | Architecture, auth, testing, and agent conventions |
+| **[docs/sitemap.md](./docs/sitemap.md)** | Route map, module targets, and implementation progress |
+| **[docs/README.md](./docs/README.md)** | What to commit in `docs/` (MD yes, PDF/Office no) |
 | **`.cursor/rules/`** | Detailed Cursor rules (master-data tables, Tailwind v4, etc.) |
 
 ### Prerequisites

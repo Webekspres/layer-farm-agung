@@ -43,8 +43,19 @@ next-env.d.ts
 # prisma
 /generated/
 
-# ignore all files in docs folder
-/docs/**
+# docs/ — commit markdown only; keep PDF/Office binaries local (see docs/README.md)
+/docs/**/*.pdf
+/docs/**/*.doc
+/docs/**/*.docx
+/docs/**/*.xls
+/docs/**/*.xlsx
+/docs/**/*.ppt
+/docs/**/*.pptx
+/docs/**/*.odt
+/docs/**/*.ods
+/docs/**/*.zip
+/docs/**/*.rar
+/docs/**/*.7z
 
 # user uploads (keep directory via .gitkeep)
 /public/uploads/**

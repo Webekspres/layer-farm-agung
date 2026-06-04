@@ -169,6 +169,8 @@ When adding nav items, update `features/dashboard/config/navigation.ts` and `fea
 | Doc / path | Contents |
 |------------|----------|
 | [DESIGN.md](./DESIGN.md) | Brand, colors, type, components, toasts |
+| [docs/sitemap.md](./docs/sitemap.md) | Routes, module progress, planned pages |
+| [docs/README.md](./docs/README.md) | Docs folder: markdown in Git, binaries local |
 | [README.md](./README.md) | Product modules, schema overview |
 | `.cursor/rules/*.mdc` | Full rules for Cursor |
 | `prisma/schema.prisma` | Data model |
