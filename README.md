@@ -72,6 +72,12 @@ Cross-domain relationships (for example flock → inventory consumption → ledg
 
 ## Development guidelines
 
+| Document | Purpose |
+|----------|---------|
+| **[DESIGN.md](./DESIGN.md)** | Brand & UI source of truth (colors, typography, components, copy) |
+| **[AGENTS.md](./AGENTS.md)** | Architecture, auth, testing, and agent conventions |
+| **`.cursor/rules/`** | Detailed Cursor rules (master-data tables, Tailwind v4, etc.) |
+
 ### Prerequisites
 
 - **Node.js** (LTS recommended; align with the version used in CI if defined)
@@ -82,8 +88,8 @@ Cross-domain relationships (for example flock → inventory consumption → ledg
 ### Getting started
 
 ```bash
-# Install dependencies
-npm install
+# Install dependencies (project uses Bun)
+bun install
 
 # Copy and edit environment variables
 cp .env.example .env
@@ -95,7 +101,7 @@ npx prisma generate
 npx prisma migrate dev
 
 # Start the development server
-npm run dev
+bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in the browser.
@@ -104,10 +110,12 @@ Open [http://localhost:3000](http://localhost:3000) in the browser.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Next.js development server with hot reload |
-| `npm run build` | Production build |
-| `npm run start` | Run the production server locally |
-| `npm run lint` | ESLint |
+| `bun run dev` | Next.js development server with hot reload |
+| `bun run build` | Production build |
+| `bun run start` | Run the production server locally |
+| `bun run lint` | ESLint |
+| `bun test` | Bun unit tests (colocated `*.test.ts`) |
+| `bun run db:seed` | Seed roles, permissions, sample master data |
 
 ### Conventions
 
