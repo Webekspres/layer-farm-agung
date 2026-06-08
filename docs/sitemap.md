@@ -137,7 +137,8 @@ Backend di repo ini menyediakan:
 
 - `features/production/schemas/daily-production.ts`
 - `features/production/services/record-daily-production.ts`
-- `features/production/services/list-field-cages.ts` (rename/reuse untuk API list kandang)
+- `features/production/services/list-field-cages.ts` — list kandang + status input hari ini
+- `features/production/services/get-cage-for-production.ts` — detail kandang untuk form produksi
 
 ---
 
