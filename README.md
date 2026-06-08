@@ -142,7 +142,7 @@ Open [http://localhost:3000](http://localhost:3000) in the browser.
 - Prefer **Server Actions** for mutations that must run on the server with clear validation (**Zod**).
 - Use **TanStack Query** for server state on the client; use **Zustand** for UI and cross-cutting client state that is not server-sourced.
 - Keep RBAC checks close to the action or route boundary so permissions stay consistent.
-- **No PWA/Serwist** in this repo. Mobile offline/sync is implemented in the Expo app consuming APIs here.
+- **No PWA/Serwist** in this repo. Mobile field ops use **React Native + Expo** calling **`/api/v1/*`** (see `AGENTS.md` and `docs/sitemap.md`).
 
 ### Deployment notes
 

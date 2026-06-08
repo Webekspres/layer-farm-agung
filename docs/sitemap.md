@@ -131,14 +131,28 @@ Backend di repo ini menyediakan:
 | `/api/auth/*` | ✅ | Admin web, **mobile (Expo) 🔲** |
 | `/api/storage/*` | ✅ | Upload/logo |
 | `/api/upload/logo` | ✅ | Branding tenant |
-| `/api/mobile/*` atau `/api/v1/*` | 🔲 | **Produksi, pakan, sync — untuk Expo** |
+| `/api/v1/*` | 🟡 | **Mobile API v1** — lihat tabel di bawah |
 
-**Layanan domain yang sudah ada (siap diexpose ke API):**
+#### Mobile API v1 (`app/api/v1/`)
+
+| Method | Path | Permission | Status | Service |
+|--------|------|------------|--------|---------|
+| `GET` | `/api/v1/cages` | `manage_production` | ✅ | `list-field-cages` |
+| `GET` | `/api/v1/cages/[cageId]` | `manage_production` | ✅ | `get-cage-for-production` |
+| `GET` | `/api/v1/egg-grades` | `manage_production` | ✅ | `list-egg-grade-options` |
+| `POST` | `/api/v1/production` | `manage_production` | ✅ | `record-daily-production` |
+| `POST` | `/api/v1/feed-consumption` | `manage_inventory` | 🔲 | stub `501` — service belum ada |
+
+**Format respons:** `{ success, message?, data? }` / `{ success: false, error }` — lihat `lib/api/response.ts` dan `AGENTS.md` § API v1.
+
+**Kontrak OpenAPI:** [`docs/apicontract/openapi.yaml`](./apicontract/openapi.yaml) — untuk codegen & integrasi Expo.
+
+**Layanan domain terkait:**
 
 - `features/production/schemas/daily-production.ts`
 - `features/production/services/record-daily-production.ts`
-- `features/production/services/list-field-cages.ts` — list kandang + status input hari ini
-- `features/production/services/get-cage-for-production.ts` — detail kandang untuk form produksi
+- `features/production/services/list-field-cages.ts`
+- `features/production/services/get-cage-for-production.ts`
 
 ---
 

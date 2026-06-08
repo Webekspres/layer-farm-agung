@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
+import {
+  applyCorsHeaders,
+  corsPreflightResponse,
+  isApiV1Path,
+} from "@/lib/api/cors";
 
 const AUTH_ROUTES = ["/login"];
 const PUBLIC_ROUTES = ["/login", "/api/auth"];
@@ -18,6 +23,14 @@ function isAuthPage(pathname: string) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (isApiV1Path(pathname)) {
+    if (request.method === "OPTIONS") {
+      return corsPreflightResponse(request);
+    }
+
+    return applyCorsHeaders(request, NextResponse.next());
+  }
 
   if (isPublicPath(pathname) && !isAuthPage(pathname)) {
     return NextResponse.next();

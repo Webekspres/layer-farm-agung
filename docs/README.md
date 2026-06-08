@@ -27,6 +27,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 | File | Isi |
 |------|-----|
 | **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; mobile Expo terdokumentasi terpisah |
+| **[apicontract/](./apicontract/)** | Kontrak **OpenAPI 3.1** untuk mobile (`openapi.yaml`) |
 
 ## Sumber kebenaran lain
 

@@ -10,9 +10,9 @@ Detailed Cursor rules live in **`.cursor/rules/`** (architecture, naming, auth, 
 
 | | |
 |--|--|
-| **Product** | Layered Farm Agung (AAPM) — admin web + API backend |
+| **Product** | Layered Farm Agung (AAPM) — hybrid: admin web + central API |
 | **Stack** | Next.js 16 App Router, React 19, Tailwind v4, shadcn/ui, Prisma 7, PostgreSQL, Better Auth, Bun |
-| **Mobile lapangan** | **React Native + Expo** (repo terpisah) — bukan PWA/Serwist di repo ini |
+| **Mobile lapangan** | **React Native + Expo** (repo terpisah) — konsumsi `app/api/v1/*` |
 | **Package manager** | **Bun** (`bun install`, `bun run dev`, `bun test`) |
 | **Locale** | UI copy in **Bahasa Indonesia** |
 
@@ -30,8 +30,68 @@ Before using routing, caching, or Server Actions APIs, read the relevant guide u
 
 - Route protection: root **`proxy.ts`** (not `middleware.ts`).
 - Route groups: `(authentication)`, `(dashboard)` only — **no field/PWA routes** in this repo.
-- Mutations: **Server Actions** for admin UI; **Route Handlers** (`app/api/`) for mobile/API consumers.
+- Mutations: **Server Actions** for admin UI; **Route Handlers** (`app/api/v1/`) for mobile/API consumers.
 - Do **not** add Serwist, service workers, or web app manifests.
+
+---
+
+## 📱 API architecture (v1) — mobile / Expo
+
+Repo ini adalah **backend pusat** untuk aplikasi mobile. Semua endpoint mobile **wajib** di `app/api/v1/` (JSON only, tanpa UI).
+
+### Folder blueprint
+
+```
+app/
+├── (authentication)/   # Login admin web
+├── (dashboard)/        # Halaman admin desktop
+└── api/
+    ├── auth/           # Better Auth handlers
+    └── v1/             # Mobile API (JSON)
+        ├── cages/
+        │   ├── route.ts              # GET daftar kandang
+        │   └── [cageId]/route.ts     # GET detail kandang
+        ├── egg-grades/route.ts       # GET katalog grade telur
+        ├── production/route.ts       # POST catat produksi harian
+        └── feed-consumption/route.ts # POST konsumsi pakan (stub → service)
+```
+
+**Aturan layering:** Route handler tipis di `app/api/v1/` → validasi Zod dari `features/*/schemas/` → bisnis di `features/*/services/`. Shared helpers API di `lib/api/` (`response`, `cors`, `require-api-session`).
+
+### Response format (wajib)
+
+| | Shape | HTTP |
+|--|--------|------|
+| **Sukses** | `{ success: true, message: "...", data: { ... } }` | 200 / 201 |
+| **Error** | `{ success: false, error: "..." }` | 400, 401, 403, 404, 500, 501 |
+
+Gunakan `apiSuccess()` / `apiError()` dari `@/lib/api/response`.
+
+### Auth & permissions
+
+- Semua `/api/v1/*` memakai **Better Auth session** (`getServerSession` via cookie / header dari client Expo).
+- Tanpa session → **401** JSON (bukan redirect ke `/login`). `proxy.ts` melewati redirect untuk prefix `/api/v1`.
+- Cek permission via `requireApiPermission()` / `requireApiPermissionWithTenant()` — jangan hardcode nama role.
+- Data operasional **wajib** scoped `tenant_id` dari `getActiveTenantId(session)`; global superadmin tanpa tenant aktif → **403**.
+
+### CORS (development Expo)
+
+`proxy.ts` menangani `OPTIONS` preflight + header CORS untuk `/api/v1/*`.  
+Env opsional: `MOBILE_CORS_ORIGINS` (koma-terpisah). Di `development`, origin Expo default (`localhost:8081`, LAN `192.168.x.x`) diizinkan.
+
+### Type safety
+
+- Parse `request.json()` ke Zod schema sebelum memanggil Prisma.
+- Reuse schema domain yang sudah ada (mis. `dailyProductionSchema`) — jangan duplikasi aturan bisnis di route.
+
+### MinIO / storage
+
+Tetap lewat `app/api/storage/*` dan `app/api/upload/logo` — **bukan** di bawah `v1/` kecuali ada kebutuhan mobile eksplisit.
+
+### OpenAPI contract
+
+- Spesifikasi mobile: **`docs/apicontract/openapi.yaml`** (OpenAPI 3.1).
+- Setiap endpoint baru/ubah di `app/api/v1/` → **update OpenAPI di PR yang sama**.
 
 ---
 
@@ -46,7 +106,7 @@ Do **not** add domain logic under `lib/` or heavy UI under `app/`.
 | `components/ui/` | shadcn primitives — minimal edits |
 | `components/shared/` | Cross-feature UI (e.g. `action-feedback.ts`) |
 | `components/layout/` | Shell: sidebar, header, tenant switcher |
-| `lib/` | Infra only: `prisma.ts`, `utils.ts` (`cn`) |
+| `lib/` | Infra only: `prisma.ts`, `utils.ts` (`cn`), `api/` (response, CORS, session guards) |
 
 **Dependency flow:** `app` → `features` → `components` → `lib` (never `lib` → `features`).
 
@@ -77,7 +137,7 @@ Do **not** add domain logic under `lib/` or heavy UI under `app/`.
 - **Tenant scope**: operational data filtered by tenant / `getActiveSubdomainId(session)` where applicable.
 - Server actions: put `redirect()` **outside** `try/catch`.
 
-Env: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`.
+Env: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, `MOBILE_CORS_ORIGINS` (opsional, Expo dev).
 
 ---
 

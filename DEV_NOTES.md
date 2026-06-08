@@ -25,6 +25,14 @@
 
 ---
 
+## 📱 Mobile API v1 (`app/api/v1/`)
+- **Response envelope:** `{ success, message, data }` / `{ success: false, error }` via `lib/api/response.ts`.
+- **Auth:** Better Auth session; `401` JSON without redirect. Permission + `tenant_id` scope on every write.
+- **CORS:** `proxy.ts` + optional `MOBILE_CORS_ORIGINS` for Expo dev.
+- **Implemented:** `GET /cages`, `GET /cages/[id]`, `GET /egg-grades`, `POST /production`. `POST /feed-consumption` = `501` until inventory service exists.
+
+---
+
 ## 🥚 Domain 3: Operasional Kandang & Mobile Forms (Offline-First, Expo)
 - **Mobile form bounds (Egg Production)** — validate in API + `features/*/schemas`; UI in Expo app:
   - `quantity` (Jumlah Telur Layak) and `weight` (Total Berat) inputs MUST NOT accept negative values.

@@ -12,7 +12,8 @@ Next.js App Router **admin dashboard + API backend** for farm management (AAPM).
 - Only: `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, route handlers, `globals.css`.
 - No heavy business logic or large UI here — import from `features/` or `components/layout/`.
 - Route groups: `(authentication)` (login), `(dashboard)` (admin shell). No `(field)` or mobile UI routes.
-- Root `proxy.ts` for route protection (not `middleware.ts`).
+- Mobile JSON API: `app/api/v1/*` only — thin handlers; domain logic in `features/*/services/`.
+- Root `proxy.ts` for route protection (not `middleware.ts`). `/api/v1/*` returns JSON 401 (no login redirect); CORS for Expo dev.
 
 ## `features/` — Domain / business logic
 
@@ -43,7 +44,7 @@ Example: `features/auth/actions/sign-in.ts`, `features/auth/server/auth.ts`, `fe
 
 ## `lib/` — Global infrastructure only
 
-- `prisma.ts`, `utils.ts` (`cn`), etc.
+- `prisma.ts`, `utils.ts` (`cn`), `api/` (`response`, `cors`, `require-api-session`), etc.
 - **No** domain logic, feature services, or entity CRUD.
 
 ## Master data list pages
