@@ -10,7 +10,7 @@
 - **Role Permissions (RBAC):**
   - `superadmin`: Access to global system setup and cross-subdomain tenant management.
   - `admin`: Full management of a specific subdomain's master data, inventory, and finance.
-  - `staff`: Strictly limited to Mobile PWA views. **Denied** access to any `/dashboard` web layout paths.
+  - `staff`: Primary client is **React Native + Expo** mobile app. Admin dashboard access may be limited per deployment policy.
 
 ---
 
@@ -21,12 +21,12 @@
 - **Active Cycle Constraint:** A single `Cage` can only have ONE cycle with `status: "Active"` at any given timestamp. Initiating a new cycle requires explicitly closing or archiving the previous one.
   - additional: only active `cage` can create a cycle. Inactive cage cannot create a cycle.
 - **QR Identifiers:** QR codes printed for farm gates contain a URL wrapping the unique UUID of the `Cage`. 
-  - Format: `https://[subdomain].aapm.co.id/kandang/[cage_id]/produksi`
+  - Mobile deep link (Expo): `aapm://kandang/[cage_id]/produksi` or agreed universal link — **not** a Next.js route in this repo.
 
 ---
 
-## 🥚 Domain 3: Operasional Kandang & PWA Forms (Offline-First)
-- **PWA Form Bounds (Egg Production):**
+## 🥚 Domain 3: Operasional Kandang & Mobile Forms (Offline-First, Expo)
+- **Mobile form bounds (Egg Production)** — validate in API + `features/*/schemas`; UI in Expo app:
   - `quantity` (Jumlah Telur Layak) and `weight` (Total Berat) inputs MUST NOT accept negative values.
   - Max egg count per single entry is capped at `10,000` to prevent catastrophic accidental typos by staff.
   - `egg_crack` (Jumlah Telur Pecah) must be tracked explicitly and flagged in orange/red accents if it exceeds 5% of the total harvest entry.
@@ -35,7 +35,7 @@
 - **Mortalitas / Population Mutation:**
   - Recording any number of dead chickens (`mutation_type: "Mortalitas"`) must immediately decrement the active flock size tracked in the active `CycleSetting`.
 - **Sync Queue Engine (`SyncQueue`):**
-  - When PWA detects an offline state (`navigator.onLine === false`), form submissions must be captured, converted to a JSON payload string, and saved to local indexedDB/localStorage while queuing a pending Sonner toast.
+  - Mobile app queues payloads locally when offline; flush to API / `SyncQueue` when online. Admin repo exposes API — no service worker.
 
 ---
 
@@ -46,8 +46,5 @@
 ---
 
 ## 🎨 Global UI/UX Constraints
-- **Sonner Toast Placement:** 
-  - Web Dashboard: `position="top-center"`
-  - Mobile PWA Interface: `position="top-center"` (To avoid hiding active inputs or bottom navigation bars).
-- **Toast Styling:** Always enable `richColors` on `<Toaster />` to give instant subconscious feedback to users (Green for successes, Orange/Red for network drops/errors).
-- **Mobile Touch Targets:** All mobile interaction fields (buttons, selects, +/- counter controls) must have a minimum clickable height/width of `44px`.
+- **Sonner (admin web only):** `position="top-center"`, theme-aware via `@/components/ui/sonner`.
+- **Mobile touch targets (Expo app):** minimum 44px — not applicable to Next.js admin UI beyond responsive forms.

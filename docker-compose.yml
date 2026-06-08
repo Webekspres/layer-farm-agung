@@ -7,8 +7,10 @@ services:
       POSTGRES_USER: layerfarm_user
       POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: layerfarm_agung_db
+    # Host 5433 avoids clash with a local Windows/macOS PostgreSQL on 5432.
+    # From the host (bun run dev): 127.0.0.1:5433 — inside Compose network: db:5432
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

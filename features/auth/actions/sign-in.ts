@@ -3,7 +3,6 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
-import { getPostLoginPath } from "@/features/auth/lib/post-login-path";
 import { auth } from "@/features/auth/server/auth";
 import prisma from "@/lib/prisma";
 
@@ -69,12 +68,5 @@ export async function signInWithIdentifier(
     return { error: getErrorMessage(error) };
   }
 
-  const signedInUser = await prisma.user.findFirst({
-    where: identifier.includes("@")
-      ? { email: { equals: identifier, mode: "insensitive" } }
-      : { username: identifier },
-    select: { role: { select: { name: true } } },
-  });
-
-  redirect(getPostLoginPath(signedInUser?.role.name));
+  redirect("/dashboard");
 }

@@ -5,13 +5,13 @@ alwaysApply: true
 
 # Architecture & Directory Rules
 
-Next.js App Router PWA for farm management. **Feature-based (domain-driven)** layout. Do not invent new top-level folders or put domain logic in `lib/`.
+Next.js App Router **admin dashboard + API backend** for farm management (AAPM). **No Serwist/PWA/field routes** — mobile lapangan is React Native + Expo in a separate repo. **Feature-based (domain-driven)** layout. Do not invent new top-level folders or put domain logic in `lib/`.
 
 ## `app/` — Routing only
 
 - Only: `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, route handlers, `globals.css`.
 - No heavy business logic or large UI here — import from `features/` or `components/layout/`.
-- Route groups: `(authentication)` (login), `(dashboard)` (app shell).
+- Route groups: `(authentication)` (login), `(dashboard)` (admin shell). No `(field)` or mobile UI routes.
 - Root `proxy.ts` for route protection (not `middleware.ts`).
 
 ## `features/` — Domain / business logic

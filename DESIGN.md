@@ -10,6 +10,8 @@
 |------|--------|
 | **Product name (UI & metadata)** | Layered Farm Agung |
 | **Short context** | Sistem manajemen peternakan ayam petelur terintegrasi |
+| **Admin web (repo ini)** | Dashboard CRUD & laporan — desktop/tablet browser |
+| **Mobile lapangan** | React Native + Expo (repo terpisah) — bukan UI di Next.js |
 | **Client / deployment** | Klien Agung Petelur (operasional “Pak Agung”) |
 | **UI locale** | Bahasa Indonesia (`lang="id"` on `<html>`) |
 | **Tone** | Profesional, jelas, operasional — hindari marketing berlebihan di dalam app |
@@ -22,7 +24,8 @@
 | Login hero | `/image/login-bg-img.jpg` | Split login panel (desktop only) |
 | Alternate logo | `/assets/logos/aapm-default.png` | Marketing / exports when needed |
 
-- Prefer **logo + wordmark** “Layered Farm Agung” on auth and shell.
+- Prefer **logo + wordmark** “Layered Farm Agung” on login and **dashboard shell**.
+- Mobile field app (Expo) may reuse tokens/colors; implementasi UI mobile **tidak** di repo Next.js ini.
 - Hero photography: peternakan / lapangan; overlay gelap tetap agar teks testimonial terbaca (lihat login split).
 
 ### Voice & copy

@@ -51,8 +51,6 @@ export async function recordDailyProductionAction(
     return { error: result.error };
   }
 
-  revalidatePath("/kandang");
-  revalidatePath(`/kandang/${parsed.data.cageId}/produksi`);
   revalidatePath("/dashboard/production");
 
   return { success: true };

@@ -1,4 +1,3 @@
-import { SerwistProvider } from "@serwist/turbopack/react"; // 🎯 Menggunakan React runtime provider khusus Turbopack
 import type { Metadata } from "next";
 import { Instrument_Sans, Raleway } from "next/font/google";
 import { NavigationProgress } from "@/components/providers/navigation-progress";
@@ -10,7 +9,8 @@ import { Toaster } from "@/components/ui/sonner";
 const APP_NAME = "Layered Farm Agung";
 const APP_DEFAULT_TITLE = "Layered Farm Agung";
 const APP_TITLE_TEMPLATE = "%s - Layered Farm Agung";
-const APP_DESCRIPTION = "A layered farm management system built with Next.js and Tailwind CSS.";
+const APP_DESCRIPTION =
+  "Sistem manajemen peternakan ayam petelur — dashboard admin Layered Farm Agung.";
 
 const instrumentSansHeading = Instrument_Sans({
   subsets: ["latin"],
@@ -23,22 +23,11 @@ const raleway = Raleway({
 });
 
 export const metadata: Metadata = {
-  applicationName: APP_NAME,
   title: {
     default: APP_DEFAULT_TITLE,
     template: APP_TITLE_TEMPLATE,
   },
   description: APP_DESCRIPTION,
-  manifest: "/manifest.json", // 🎯 Mendaftarkan manifes aplikasi ke meta HTML browser
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: APP_DEFAULT_TITLE,
-    // startUpImage: [],
-  },
-  formatDetection: {
-    telephone: false,
-  },
   openGraph: {
     type: "website",
     siteName: APP_NAME,
@@ -74,14 +63,11 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
-        {/* 🎯 Menghubungkan provider ke lokasi compile Service Worker yang sah */}
-        <SerwistProvider swUrl="/serwist/sw.js">
-          <ThemeProvider>
-            <NavigationProgress />
-            {children}
-            <Toaster position="top-center" />
-          </ThemeProvider>
-        </SerwistProvider>
+        <ThemeProvider>
+          <NavigationProgress />
+          {children}
+          <Toaster position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   );

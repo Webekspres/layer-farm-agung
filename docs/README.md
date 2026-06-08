@@ -26,7 +26,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 
 | File | Isi |
 |------|-----|
-| **[sitemap.md](./sitemap.md)** | Peta rute aplikasi, target modul, progress implementasi vs `prisma/schema.prisma` |
+| **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; mobile Expo terdokumentasi terpisah |
 
 ## Sumber kebenaran lain
 
@@ -39,3 +39,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 | `DEV_NOTES.md` | Aturan bisnis & validasi (root) |
 
 Saat menambah halaman baru, **perbarui `sitemap.md`** di PR yang sama.
+
+## Pengembangan lokal (database)
+
+PostgreSQL via Docker memakai **port host `5433`** (bukan `5432`) agar tidak bentrok dengan Postgres sistem. Lihat [`.env.example`](../.env.example) dan bagian *Local database* di [`README.md`](../README.md).

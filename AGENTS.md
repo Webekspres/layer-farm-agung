@@ -10,8 +10,9 @@ Detailed Cursor rules live in **`.cursor/rules/`** (architecture, naming, auth, 
 
 | | |
 |--|--|
-| **Product** | Layered Farm Agung — PWA manajemen peternakan ayam petelur |
+| **Product** | Layered Farm Agung (AAPM) — admin web + API backend |
 | **Stack** | Next.js 16 App Router, React 19, Tailwind v4, shadcn/ui, Prisma 7, PostgreSQL, Better Auth, Bun |
+| **Mobile lapangan** | **React Native + Expo** (repo terpisah) — bukan PWA/Serwist di repo ini |
 | **Package manager** | **Bun** (`bun install`, `bun run dev`, `bun test`) |
 | **Locale** | UI copy in **Bahasa Indonesia** |
 
@@ -28,8 +29,9 @@ Before using routing, caching, or Server Actions APIs, read the relevant guide u
 <!-- END:nextjs-agent-rules -->
 
 - Route protection: root **`proxy.ts`** (not `middleware.ts`).
-- Route groups: `(authentication)`, `(dashboard)`.
-- Mutations: **Server Actions** in `features/*/actions/` with Zod validation.
+- Route groups: `(authentication)`, `(dashboard)` only — **no field/PWA routes** in this repo.
+- Mutations: **Server Actions** for admin UI; **Route Handlers** (`app/api/`) for mobile/API consumers.
+- Do **not** add Serwist, service workers, or web app manifests.
 
 ---
 
@@ -140,7 +142,7 @@ bun run db:generate      # Prisma client
 bun run lint             # ESLint
 ```
 
-Docker hybrid: `bun run hybrid` (services + generate + dev).
+Docker hybrid: `bun run hybrid` (services + generate + dev). Local `DATABASE_URL` must use **`127.0.0.1:5433`** (Docker Postgres); see `.env.example`.
 
 ---
 
@@ -158,7 +160,7 @@ Docker hybrid: `bun run hybrid` (services + generate + dev).
 
 ## Domain roadmap (context only)
 
-Implemented in phases: **Domain 1** identity/RBAC/tenants/users; **Domain 2** master data (locations, cages, strains, grades, vendors); **Domain 3+** production, inventory, PWA field input, offline sync — see `README.md`.
+Implemented in phases: **Domain 1** identity/RBAC/tenants/users; **Domain 2** master data; **Domain 3+** operasional (admin rekap + **API for Expo**); **mobile field input** in separate React Native app — see `README.md` and `docs/sitemap.md`.
 
 When adding nav items, update `features/dashboard/config/navigation.ts` and `features/permissions/config/wired-permissions.ts`, then seed.
 
