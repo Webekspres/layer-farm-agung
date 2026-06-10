@@ -2,7 +2,14 @@
 
 **Sistem Manajemen Peternakan Ayam Petelur Terintegrasi**
 
-**Layered Farm Agung (AAPM)** is a cloud-based farm management platform. **This repository** is the **admin web dashboard** and **API backend** (Next.js). **Field operations** for staff kandang are built in a separate **React Native + Expo** mobile app.
+**Layered Farm Agung (AAPM)** is a cloud-based farm management platform split across **two repos**:
+
+| Repo | Role |
+|------|------|
+| **layered-farm-agung** (this) | Admin dashboard, API (`/api/v1/*`), database, auth |
+| **[aapm-mobile](../mobile-apps/aapm-mobile)** | React Native + Expo app for **staff kandang** |
+
+See **[docs/ecosystem.md](./docs/ecosystem.md)** for architecture and local dev workflow.
 
 The platform supports **population monitoring**, **production efficiency** (HDP, FCR), master data, inventory, and finance — with mobile offline input handled outside this repo.
 
@@ -31,7 +38,7 @@ The platform supports **population monitoring**, **production efficiency** (HDP,
 | **State** | **Zustand** |
 | **Data fetching** | **TanStack Query** |
 | **Validation & forms** | **Zod** · **React Hook Form** |
-| **Mobile (lapangan)** | **React Native + Expo** (repo terpisah) |
+| **Mobile (lapangan)** | **[aapm-mobile](../mobile-apps/aapm-mobile)** — React Native + Expo SDK 54 |
 
 ---
 

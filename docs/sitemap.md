@@ -5,9 +5,10 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§2**.
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-06-04 |
+| **Terakhir diperbarui** | 2026-06-08 |
 | **Repo ini** | Next.js 16 — **admin dashboard + API provider** |
-| **Mobile lapangan** | **React Native + Expo** (repo terpisah) |
+| **Mobile lapangan** | [`aapm-mobile`](../mobile-apps/aapm-mobile) — React Native + Expo |
+| **Ekosistem** | [`docs/ecosystem.md`](./ecosystem.md) |
 | **Schema DB** | [`prisma/schema.prisma`](../prisma/schema.prisma) |
 | **Nav kode** | [`features/dashboard/config/navigation.ts`](../features/dashboard/config/navigation.ts) |
 | **Proteksi rute** | [`proxy.ts`](../proxy.ts) |
@@ -19,7 +20,7 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§2**.
 | Aplikasi | Stack | Cakupan |
 |----------|-------|---------|
 | **AAPM Admin** (repo ini) | Next.js 16, shadcn, Prisma | CRUD master data, user/RBAC, rekap operasional, keuangan |
-| **AAPM Mobile** (repo terpisah) | React Native + Expo | Input harian kandang: produksi, pakan, mortalitas, QR, offline sync |
+| **AAPM Mobile** ([`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile)) | React Native + Expo SDK 54 | Input harian kandang: produksi, pakan, mortalitas, QR, offline sync |
 
 **Repo ini tidak lagi memakai Serwist / PWA.** Tidak ada service worker, manifest, atau rute `/kandang` / `/input-harian`.
 
@@ -156,9 +157,10 @@ Backend di repo ini menyediakan:
 
 ---
 
-## 6. Sitemap — Mobile (React Native + Expo, repo terpisah)
+## 6. Sitemap — Mobile (`aapm-mobile`)
 
-> Tidak ada rute di Next.js. Dokumentasi target untuk tim mobile.
+> Implementasi UI di [`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile) — tidak ada rute lapangan di Next.js.  
+> Panduan agent: [`aapm-mobile/AGENTS.md`](../mobile-apps/aapm-mobile/AGENTS.md).
 
 | Layar (usulan) | Modul | Model / API |
 |----------------|-------|-------------|
@@ -170,7 +172,7 @@ Backend di repo ini menyediakan:
 | Vaksinasi | Kesehatan | `VaccineSchedule` |
 | Profil & sync | Offline | `SyncQueue`, antrean lokal |
 
-**QR deep link (mobile):** `aapm://kandang/[cage_id]/produksi` atau universal link — disepakati di repo Expo.
+**QR / deep link:** `aapmmobile://kandang/[cage_id]/produksi` (`app.json` scheme) — detail di [`docs/ecosystem.md`](./ecosystem.md).
 
 ---
 

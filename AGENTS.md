@@ -12,9 +12,22 @@ Detailed Cursor rules live in **`.cursor/rules/`** (architecture, naming, auth, 
 |--|--|
 | **Product** | Layered Farm Agung (AAPM) — hybrid: admin web + central API |
 | **Stack** | Next.js 16 App Router, React 19, Tailwind v4, shadcn/ui, Prisma 7, PostgreSQL, Better Auth, Bun |
-| **Mobile lapangan** | **React Native + Expo** (repo terpisah) — konsumsi `app/api/v1/*` |
+| **Mobile lapangan** | **[`aapm-mobile`](../mobile-apps/aapm-mobile)** — Expo SDK 54; konsumsi `app/api/v1/*` |
 | **Package manager** | **Bun** (`bun install`, `bun run dev`, `bun test`) |
 | **Locale** | UI copy in **Bahasa Indonesia** |
+
+---
+
+## Linked mobile app
+
+| | |
+|--|--|
+| **Repo** | [`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile) |
+| **Role** | Staff kandang — input harian, QR, offline client |
+| **Contract** | [`docs/apicontract/openapi.yaml`](./docs/apicontract/openapi.yaml) |
+| **Ecosystem** | [`docs/ecosystem.md`](./docs/ecosystem.md) |
+
+Backend owns data, auth, and `/api/v1/*`. Mobile owns UI and local offline queue only. API changes → update OpenAPI + mobile types in the same release cycle.
 
 ---
 
@@ -233,6 +246,9 @@ When adding nav items, update `features/dashboard/config/navigation.ts` and `fea
 | [DESIGN.md](./DESIGN.md) | Brand, colors, type, components, toasts |
 | [docs/sitemap.md](./docs/sitemap.md) | Routes, module progress, planned pages |
 | [docs/README.md](./docs/README.md) | Docs folder: markdown in Git, binaries local |
+| [docs/ecosystem.md](./docs/ecosystem.md) | Two-repo architecture (backend + aapm-mobile) |
+| [docs/apicontract/openapi.yaml](./docs/apicontract/openapi.yaml) | Mobile API OpenAPI contract |
+| [../mobile-apps/aapm-mobile/AGENTS.md](../mobile-apps/aapm-mobile/AGENTS.md) | Mobile app agent guide |
 | [README.md](./README.md) | Product modules, schema overview |
 | `.cursor/rules/*.mdc` | Full rules for Cursor |
 | `prisma/schema.prisma` | Data model |

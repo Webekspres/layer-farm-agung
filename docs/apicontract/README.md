@@ -52,6 +52,8 @@ Saat menambah endpoint di `app/api/v1/`, **perbarui `openapi.yaml` di PR yang sa
 
 ## Terkait
 
+- [ecosystem.md](../ecosystem.md) — hubungan backend ↔ **aapm-mobile**
 - [sitemap.md](../sitemap.md) — status implementasi per route
-- [AGENTS.md](../../AGENTS.md) — aturan arsitektur API v1
+- [AGENTS.md](../../AGENTS.md) — aturan arsitektur API v1 (backend)
+- [aapm-mobile/AGENTS.md](../../../mobile-apps/aapm-mobile/AGENTS.md) — panduan app mobile
 - [DEV_NOTES.md](../../DEV_NOTES.md) — validasi bisnis domain 3
