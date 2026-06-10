@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const eggGradeSchema = z.object({
-  name: z.string().trim().min(2, "Nama grade minimal 2 karakter."),
+  name: z.string().trim().min(1, "Nama grade wajib diisi."),
   description: z
     .string()
     .trim()

@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { isUuid } from "@/lib/uuid";
 
 export type CageForProduction = {
   id: string;
@@ -14,6 +15,10 @@ export async function getCageForProduction(
   tenantId: string,
   cageId: string,
 ): Promise<CageForProduction | null> {
+  if (!isUuid(cageId)) {
+    return null;
+  }
+
   const row = await prisma.cage.findFirst({
     where: {
       id: cageId,
