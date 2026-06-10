@@ -1,3 +1,4 @@
+import { expo } from "@better-auth/expo";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
@@ -9,9 +10,17 @@ import {
 } from "@/features/auth/lib/session-guards";
 import prisma from "@/lib/prisma";
 
+const trustedOrigins = [
+  "aapmmobile://",
+  ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? []),
+];
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   baseURL: process.env.BETTER_AUTH_URL,
+  trustedOrigins,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -139,6 +148,7 @@ export const auth = betterAuth({
         },
       };
     }),
+    expo(),
     nextCookies(),
   ],
   databaseHooks: {

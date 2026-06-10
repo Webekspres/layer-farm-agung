@@ -15,6 +15,14 @@ export function isApiV1Path(pathname: string) {
   );
 }
 
+export function isAuthApiPath(pathname: string) {
+  return pathname === "/api/auth" || pathname.startsWith("/api/auth/");
+}
+
+export function isMobileCorsPath(pathname: string) {
+  return isApiV1Path(pathname) || isAuthApiPath(pathname);
+}
+
 function configuredOrigins(): string[] {
   const raw = process.env.MOBILE_CORS_ORIGINS?.trim();
   if (!raw) return [];
@@ -60,7 +68,7 @@ export function applyCorsHeaders(
   );
   response.headers.set(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Cookie",
+    "Content-Type, Authorization, Cookie, expo-origin",
   );
 
   return response;

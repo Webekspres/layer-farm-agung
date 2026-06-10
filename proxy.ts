@@ -3,7 +3,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import {
   applyCorsHeaders,
   corsPreflightResponse,
-  isApiV1Path,
+  isMobileCorsPath,
 } from "@/lib/api/cors";
 
 const AUTH_ROUTES = ["/login"];
@@ -24,7 +24,7 @@ function isAuthPage(pathname: string) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (isApiV1Path(pathname)) {
+  if (isMobileCorsPath(pathname)) {
     if (request.method === "OPTIONS") {
       return corsPreflightResponse(request);
     }
