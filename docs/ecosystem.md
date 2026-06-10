@@ -149,4 +149,4 @@ Data kandang setelah scan: `GET /api/v1/cages/{cageId}`.
 | Repo | Dokumen |
 |------|---------|
 | **layered-farm-agung** | [AGENTS.md](../AGENTS.md), [sitemap.md](./sitemap.md), [apicontract/](./apicontract/), [DEV_NOTES.md](../DEV_NOTES.md), [DESIGN.md](../DESIGN.md) |
-| **aapm-mobile** | [AGENTS.md](../../mobile-apps/aapm-mobile/AGENTS.md), [README.md](../../mobile-apps/aapm-mobile/README.md) |
+| **aapm-mobile** | [docs/](../../mobile-apps/aapm-mobile/docs/) (progress & roadmap), [AGENTS.md](../../mobile-apps/aapm-mobile/AGENTS.md) |

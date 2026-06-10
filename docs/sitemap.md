@@ -160,7 +160,7 @@ Backend di repo ini menyediakan:
 ## 6. Sitemap — Mobile (`aapm-mobile`)
 
 > Implementasi UI di [`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile) — tidak ada rute lapangan di Next.js.  
-> Panduan agent: [`aapm-mobile/AGENTS.md`](../mobile-apps/aapm-mobile/AGENTS.md).
+> **Progress mobile:** [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.md) · **Roadmap D3:** [`roadmap-domain3.md`](../mobile-apps/aapm-mobile/docs/roadmap-domain3.md)
 
 | Layar (usulan) | Modul | Model / API |
 |----------------|-------|-------------|
@@ -198,18 +198,22 @@ Backend di repo ini menyediakan:
 
 ## 8. Backlog admin repo
 
-- [ ] API v1 untuk mobile (produksi, list kandang, auth)
+- [x] API v1 slice produksi (cages, egg-grades, production)
+- [ ] Auth mobile end-to-end (cookie dari Expo)
 - [ ] Dashboard produksi: tabel rekap harian
 - [ ] `ProductionTarget` CRUD
 - [ ] Siklus kandang penuh (`CycleSetting`)
 - [ ] Inventori admin (`Item`, `InventoryStock`)
 
-## 9. Backlog mobile (Expo — luar repo)
+## 9. Backlog mobile (Expo — `aapm-mobile/docs/`)
 
-- [ ] Shell + navigasi (Dashboard, Input, Profil)
+Lihat checklist lengkap: [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.md)
+
+- [ ] API client + login staff
+- [ ] Shell + navigasi (Home, Input, Profil)
+- [ ] Form produksi (API sudah ada)
 - [ ] QR scanner
-- [ ] Form produksi + offline queue
-- [ ] Sinkronisasi ke `SyncQueue` / API
+- [ ] Offline queue + sync
 
 ---
 
