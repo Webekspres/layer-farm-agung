@@ -85,10 +85,11 @@ model User {
   // Relations
   tenant            Tenant?           @relation(fields: [tenant_id], references: [id], onDelete: SetNull)
   role              Role              @relation(fields: [role_id], references: [id], onDelete: Restrict)
-  daily_productions DailyProduction[]
-  feed_consumptions FeedConsumption[]
-  sessions          Session[]
-  accounts          Account[]
+  daily_productions      DailyProduction[]
+  feed_consumptions      FeedConsumption[]
+  sessions               Session[]
+  accounts               Account[]
+  cage_staff_assignments CageStaffAssignment[]
 }
 
 model Session {
@@ -164,6 +165,8 @@ model Cage {
   cage_type   String?
   capacity    Int
   status      String   @default("Active")
+  /** Unique token encoded in QR (`aapmmobile://kandang/{qr_code}/produksi`). */
+  qr_code     String   @unique
   created_at  DateTime @default(now())
 
   // Relations
@@ -175,6 +178,20 @@ model Cage {
   population_mutations PopulationMutation[]
   vaccine_schedules    VaccineSchedule[]
   medical_records      MedicalRecord[]
+  staff_assignments    CageStaffAssignment[]
+}
+
+model CageStaffAssignment {
+  cage_id     String   @db.Uuid
+  user_id     String   @db.Uuid
+  assigned_at DateTime @default(now())
+
+  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([cage_id, user_id])
+  @@index([user_id])
+  @@map("cage_staff_assignment")
 }
 
 model CycleSetting {

@@ -163,11 +163,55 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/cages/scan:
+    post:
+      tags: [Cages]
+      summary: Validasi scan QR kandang
+      description: |
+        Memvalidasi payload QR (deep link `aapmmobile://kandang/{qr_code}/produksi` atau token `KDG…`).
+        Staff harus ditugaskan ke kandang; kandang harus aktif dengan siklus berjalan.
+      operationId: scanCageQr
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payload]
+              properties:
+                payload:
+                  type: string
+                  description: Teks mentah dari QR (URL deep link atau token)
+            example:
+              payload: aapmmobile://kandang/KDG4F8A2B1C0D3/produksi
+      responses:
+        "200":
+          description: Kandang valid untuk input produksi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CageForProduction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/cages/{cageId}:
     get:
       tags: [Cages]
       summary: Detail kandang untuk form produksi
-      description: Dipakai setelah scan QR (`aapm://kandang/{cageId}/produksi`).
+      description: |
+        Dipakai setelah scan QR berhasil. Memerlukan penugasan staff ke kandang
+        dan siklus aktif (`aapmmobile://kandang/{qr_code}/produksi`).
       operationId: getCageById
       parameters:
         - $ref: "#/components/parameters/CageId"

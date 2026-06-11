@@ -1,3 +1,4 @@
+import { getAssignedCageIdsForUser } from "@/features/cages/lib/cage-staff-db";
 import prisma from "@/lib/prisma";
 
 export type FieldCageListItem = {
@@ -28,13 +29,20 @@ function startOfTodayUtc() {
 
 export async function listFieldCages(
   tenantId: string,
+  userId: string,
 ): Promise<FieldCageStats> {
   const today = startOfTodayUtc();
+  const assignedCageIds = await getAssignedCageIdsForUser(userId);
+
+  if (assignedCageIds.length === 0) {
+    return { cages: [], totalActive: 0, recordedTodayCount: 0 };
+  }
 
   const rows = await prisma.cage.findMany({
     where: {
       status: "Active",
       location: { tenant_id: tenantId },
+      id: { in: assignedCageIds },
     },
     include: {
       location: { select: { name: true } },

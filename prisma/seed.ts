@@ -183,8 +183,19 @@ async function main() {
     },
   });
 
-  if (!existingCage) {
-    const cage = await prisma.cage.create({
+  const staffUser = await prisma.user.findUnique({
+    where: { username: staffUsername },
+    select: { id: true },
+  });
+
+  let seedCage = existingCage;
+
+  if (!seedCage) {
+    const { generateCageQrCode } = await import(
+      "@/features/cages/lib/generate-qr-code"
+    );
+
+    seedCage = await prisma.cage.create({
       data: {
         location_id: mainLocation.id,
         strain_id: strainLohmann.id,
@@ -195,14 +206,26 @@ async function main() {
       },
     });
 
+    const { setCageQrCode } = await import(
+      "@/features/cages/lib/cage-staff-db"
+    );
+    await setCageQrCode(seedCage.id, generateCageQrCode());
+
     await prisma.cycleSetting.create({
       data: {
-        cage_id: cage.id,
+        cage_id: seedCage.id,
         start_date: new Date("2025-01-01"),
         initial_population: 4800,
         status: "Active",
       },
     });
+  }
+
+  if (seedCage && staffUser) {
+    const { upsertCageStaffAssignment } = await import(
+      "@/features/cages/lib/cage-staff-db"
+    );
+    await upsertCageStaffAssignment(seedCage.id, staffUser.id);
   }
 
   await prisma.vendor.upsert({

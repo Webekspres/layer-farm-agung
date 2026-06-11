@@ -6,6 +6,8 @@ import {
   getMasterDataTenantScope,
   requireManageMasterDataSession,
 } from "@/features/master-data/lib/access";
+import { setCageQrCode } from "@/features/cages/lib/cage-staff-db";
+import { generateCageQrCode } from "@/features/cages/lib/generate-qr-code";
 import { cageSchema } from "@/features/cages/schemas/cage";
 
 export type CageFormState = {
@@ -64,7 +66,7 @@ export async function createCageAction(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.cage.create({
+      const cage = await tx.cage.create({
         data: {
           location_id: data.locationId,
           strain_id: data.strainId,
@@ -74,6 +76,8 @@ export async function createCageAction(
           status: data.status,
         },
       });
+
+      await setCageQrCode(cage.id, generateCageQrCode());
 
       // Temporarily bypassed CycleSetting insertion because backend infrastructure is under development
       /*

@@ -30,7 +30,10 @@ import {
 } from "@/components/ui/table";
 import { createCycleAction } from "@/features/cages/actions/create-cycle";
 import { closeCycleAction } from "@/features/cages/actions/close-cycle";
+import { CageQrPanel } from "@/features/cages/components/cage-qr-panel";
+import { CageStaffPanel } from "@/features/cages/components/cage-staff-panel";
 import type { CageDetail } from "@/features/cages/services/get-cage-detail";
+import type { TenantStaffOption } from "@/features/cages/services/list-tenant-staff-options";
 
 function getAgeInWeeksAndDays(startDate: Date) {
   const start = new Date(startDate);
@@ -62,9 +65,10 @@ function formatDate(date: Date) {
 
 type CageDetailViewProps = {
   cage: CageDetail;
+  staffOptions: TenantStaffOption[];
 };
 
-export function CageDetailView({ cage }: CageDetailViewProps) {
+export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
 
@@ -131,6 +135,15 @@ export function CageDetailView({ cage }: CageDetailViewProps) {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CageQrPanel cageName={cage.name} qrCode={cage.qrCode} />
+        <CageStaffPanel
+          cageId={cage.id}
+          staffOptions={staffOptions}
+          assignedStaffIds={cage.assignedStaffIds}
+        />
       </div>
 
       {/* Active Cycle Panel */}

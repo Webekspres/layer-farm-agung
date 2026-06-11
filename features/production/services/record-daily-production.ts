@@ -1,5 +1,6 @@
-import prisma from "@/lib/prisma";
+import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
+import prisma from "@/lib/prisma";
 
 export type RecordDailyProductionResult =
   | { ok: true }
@@ -34,6 +35,15 @@ export async function recordDailyProduction(
 
   if (!cage) {
     return { ok: false, error: "Kandang tidak ditemukan di tenant ini." };
+  }
+
+  const assigned = await isUserAssignedToCage(userId, input.cageId);
+
+  if (!assigned) {
+    return {
+      ok: false,
+      error: "Anda tidak ditugaskan ke kandang ini.",
+    };
   }
 
   if (cage.status !== "Active") {

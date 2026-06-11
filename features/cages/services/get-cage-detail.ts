@@ -1,13 +1,19 @@
+import {
+  getAssignedStaffIds,
+  getCageQrCode,
+} from "@/features/cages/lib/cage-staff-db";
 import prisma from "@/lib/prisma";
 
 export type CageDetail = {
   id: string;
   name: string;
+  qrCode: string;
   capacity: number;
   status: string;
   cageType: string | null;
   location: { id: string; name: string };
   strain: { id: number; name: string };
+  assignedStaffIds: string[];
   activeCycle: {
     id: string;
     startDate: Date;
@@ -43,17 +49,24 @@ export async function getCageDetail(
 
   if (!cage) return null;
 
+  const [qrCode, assignedStaffIds] = await Promise.all([
+    getCageQrCode(cage.id),
+    getAssignedStaffIds(cage.id),
+  ]);
+
   const activeCycleRow = cage.cycle_settings.find((c) => c.status === "Active") ?? null;
   const historyRows = cage.cycle_settings.filter((c) => c.status !== "Active");
 
   return {
     id: cage.id,
     name: cage.name,
+    qrCode: qrCode ?? "",
     capacity: cage.capacity,
     status: cage.status,
     cageType: cage.cage_type,
     location: cage.location,
     strain: cage.strain,
+    assignedStaffIds,
     activeCycle: activeCycleRow
       ? {
           id: activeCycleRow.id,

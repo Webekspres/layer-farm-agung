@@ -6,8 +6,9 @@ import {
   getMasterDataTenantScope,
   requireManageMasterDataSession,
 } from "@/features/master-data/lib/access";
-import { getCageDetail } from "@/features/cages/services/get-cage-detail";
 import { CageDetailView } from "@/features/cages/components/cage-detail-view";
+import { getCageDetail } from "@/features/cages/services/get-cage-detail";
+import { listTenantStaffOptions } from "@/features/cages/services/list-tenant-staff-options";
 
 type CageDetailPageProps = {
   params: Promise<{
@@ -32,7 +33,10 @@ export default async function CageDetailPage({ params }: CageDetailPageProps) {
   }
 
   const { id } = await params;
-  const cage = await getCageDetail(id, tenantId!);
+  const [cage, staffOptions] = await Promise.all([
+    getCageDetail(id, tenantId!),
+    listTenantStaffOptions(tenantId!),
+  ]);
 
   if (!cage) {
     notFound();
@@ -40,7 +44,7 @@ export default async function CageDetailPage({ params }: CageDetailPageProps) {
 
   return (
     <Suspense fallback={null}>
-      <CageDetailView cage={cage} />
+      <CageDetailView cage={cage} staffOptions={staffOptions} />
     </Suspense>
   );
 }

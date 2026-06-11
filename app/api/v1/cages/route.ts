@@ -10,7 +10,7 @@ export async function GET(_request: NextRequest) {
     return auth.error;
   }
 
-  const data = await listFieldCages(auth.tenantId);
+  const data = await listFieldCages(auth.tenantId, auth.session.user.id);
 
   return apiSuccess(data, "Daftar kandang berhasil dimuat.");
 }
