@@ -120,12 +120,34 @@ export const auth = betterAuth({
       const activeTenantId =
         sessionRecord.activeTenantId ?? dbUser.tenant_id;
 
+      let tenant: {
+        id: string;
+        name: string;
+        brandName: string | null;
+        logoUrl: string | null;
+      } | null = null;
+
       if (activeTenantId) {
         const contextTenant = await prisma.tenant.findUnique({
           where: { id: activeTenantId },
-          select: { is_active: true },
+          select: {
+            id: true,
+            name: true,
+            brand_name: true,
+            logo_url: true,
+            is_active: true,
+          },
         });
         assertActiveTenantContext(contextTenant);
+
+        if (contextTenant) {
+          tenant = {
+            id: contextTenant.id,
+            name: contextTenant.name,
+            brandName: contextTenant.brand_name,
+            logoUrl: contextTenant.logo_url,
+          };
+        }
       }
 
       const permissions = dbUser.role.role_permissions.map(
@@ -146,6 +168,7 @@ export const auth = betterAuth({
           ...session,
           activeTenantId,
         },
+        tenant,
       };
     }),
     expo(),

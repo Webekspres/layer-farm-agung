@@ -33,7 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
-import { authClient } from "@/features/auth/client/auth-client";
+import { signOutAction } from "@/features/auth/actions/sign-out";
 import { notifyActionResult } from "@/components/shared/action-feedback";
 import { switchActiveTenantAction } from "@/features/tenants/actions/switch-active-tenant";
 import type { ServerSession } from "@/features/auth/lib/session";
@@ -130,10 +130,10 @@ export function DashboardHeader({
     crumbs[crumbs.length - 1].title = title;
   }
 
-  async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/login");
-    router.refresh();
+  function handleSignOut() {
+    startSwitching(() => {
+      void signOutAction();
+    });
   }
 
   function handleTenantSwitch(next: string) {
