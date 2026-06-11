@@ -34,7 +34,6 @@ export const mainNavItems: NavItem[] = [
     href: "/dashboard/production",
     icon: Egg,
     permission: "manage_production",
-    badge: "Soon",
   },
   {
     title: "Inventori",

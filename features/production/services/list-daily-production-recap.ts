@@ -1,3 +1,4 @@
+import { startOfTodayUtc } from "@/features/production/lib/parse-production-date";
 import prisma from "@/lib/prisma";
 
 export type DailyProductionRecapRow = {
@@ -12,13 +13,6 @@ export type DailyProductionRecapRow = {
   recordedBy: string;
   createdAt: Date;
 };
-
-function startOfTodayUtc() {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
-}
 
 export async function listDailyProductionRecap(
   tenantId: string,
