@@ -9,7 +9,6 @@ export type DailyProductionRecapRow = {
   tb: number;
   tr: number;
   tp: number;
-  weight: number | null;
   recordedBy: string;
   createdAt: Date;
 };
@@ -46,7 +45,6 @@ export async function listDailyProductionRecap(
     tb: row.tb,
     tr: row.tr,
     tp: row.tp,
-    weight: row.weight,
     recordedBy: row.user.full_name || row.user.username,
     createdAt: row.created_at,
   }));

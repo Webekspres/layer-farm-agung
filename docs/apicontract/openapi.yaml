@@ -234,6 +234,41 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/cages/{cageId}/daily-history:
+    get:
+      tags: [Cages]
+      summary: Riwayat input harian per kandang
+      description: |
+        Daftar entri multi-record untuk satu kandang pada tanggal tertentu.
+        Saat ini `productions` terisi; `feed`, `population`, `medical` menyusul.
+      operationId: getCageDailyHistory
+      parameters:
+        - $ref: "#/components/parameters/CageId"
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Tanggal rekap (default hari ini)
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CageDailyHistory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/egg-grades:
     get:
       tags: [Catalog]
@@ -313,6 +348,52 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /api/v1/production/{recordId}:
+    patch:
+      tags: [Production]
+      summary: Perbarui entri produksi harian
+      description: |
+        Edit satu baris multi-record (Opsi B). Staff harus ditugaskan ke kandang
+        terkait. Body hanya TB/TR/TP.
+      operationId: updateDailyProduction
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDailyProductionInput"
+      responses:
+        "200":
+          description: Produksi diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/feed-consumption:
     post:
@@ -616,6 +697,79 @@ components:
         recorded:
           type: boolean
           const: true
+
+    UpdateDailyProductionInput:
+      type: object
+      properties:
+        tb:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        tr:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        tp:
+          type: integer
+          minimum: 0
+          maximum: 10000
+
+    CageProductionHistoryItem:
+      type: object
+      required: [id, tb, tr, tp, total, recordedBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tb:
+          type: integer
+        tr:
+          type: integer
+        tp:
+          type: integer
+        total:
+          type: integer
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CageDailyHistory:
+      type: object
+      required:
+        - recordDate
+        - cageId
+        - cageName
+        - locationName
+        - productions
+        - feed
+        - population
+        - medical
+      properties:
+        recordDate:
+          type: string
+          format: date
+        cageId:
+          type: string
+          format: uuid
+        cageName:
+          type: string
+        locationName:
+          type: string
+        productions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CageProductionHistoryItem"
+        feed:
+          type: array
+          items: {}
+        population:
+          type: array
+          items: {}
+        medical:
+          type: array
+          items: {}
 
     FeedConsumptionInput:
       type: object

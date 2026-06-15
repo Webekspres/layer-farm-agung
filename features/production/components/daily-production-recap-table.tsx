@@ -44,13 +44,14 @@ export function DailyProductionRecapTable({
             <TableHead className="text-right">TB</TableHead>
             <TableHead className="text-right">TR</TableHead>
             <TableHead className="text-right">TP</TableHead>
-            <TableHead className="text-right">Berat (kg)</TableHead>
+            <TableHead className="text-right">Total</TableHead>
             <TableHead>Staff</TableHead>
             <TableHead>Waktu</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
+            const total = row.tb + row.tr + row.tp;
             const defectWarning = crackRatioExceedsThreshold(
               row.tb,
               row.tr,
@@ -71,16 +72,17 @@ export function DailyProductionRecapTable({
                   <span className="inline-flex items-center justify-end gap-2">
                     {row.tp.toLocaleString("id-ID")}
                     {defectWarning ? (
-                      <Badge variant="outline" className="border-warning text-warning">
+                      <Badge
+                        variant="outline"
+                        className="border-warning text-warning"
+                      >
                         &gt;5%
                       </Badge>
                     ) : null}
                   </span>
                 </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {row.weight != null
-                    ? row.weight.toLocaleString("id-ID")
-                    : "—"}
+                <TableCell className="text-right tabular-nums font-medium">
+                  {total.toLocaleString("id-ID")}
                 </TableCell>
                 <TableCell>{row.recordedBy}</TableCell>
                 <TableCell className="text-muted-foreground">

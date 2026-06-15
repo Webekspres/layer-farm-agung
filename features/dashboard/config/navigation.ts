@@ -30,7 +30,7 @@ export const mainNavItems: NavItem[] = [
     permission: "view_dashboard",
   },
   {
-    title: "Produksi",
+    title: "Input harian",
     href: "/dashboard/production",
     icon: Egg,
     permission: "manage_production",
