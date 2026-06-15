@@ -28,10 +28,10 @@ export async function recordDailyProductionAction(
 
   const parsed = dailyProductionSchema.safeParse({
     cageId: formData.get("cageId"),
-    eggGradeId: formData.get("eggGradeId"),
     recordDate: formData.get("recordDate"),
-    quantity: formData.get("quantity"),
-    eggCrack: formData.get("eggCrack") ?? "0",
+    tb: formData.get("tb") ?? "0",
+    tr: formData.get("tr") ?? "0",
+    tp: formData.get("tp") ?? "0",
     weight: formData.get("weight"),
   });
 

@@ -2,22 +2,13 @@ import { z } from "zod";
 
 export const MAX_EGG_COUNT_PER_ENTRY = 10_000;
 
-const quantityField = z.coerce
+const eggCountField = z.coerce
   .number()
-  .int("Jumlah telur layak harus bilangan bulat.")
-  .min(0, "Jumlah telur layak tidak boleh negatif.")
+  .int("Jumlah telur harus bilangan bulat.")
+  .min(0, "Jumlah telur tidak boleh negatif.")
   .max(
     MAX_EGG_COUNT_PER_ENTRY,
-    `Maksimal ${MAX_EGG_COUNT_PER_ENTRY.toLocaleString("id-ID")} butir per entri.`,
-  );
-
-const eggCrackField = z.coerce
-  .number()
-  .int("Jumlah telur pecah harus bilangan bulat.")
-  .min(0, "Jumlah telur pecah tidak boleh negatif.")
-  .max(
-    MAX_EGG_COUNT_PER_ENTRY,
-    `Maksimal ${MAX_EGG_COUNT_PER_ENTRY.toLocaleString("id-ID")} butir per entri.`,
+    `Maksimal ${MAX_EGG_COUNT_PER_ENTRY.toLocaleString("id-ID")} butir per field.`,
   );
 
 const weightField = z.preprocess(
@@ -28,24 +19,21 @@ const weightField = z.preprocess(
 export const dailyProductionSchema = z
   .object({
     cageId: z.string().uuid("Kandang tidak valid."),
-    eggGradeId: z.coerce
-      .number()
-      .int()
-      .positive("Pilih grade telur."),
     recordDate: z.coerce.date({
       message: "Tanggal panen tidak valid.",
     }),
-    quantity: quantityField,
-    eggCrack: eggCrackField.default(0),
+    tb: eggCountField.default(0),
+    tr: eggCountField.default(0),
+    tp: eggCountField.default(0),
     weight: weightField,
   })
   .superRefine((data, ctx) => {
-    const total = data.quantity + data.eggCrack;
+    const total = data.tb + data.tr + data.tp;
     if (total <= 0) {
       ctx.addIssue({
         code: "custom",
-        message: "Isi jumlah telur layak atau telur pecah minimal 1 butir.",
-        path: ["quantity"],
+        message: "Isi minimal satu dari TB, TR, atau TP.",
+        path: ["tb"],
       });
     }
   });

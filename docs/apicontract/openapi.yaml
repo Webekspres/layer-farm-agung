@@ -272,8 +272,9 @@ paths:
       tags: [Production]
       summary: Catat produksi telur harian
       description: |
-        Satu entri per kombinasi `(cageId, eggGradeId, recordDate)`.
-        Validasi bisnis: kandang aktif, siklus aktif, total `quantity + eggCrack >= 1`,
+        Catat satu entri panen harian dengan bucket TB (telur bagus), TR (telur retak), TP (telur pecah).
+        Boleh lebih dari satu entri per kandang per hari (mis. pagi/sore).
+        Validasi bisnis: kandang aktif, siklus aktif, total `tb + tr + tp >= 1`,
         maksimal 10.000 butir per field.
       operationId: recordDailyProduction
       requestBody:
@@ -284,10 +285,10 @@ paths:
               $ref: "#/components/schemas/DailyProductionInput"
             example:
               cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-              eggGradeId: 1
               recordDate: "2026-06-04"
-              quantity: 1200
-              eggCrack: 15
+              tb: 1200
+              tr: 30
+              tp: 15
               weight: 72.5
       responses:
         "201":
@@ -575,29 +576,33 @@ components:
 
     DailyProductionInput:
       type: object
-      required: [cageId, eggGradeId, recordDate, quantity]
+      required: [cageId, recordDate]
       properties:
         cageId:
           type: string
           format: uuid
-        eggGradeId:
-          type: integer
-          minimum: 1
         recordDate:
           type: string
           format: date
           description: Tanggal panen (ISO 8601 date)
-        quantity:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          description: Jumlah telur layak (butir)
-        eggCrack:
+        tb:
           type: integer
           minimum: 0
           maximum: 10000
           default: 0
-          description: Jumlah telur pecah (butir)
+          description: Telur bagus (butir)
+        tr:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 0
+          description: Telur retak (butir)
+        tp:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 0
+          description: Telur pecah (butir)
         weight:
           type: number
           format: float

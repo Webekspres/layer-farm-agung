@@ -6,9 +6,9 @@ export type DailyProductionRecapRow = {
   recordDate: Date;
   cageName: string;
   locationName: string;
-  eggGradeName: string;
-  quantity: number;
-  eggCrack: number;
+  tb: number;
+  tr: number;
+  tp: number;
   weight: number | null;
   recordedBy: string;
   createdAt: Date;
@@ -30,10 +30,12 @@ export async function listDailyProductionRecap(
           location: { select: { name: true } },
         },
       },
-      egg_grade: { select: { name: true } },
       user: { select: { full_name: true, username: true } },
     },
-    orderBy: [{ cage: { name: "asc" } }, { egg_grade: { name: "asc" } }],
+    orderBy: [
+      { cage: { name: "asc" } },
+      { created_at: "asc" },
+    ],
   });
 
   return rows.map((row) => ({
@@ -41,9 +43,9 @@ export async function listDailyProductionRecap(
     recordDate: row.record_date,
     cageName: row.cage.name,
     locationName: row.cage.location.name,
-    eggGradeName: row.egg_grade.name,
-    quantity: row.quantity,
-    eggCrack: row.egg_crack,
+    tb: row.tb,
+    tr: row.tr,
+    tp: row.tp,
     weight: row.weight,
     recordedBy: row.user.full_name || row.user.username,
     createdAt: row.created_at,

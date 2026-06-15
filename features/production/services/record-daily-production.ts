@@ -60,34 +60,7 @@ export async function recordDailyProduction(
     };
   }
 
-  const grade = await prisma.eggGrade.findUnique({
-    where: { id: input.eggGradeId },
-    select: { id: true },
-  });
-
-  if (!grade) {
-    return { ok: false, error: "Grade telur tidak ditemukan." };
-  }
-
   const recordDate = startOfUtcDate(input.recordDate);
-
-  const existing = await prisma.dailyProduction.findFirst({
-    where: {
-      tenant_id: tenantId,
-      cage_id: input.cageId,
-      egg_grade_id: input.eggGradeId,
-      record_date: recordDate,
-    },
-    select: { id: true },
-  });
-
-  if (existing) {
-    return {
-      ok: false,
-      error:
-        "Produksi untuk kandang, tanggal, dan grade ini sudah tercatat. Edit dari dashboard (segera) atau pilih grade lain.",
-    };
-  }
 
   try {
     await prisma.dailyProduction.create({
@@ -95,10 +68,10 @@ export async function recordDailyProduction(
         tenant_id: tenantId,
         cage_id: input.cageId,
         user_id: userId,
-        egg_grade_id: input.eggGradeId,
         record_date: recordDate,
-        quantity: input.quantity,
-        egg_crack: input.eggCrack,
+        tb: input.tb,
+        tr: input.tr,
+        tp: input.tp,
         weight: input.weight ?? null,
         is_synced: true,
       },

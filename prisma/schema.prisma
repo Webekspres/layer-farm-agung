@@ -233,9 +233,8 @@ model EggGrade {
   name        String   @unique
   description String?
 
-  // Relations
-  daily_productions  DailyProduction[]
-  sales_order_items  SalesOrderItem[]
+  // Relations — penjualan (Modul 11); bukan input lapangan TB/TR/TP
+  sales_order_items SalesOrderItem[]
 }
 
 model Vendor {
@@ -339,18 +338,20 @@ model DailyProduction {
   cage_id      String   @db.Uuid
   user_id      String   @db.Uuid
   record_date  DateTime @db.Date
-  egg_grade_id Int
-  quantity     Int
-  egg_crack    Int      @default(0)
+  /** Telur bagus (TB) */
+  tb           Int      @default(0)
+  /** Telur retak (TR) */
+  tr           Int      @default(0)
+  /** Telur pecah (TP) */
+  tp           Int      @default(0)
   weight       Float?
   is_synced    Boolean  @default(true)
   created_at   DateTime @default(now())
 
   // Relations
-  tenant    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  cage      Cage      @relation(fields: [cage_id], references: [id], onDelete: Restrict)
-  user      User      @relation(fields: [user_id], references: [id], onDelete: Restrict)
-  egg_grade EggGrade  @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cage   Cage   @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Restrict)
 }
 
 model FeedConsumption {

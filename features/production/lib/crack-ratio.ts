@@ -1,10 +1,11 @@
-/** True when pecah melebihi ambang % dari total panen (layak + pecah). */
+/** True when TR+TP melebihi ambang % dari total panen (TB+TR+TP). */
 export function crackRatioExceedsThreshold(
-  quantity: number,
-  eggCrack: number,
+  tb: number,
+  tr: number,
+  tp: number,
   threshold = 0.05,
 ): boolean {
-  const total = quantity + eggCrack;
+  const total = tb + tr + tp;
   if (total <= 0) return false;
-  return eggCrack / total > threshold;
+  return (tr + tp) / total > threshold;
 }

@@ -41,9 +41,9 @@ export function DailyProductionRecapTable({
           <TableRow>
             <TableHead>Kandang</TableHead>
             <TableHead>Lokasi</TableHead>
-            <TableHead>Grade</TableHead>
-            <TableHead className="text-right">Layak</TableHead>
-            <TableHead className="text-right">Pecah</TableHead>
+            <TableHead className="text-right">TB</TableHead>
+            <TableHead className="text-right">TR</TableHead>
+            <TableHead className="text-right">TP</TableHead>
             <TableHead className="text-right">Berat (kg)</TableHead>
             <TableHead>Staff</TableHead>
             <TableHead>Waktu</TableHead>
@@ -51,23 +51,26 @@ export function DailyProductionRecapTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const crackWarning = crackRatioExceedsThreshold(
-              row.quantity,
-              row.eggCrack,
+            const defectWarning = crackRatioExceedsThreshold(
+              row.tb,
+              row.tr,
+              row.tp,
             );
 
             return (
               <TableRow key={row.id}>
                 <TableCell className="font-medium">{row.cageName}</TableCell>
                 <TableCell>{row.locationName}</TableCell>
-                <TableCell>{row.eggGradeName}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {row.quantity.toLocaleString("id-ID")}
+                  {row.tb.toLocaleString("id-ID")}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {row.tr.toLocaleString("id-ID")}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
                   <span className="inline-flex items-center justify-end gap-2">
-                    {row.eggCrack.toLocaleString("id-ID")}
-                    {crackWarning ? (
+                    {row.tp.toLocaleString("id-ID")}
+                    {defectWarning ? (
                       <Badge variant="outline" className="border-warning text-warning">
                         &gt;5%
                       </Badge>
