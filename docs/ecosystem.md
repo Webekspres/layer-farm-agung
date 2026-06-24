@@ -4,7 +4,7 @@
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-06-08 |
+| **Terakhir diperbarui** | 2026-06-24 |
 | **Pivot** | Mobile **PWA/Serwist di Next.js dihentikan** → **React Native + Expo** |
 
 ---
@@ -74,10 +74,14 @@ Detail endpoint: **[apicontract/openapi.yaml](./apicontract/openapi.yaml)**.
 
 | Endpoint v1 | Status |
 |-------------|--------|
+| `POST /api/v1/mobile/auth/sign-in` | ✅ |
 | `GET /api/v1/cages` | ✅ |
 | `GET /api/v1/cages/{cageId}` | ✅ |
-| `GET /api/v1/egg-grades` | ✅ |
-| `POST /api/v1/production` | ✅ |
+| `POST /api/v1/cages/scan` | ✅ |
+| `GET /api/v1/cages/{cageId}/daily-history` | ✅ |
+| `GET /api/v1/egg-grades` | ✅ (legacy) |
+| `POST /api/v1/production` | ✅ TB/TR/TP, multi-record |
+| `PATCH /api/v1/production/{recordId}` | ✅ |
 | `POST /api/v1/feed-consumption` | 🔲 stub `501` |
 
 ---
