@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { requireApiPermissionWithTenant } from "@/lib/api/require-api-session";
 import { apiError, apiSuccess, apiValidationError } from "@/lib/api/response";
-import { feedConsumptionSchema } from "@/features/production/schemas/feed-consumption";
-import { recordFeedConsumption } from "@/features/production/services/record-feed-consumption";
+import { medicalRecordSchema } from "@/features/production/schemas/medical-record";
+import { recordMedicalRecord } from "@/features/production/services/record-medical-record";
 
 export async function POST(request: NextRequest) {
   const auth = await requireApiPermissionWithTenant("manage_production");
@@ -18,14 +18,14 @@ export async function POST(request: NextRequest) {
     return apiValidationError("Body JSON tidak valid.");
   }
 
-  const parsed = feedConsumptionSchema.safeParse(body);
+  const parsed = medicalRecordSchema.safeParse(body);
   if (!parsed.success) {
     return apiValidationError(
-      parsed.error.issues[0]?.message ?? "Data konsumsi pakan tidak valid.",
+      parsed.error.issues[0]?.message ?? "Data pengobatan tidak valid.",
     );
   }
 
-  const result = await recordFeedConsumption(
+  const result = await recordMedicalRecord(
     auth.tenantId,
     auth.session.user.id,
     parsed.data,
@@ -35,5 +35,5 @@ export async function POST(request: NextRequest) {
     return apiError(result.error, 400);
   }
 
-  return apiSuccess({ recorded: true }, "Konsumsi pakan berhasil dicatat.", 201);
+  return apiSuccess({ recorded: true }, "Catatan pengobatan berhasil dicatat.", 201);
 }

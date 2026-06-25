@@ -32,6 +32,7 @@ model Tenant {
   vendors               Vendor[]
   items                 Item[]
   daily_productions     DailyProduction[]
+  feed_consumptions     FeedConsumption[]
   sync_queues           SyncQueue[]
   customers             Customer[]
   sales_orders          SalesOrder[]
@@ -83,10 +84,12 @@ model User {
   updated_at       DateTime @updatedAt
 
   // Relations
-  tenant            Tenant?           @relation(fields: [tenant_id], references: [id], onDelete: SetNull)
-  role              Role              @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  tenant                 Tenant?                @relation(fields: [tenant_id], references: [id], onDelete: SetNull)
+  role                   Role                   @relation(fields: [role_id], references: [id], onDelete: Restrict)
   daily_productions      DailyProduction[]
   feed_consumptions      FeedConsumption[]
+  population_mutations   PopulationMutation[]
+  medical_records        MedicalRecord[]
   sessions               Session[]
   accounts               Account[]
   cage_staff_assignments CageStaffAssignment[]
@@ -356,31 +359,37 @@ model DailyProduction {
 
 model FeedConsumption {
   id          String   @id @default(uuid()) @db.Uuid
+  tenant_id   String   @db.Uuid
   cage_id     String   @db.Uuid
   item_id     String   @db.Uuid
   user_id     String   @db.Uuid
   record_date DateTime @db.Date
   quantity    Float
+  notes       String?
   is_synced   Boolean  @default(true)
   created_at  DateTime @default(now())
 
   // Relations
-  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Restrict)
-  item Item @relation(fields: [item_id], references: [id], onDelete: Restrict)
-  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cage   Cage   @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  item   Item   @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Restrict)
 }
 
 model PopulationMutation {
   id            String   @id @default(uuid()) @db.Uuid
   cage_id       String   @db.Uuid
+  user_id       String   @db.Uuid
   mutation_type String
   quantity      Int
   notes         String?
   record_date   DateTime @db.Date
+  is_synced     Boolean  @default(true)
   created_at    DateTime @default(now())
 
   // Relations
   cage Cage @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
 }
 
 model VaccineSchedule {
@@ -398,15 +407,24 @@ model VaccineSchedule {
 }
 
 model MedicalRecord {
-  id              String   @id @default(uuid()) @db.Uuid
-  cage_id         String   @db.Uuid
-  indication      String
-  treatment_notes String?
-  treatment_date  DateTime @db.Date
-  created_at      DateTime @default(now())
+  id                   String   @id @default(uuid()) @db.Uuid
+  cage_id              String   @db.Uuid
+  user_id              String   @db.Uuid
+  /** Gejala / indikasi penyakit */
+  indication           String
+  sick_population      Int      @default(0)
+  mortality_count      Int      @default(0)
+  medicine_name        String
+  dosage_and_duration  String
+  application_method   String
+  treatment_notes      String?
+  treatment_date       DateTime @db.Date
+  is_synced            Boolean  @default(true)
+  created_at           DateTime @default(now())
 
   // Relations
   cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
 }
 
 model SyncQueue {

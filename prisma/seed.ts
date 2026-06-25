@@ -203,13 +203,9 @@ async function main() {
         cage_type: "Closed house",
         capacity: 5000,
         status: "Active",
+        qr_code: generateCageQrCode(),
       },
     });
-
-    const { setCageQrCode } = await import(
-      "@/features/cages/lib/cage-staff-db"
-    );
-    await setCageQrCode(seedCage.id, generateCageQrCode());
 
     await prisma.cycleSetting.create({
       data: {

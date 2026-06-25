@@ -13,8 +13,8 @@ describe("isApiV1Path", () => {
 
 describe("resolveAllowedOrigin", () => {
   test("allows Expo dev origin in development", () => {
-    const previous = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
+    const previous = (process.env as any).NODE_ENV;
+    (process.env as any).NODE_ENV = "development";
 
     const request = new NextRequest("http://localhost:3000/api/v1/cages", {
       headers: { origin: "http://localhost:8081" },
@@ -22,6 +22,6 @@ describe("resolveAllowedOrigin", () => {
 
     expect(resolveAllowedOrigin(request)).toBe("http://localhost:8081");
 
-    process.env.NODE_ENV = previous;
+    (process.env as any).NODE_ENV = previous;
   });
 });

@@ -25,13 +25,9 @@ function buildWhere({
 
   if (usage === "in_use") {
     and.push({
-      OR: [
-        { daily_productions: { some: {} } },
-        { sales_order_items: { some: {} } },
-      ],
+      sales_order_items: { some: {} },
     });
   } else if (usage === "unused") {
-    and.push({ daily_productions: { none: {} } });
     and.push({ sales_order_items: { none: {} } });
   }
 
@@ -51,7 +47,7 @@ export async function listEggGrades(
   const where = buildWhere(searchFilters);
 
   const includeClause = {
-    _count: { select: { daily_productions: true, sales_order_items: true } },
+    _count: { select: { sales_order_items: true } },
   } as const;
 
   if (page !== undefined && pageSize !== undefined) {
@@ -73,7 +69,7 @@ export async function listEggGrades(
         id: row.id,
         name: row.name,
         description: row.description,
-        usageCount: row._count.daily_productions + row._count.sales_order_items,
+        usageCount: row._count.sales_order_items,
       })),
       total,
       page: safePage,
@@ -92,7 +88,7 @@ export async function listEggGrades(
     id: row.id,
     name: row.name,
     description: row.description,
-    usageCount: row._count.daily_productions + row._count.sales_order_items,
+    usageCount: row._count.sales_order_items,
   }));
 
   return {

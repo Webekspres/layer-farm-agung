@@ -57,7 +57,7 @@ describe("getUsersTenantScope", () => {
     const session = {
       user: { tenantId: undefined },
       session: { activeTenantId: null },
-    } as ServerSession;
+    } as unknown as ServerSession;
     expect(() => getUsersTenantScope(session)).toThrow(
       "Tenant aktif tidak ditemukan untuk akun ini.",
     );

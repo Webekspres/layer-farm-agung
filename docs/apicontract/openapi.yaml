@@ -400,8 +400,7 @@ paths:
       tags: [Feed]
       summary: Catat konsumsi pakan
       description: |
-        **Belum diimplementasi** — server mengembalikan `501` sampai service domain
-        inventori siap. Skema request di bawah adalah target kontrak.
+        Catat konsumsi pakan harian untuk kandang tertentu.
       operationId: recordFeedConsumption
       requestBody:
         required: true
@@ -409,9 +408,15 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/FeedConsumptionInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              itemId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+              recordDate: "2026-06-11"
+              quantity: 25.5
+              notes: Habis semua
       responses:
         "201":
-          description: Konsumsi tercatat (rencana)
+          description: Konsumsi pakan berhasil dicatat
           content:
             application/json:
               schema:
@@ -421,21 +426,140 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/RecordFeedConsumptionResult"
+              example:
+                success: true
+                message: Konsumsi pakan berhasil dicatat.
+                data:
+                  recorded: true
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "501":
-          description: Endpoint belum tersedia
+
+  /api/v1/population-mutation:
+    post:
+      tags: [Production]
+      summary: Catat mutasi populasi
+      description: |
+        Catat mutasi/perubahan populasi ayam (Mati, Afkir, Masuk, Pindah).
+      operationId: recordPopulationMutation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PopulationMutationInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              mutationType: Mati
+              quantity: 5
+              recordDate: "2026-06-11"
+              notes: Sakit lemas
+      responses:
+        "201":
+          description: Mutasi populasi berhasil dicatat
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ApiError"
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RecordPopulationMutationResult"
               example:
-                success: false
-                error: Endpoint konsumsi pakan belum tersedia. Layanan domain sedang dalam pengembangan.
+                success: true
+                message: Mutasi populasi berhasil dicatat.
+                data:
+                  recorded: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/medical-records:
+    post:
+      tags: [Production]
+      summary: Catat pengobatan
+      description: |
+        Catat pemberian obat/vitamin dan laporan kondisi kesehatan kandang.
+      operationId: recordMedicalRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicalRecordInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              indication: Kurang nafsu makan
+              sickPopulation: 12
+              mortalityCount: 1
+              medicineName: Vita-B
+              dosageAndDuration: 2ml/L selama 3 hari
+              applicationMethod: Minum
+              treatmentNotes: Observasi lanjutan
+              treatmentDate: "2026-06-11"
+      responses:
+        "201":
+          description: Catatan pengobatan berhasil dicatat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RecordMedicalRecordResult"
+              example:
+                success: true
+                message: Catatan pengobatan berhasil dicatat.
+                data:
+                  recorded: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/feed-items:
+    get:
+      tags: [Catalog]
+      summary: Daftar item pakan
+      description: |
+        Mendapatkan daftar item pakan aktif untuk dropdown pilihan pakan.
+      operationId: listFeedItems
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/FeedItemOption"
+              example:
+                success: true
+                message: Daftar pakan berhasil diambil.
+                data:
+                  - id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                    name: Konsentrat Layer PAR-L
+                    unit: kg
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
 components:
   securitySchemes:
@@ -773,7 +897,6 @@ components:
 
     FeedConsumptionInput:
       type: object
-      description: Kontrak rencana — belum divalidasi server
       required: [cageId, itemId, recordDate, quantity]
       properties:
         cageId:
@@ -789,12 +912,98 @@ components:
         quantity:
           type: number
           format: float
-          minimum: 0
-          description: Jumlah pakan (satuan sesuai master item)
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah pakan (kg)
+        notes:
+          type: string
+          maxLength: 500
 
     RecordFeedConsumptionResult:
       type: object
-      description: Kontrak rencana
       properties:
         recorded:
           type: boolean
+          const: true
+
+    PopulationMutationInput:
+      type: object
+      required: [cageId, mutationType, quantity, recordDate]
+      properties:
+        cageId:
+          type: string
+          format: uuid
+        mutationType:
+          type: string
+          enum: [Mati, Afkir, Masuk, Pindah]
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        recordDate:
+          type: string
+          format: date
+        notes:
+          type: string
+          maxLength: 500
+
+    RecordPopulationMutationResult:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+          const: true
+
+    MedicalRecordInput:
+      type: object
+      required: [cageId, indication, sickPopulation, mortalityCount, medicineName, dosageAndDuration, applicationMethod, treatmentDate]
+      properties:
+        cageId:
+          type: string
+          format: uuid
+        indication:
+          type: string
+          minLength: 3
+          maxLength: 500
+        sickPopulation:
+          type: integer
+          minimum: 0
+        mortalityCount:
+          type: integer
+          minimum: 0
+        medicineName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        dosageAndDuration:
+          type: string
+          minLength: 1
+          maxLength: 300
+        applicationMethod:
+          type: string
+          enum: [Minum, Suntik, Semprot, Tetes, Campur Pakan]
+        treatmentNotes:
+          type: string
+          maxLength: 1000
+        treatmentDate:
+          type: string
+          format: date
+
+    RecordMedicalRecordResult:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+          const: true
+
+    FeedItemOption:
+      type: object
+      required: [id, name, unit]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string

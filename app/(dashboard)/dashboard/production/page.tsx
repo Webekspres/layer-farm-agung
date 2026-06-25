@@ -2,9 +2,11 @@ import { Suspense } from "react";
 
 import { PageHeader } from "@/components/layout/page-header";
 import { TenantRequiredPanel } from "@/features/master-data/components/tenant-required-panel";
-import { DailyInputRecapEmptyPanel } from "@/features/production/components/daily-input-recap-empty-panel";
 import { DailyInputRecapTabs } from "@/features/production/components/daily-input-recap-tabs";
 import { DailyProductionRecapTable } from "@/features/production/components/daily-production-recap-table";
+import { FeedConsumptionRecapTable } from "@/features/production/components/feed-consumption-recap-table";
+import { PopulationMutationRecapTable } from "@/features/production/components/population-mutation-recap-table";
+import { MedicalRecordRecapTable } from "@/features/production/components/medical-record-recap-table";
 import { ProductionDateToolbar } from "@/features/production/components/production-date-toolbar";
 import { parseDailyInputRecapTab } from "@/features/production/config/daily-input-recap-tabs";
 import {
@@ -16,6 +18,9 @@ import {
   parseProductionRecordDate,
 } from "@/features/production/lib/parse-production-date";
 import { listDailyProductionRecap } from "@/features/production/services/list-daily-production-recap";
+import { listFeedConsumptionRecap } from "@/features/production/services/list-feed-consumption-recap";
+import { listPopulationMutationRecap } from "@/features/production/services/list-population-mutation-recap";
+import { listMedicalRecordRecap } from "@/features/production/services/list-medical-record-recap";
 
 type ProductionPageProps = {
   searchParams: Promise<{
@@ -32,10 +37,23 @@ export default async function ProductionPage({ searchParams }: ProductionPagePro
   const recordDateLabel = formatProductionDateLabel(recordDate);
   const activeTab = parseDailyInputRecapTab(params.tab);
 
-  const productionRows =
-    tenantId && !needsTenantSelection
-      ? await listDailyProductionRecap(tenantId, recordDate)
-      : [];
+  const hasTenant = tenantId && !needsTenantSelection;
+
+  const productionRows = hasTenant
+    ? await listDailyProductionRecap(tenantId, recordDate)
+    : [];
+
+  const feedRows = hasTenant && activeTab === "feed"
+    ? await listFeedConsumptionRecap(tenantId, recordDate)
+    : [];
+
+  const populationRows = hasTenant && activeTab === "population"
+    ? await listPopulationMutationRecap(tenantId, recordDate)
+    : [];
+
+  const medicalRows = hasTenant && activeTab === "medical"
+    ? await listMedicalRecordRecap(tenantId, recordDate)
+    : [];
 
   return (
     <>
@@ -62,23 +80,23 @@ export default async function ProductionPage({ searchParams }: ProductionPagePro
           ) : null}
 
           {activeTab === "feed" ? (
-            <DailyInputRecapEmptyPanel
-              title="Belum ada rekap pakan"
-              description="Data konsumsi pakan akan muncul setelah modul inventori dan API feed-consumption aktif."
+            <FeedConsumptionRecapTable
+              rows={feedRows}
+              recordDateLabel={recordDateLabel}
             />
           ) : null}
 
           {activeTab === "population" ? (
-            <DailyInputRecapEmptyPanel
-              title="Belum ada rekap mutasi populasi"
-              description="Data increase/decrease layer akan muncul setelah API mutasi populasi aktif."
+            <PopulationMutationRecapTable
+              rows={populationRows}
+              recordDateLabel={recordDateLabel}
             />
           ) : null}
 
           {activeTab === "medical" ? (
-            <DailyInputRecapEmptyPanel
-              title="Belum ada rekap pengobatan"
-              description="Laporan pengobatan akan muncul setelah API medical record aktif."
+            <MedicalRecordRecapTable
+              rows={medicalRows}
+              recordDateLabel={recordDateLabel}
             />
           ) : null}
         </div>
@@ -86,3 +104,4 @@ export default async function ProductionPage({ searchParams }: ProductionPagePro
     </>
   );
 }
+

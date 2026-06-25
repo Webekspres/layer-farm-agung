@@ -7,7 +7,7 @@ import {
 } from "@/lib/api/cors";
 
 const AUTH_ROUTES = ["/login"];
-const PUBLIC_ROUTES = ["/login", "/api/auth"];
+const PUBLIC_ROUTES = ["/login", "/api/auth", "/api-docs"];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_ROUTES.some(
