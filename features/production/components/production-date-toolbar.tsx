@@ -2,10 +2,18 @@
 
 import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   formatProductionDateParam,
   isProductionToday,
@@ -20,10 +28,10 @@ export function ProductionDateToolbar() {
   const [, startTransition] = useTransition();
 
   const recordDate = parseProductionRecordDate(searchParams.get("date"));
-  const dateParam = formatProductionDateParam(recordDate);
   const viewingToday = isProductionToday(recordDate);
 
-  function navigateTo(date: Date) {
+  function navigateTo(date: Date | undefined) {
+    if (!date) return;
     const next = new URLSearchParams(searchParams.toString());
     const param = formatProductionDateParam(date);
 
@@ -42,6 +50,7 @@ export function ProductionDateToolbar() {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
+        {/* Tombol Hari Sebelumnya */}
         <Button
           type="button"
           variant="outline"
@@ -52,21 +61,38 @@ export function ProductionDateToolbar() {
           <ChevronLeft className="size-4" />
         </Button>
 
-        <div className="relative min-w-[10.5rem]">
-          <CalendarDays className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="date"
-            value={dateParam}
-            max={formatProductionDateParam(new Date())}
-            className="pl-9"
-            aria-label="Pilih tanggal rekap"
-            onChange={(event) => {
-              if (!event.target.value) return;
-              navigateTo(parseProductionRecordDate(event.target.value));
-            }}
-          />
-        </div>
+        {/* Shadcn Popover + Calendar UI Modern */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={"outline"}
+              className={cn(
+                "w-[14rem] justify-start text-left font-normal pl-3",
+                !recordDate && "text-muted-foreground",
+              )}
+            >
+              <CalendarIcon className="mr-2.5 size-4 text-muted-foreground" />
+              {recordDate ? (
+                format(recordDate, "dd MMMM yyyy", { locale: id })
+              ) : (
+                <span>Pilih tanggal</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={recordDate}
+              onSelect={navigateTo}
+              // Mengunci tanggal masa depan agar staff tidak bisa melihat rekap esok hari
+              disabled={(date) =>
+                date > new Date() || date < new Date("1900-01-01")
+              }
+            />
+          </PopoverContent>
+        </Popover>
 
+        {/* Tombol Hari Berikutnya */}
         <Button
           type="button"
           variant="outline"
@@ -79,6 +105,7 @@ export function ProductionDateToolbar() {
         </Button>
       </div>
 
+      {/* Tombol Kembali Ke Hari Ini */}
       {!viewingToday ? (
         <Button
           type="button"
