@@ -65,7 +65,7 @@ export function MedicalRecordRecapTable({
               <TableCell>{row.medicineName}</TableCell>
               <TableCell>{row.dosageAndDuration}</TableCell>
               <TableCell>{row.applicationMethod}</TableCell>
-              <TableCell className="max-w-[150px] truncate text-muted-foreground">
+              <TableCell className="max-w-37.5 truncate text-muted-foreground">
                 {row.treatmentNotes || "-"}
               </TableCell>
               <TableCell>{row.recordedBy}</TableCell>

@@ -55,7 +55,7 @@ export function PopulationMutationRecapTable({
               <TableCell className="text-right tabular-nums">
                 {row.quantity.toLocaleString("id-ID")}
               </TableCell>
-              <TableCell className="max-w-[200px] truncate text-muted-foreground">
+              <TableCell className="max-w-50 truncate text-muted-foreground">
                 {row.notes || "-"}
               </TableCell>
               <TableCell>{row.recordedBy}</TableCell>
