@@ -101,7 +101,7 @@ export default function LoginSplitScreen() {
 
               <FieldGroup className="gap-5">
                 <Field>
-                  <FieldLabel htmlFor="identifier">Username / Email</FieldLabel>
+                  <FieldLabel htmlFor="identifier">Username atau Email</FieldLabel>
                   <Input
                     id="identifier"
                     name="identifier"
