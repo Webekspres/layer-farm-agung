@@ -154,7 +154,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
         </h2>
 
         {cage.activeCycle ? (
-          <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 p-6">
+          <div className="rounded-xl border border-emerald-500/20 bg-linear-to-r from-emerald-500/5 to-teal-500/5 p-6">
             <div className="grid gap-6 sm:grid-cols-3">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-semibold">

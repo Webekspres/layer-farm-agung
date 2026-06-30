@@ -67,7 +67,7 @@ export function ProductionDateToolbar() {
             <Button
               variant={"outline"}
               className={cn(
-                "w-[14rem] justify-start text-left font-normal pl-3",
+                "w-56 justify-start text-left font-normal pl-3",
                 !recordDate && "text-muted-foreground",
               )}
             >
