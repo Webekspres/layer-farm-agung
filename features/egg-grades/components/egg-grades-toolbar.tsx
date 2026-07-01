@@ -66,7 +66,7 @@ export function EggGradesToolbar({ onCreateClick }: EggGradesToolbarProps) {
           />
         </div>
         <Select value={usage} onValueChange={(v) => updateFilter("usage", v)}>
-          <SelectTrigger className="w-full sm:w-[200px]">
+          <SelectTrigger className="w-full sm:w-50">
             <SelectValue placeholder="Pemakaian" />
           </SelectTrigger>
           <SelectContent>
