@@ -61,7 +61,26 @@ export async function createCageAction(
     return { error: "Strain tidak ditemukan." };
   }
 
-  const finalCageType = data.cageType === "Lainnya" ? data.cageTypeCustom : data.cageType;
+  // 🔒 TAMBAHAN VALIDASI: Cek nama kandang duplikat di lokasi yang sama
+  const duplicateCage = await prisma.cage.findFirst({
+    where: {
+      name: {
+        equals: data.name,
+        mode: "insensitive",
+      },
+      location_id: data.locationId,
+    },
+    select: { id: true },
+  });
+
+  if (duplicateCage) {
+    return {
+      error: `Nama kandang "${data.name}" sudah digunakan di lokasi ini.`,
+    };
+  }
+
+  const finalCageType =
+    data.cageType === "Lainnya" ? data.cageTypeCustom : data.cageType;
   const qrCode = generateCageQrCode();
 
   try {

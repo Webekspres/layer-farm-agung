@@ -62,7 +62,29 @@ export async function updateCageAction(
     return { error: "Lokasi tidak valid untuk tenant ini." };
   }
 
-  const finalCageType = data.cageType === "Lainnya" ? data.cageTypeCustom : data.cageType;
+  // 🔒 TAMBAHAN VALIDASI: Cek benturan nama kandang lain di lokasi yang sama (Case-Insensitive)
+  const duplicateCage = await prisma.cage.findFirst({
+    where: {
+      name: {
+        equals: data.name,
+        mode: "insensitive",
+      },
+      location_id: data.locationId,
+      id: {
+        not: data.id, // 👈 KUNCI: Kecualikan kandang ini sendiri agar bisa save jika nama tidak diubah
+      },
+    },
+    select: { id: true },
+  });
+
+  if (duplicateCage) {
+    return {
+      error: `Nama kandang "${data.name}" sudah digunakan di lokasi ini.`,
+    };
+  }
+
+  const finalCageType =
+    data.cageType === "Lainnya" ? data.cageTypeCustom : data.cageType;
 
   try {
     await prisma.cage.update({

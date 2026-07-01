@@ -3,7 +3,7 @@ import { z } from "zod";
 const cageStatusValues = ["Active", "Inactive"] as const;
 
 const cageBaseSchema = z.object({
-  locationId: z.string().uuid("Pilih lokasi yang valid."),
+  locationId: z.uuid("Pilih lokasi yang valid."),
   strainId: z.coerce.number().int().positive("Pilih strain yang valid."),
   name: z.string().trim().min(2, "Nama kandang minimal 2 karakter."),
   cageType: z

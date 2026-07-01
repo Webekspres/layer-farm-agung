@@ -182,6 +182,8 @@ model Cage {
   vaccine_schedules    VaccineSchedule[]
   medical_records      MedicalRecord[]
   staff_assignments    CageStaffAssignment[]
+
+  @@unique([location_id, name])
 }
 
 model CageStaffAssignment {

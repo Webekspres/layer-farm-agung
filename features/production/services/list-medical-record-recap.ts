@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 export type MedicalRecordRecapRow = {
   id: string;
   treatmentDate: Date;
+  cageId: string;
   cageName: string;
   locationName: string;
   indication: string;
@@ -29,6 +30,7 @@ export async function listMedicalRecordRecap(
     include: {
       cage: {
         select: {
+          id: true,
           name: true,
           location: { select: { name: true } },
         },
@@ -41,6 +43,7 @@ export async function listMedicalRecordRecap(
   return rows.map((row) => ({
     id: row.id,
     treatmentDate: row.treatment_date,
+    cageId: row.cage.id,
     cageName: row.cage.name,
     locationName: row.cage.location.name,
     indication: row.indication,
