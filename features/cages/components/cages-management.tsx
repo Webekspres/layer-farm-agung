@@ -200,29 +200,6 @@ function CageFormFields({
           </SelectContent>
         </Select>
       </Field>
-      {/* Temporarily bypass cycle inputs because backend is under development
-      {!editing ? (
-        <>
-          <Field>
-            <FieldLabel htmlFor="cycle-start">
-              Mulai siklus (opsional)
-            </FieldLabel>
-            <Input id="cycle-start" name="cycleStartDate" type="date" />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="cycle-pop">
-              Populasi awal siklus (opsional)
-            </FieldLabel>
-            <Input
-              id="cycle-pop"
-              name="initialPopulation"
-              type="number"
-              min={1}
-            />
-          </Field>
-        </>
-      ) : null}
-      */}
       {error ? <FieldError>{error}</FieldError> : null}
     </FieldGroup>
   );
@@ -246,8 +223,8 @@ export function CagesManagement({
   const [createLocationId, setCreateLocationId] = useState(
     () => formOptions.locations[0]?.id ?? "",
   );
-  const [createStrainId, setCreateStrainId] = useState(
-    () => String(formOptions.strains[0]?.id ?? ""),
+  const [createStrainId, setCreateStrainId] = useState(() =>
+    String(formOptions.strains[0]?.id ?? ""),
   );
   const [createStatus, setCreateStatus] = useState("Active");
   const [editLocationId, setEditLocationId] = useState("");
@@ -315,7 +292,8 @@ export function CagesManagement({
                 <TableHead>Lokasi</TableHead>
                 <TableHead>Strain</TableHead>
                 <TableHead>Kapasitas</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Siklus</TableHead>
+                {/* 🔴 Kolom Status Dihapus dari Head */}
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -333,13 +311,40 @@ export function CagesManagement({
                   <TableCell>{cage.locationName}</TableCell>
                   <TableCell>{cage.strainName}</TableCell>
                   <TableCell>{cage.capacity.toLocaleString("id-ID")}</TableCell>
+
                   <TableCell>
-                    <Badge
-                      variant={cage.status === "Active" ? "default" : "secondary"}
-                    >
-                      {cage.status === "Active" ? "Aktif" : "Nonaktif"}
-                    </Badge>
+                    {cage.activeCycleStartDate ? (
+                      <div className="flex flex-col gap-0.5">
+                        <Badge
+                          variant="outline"
+                          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-medium w-fit"
+                        >
+                          Siklus Aktif
+                        </Badge>
+                        <span className="text-[11px] text-muted-foreground pl-1 mt-0.5">
+                          Mulai:{" "}
+                          {new Date(
+                            cage.activeCycleStartDate,
+                          ).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    ) : (
+                      /* 🔴 Diubah menjadi lencana "Tidak Aktif" bernuansa merah/redup */
+                      <Badge
+                        variant="outline"
+                        className="border-destructive/30 bg-destructive/10 text-destructive/80 font-medium w-fit"
+                      >
+                        Tidak Aktif
+                      </Badge>
+                    )}
                   </TableCell>
+
+                  {/* 🔴 Data Status Di-bypass dari Cell View agar Tetap Berjalan di Belakang Layar */}
+
                   <TableCell className="text-right">
                     <Button
                       type="button"

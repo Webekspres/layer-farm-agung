@@ -1,10 +1,14 @@
-export type CageStatusFilter = "all" | "Active" | "Inactive";
+// Diubah konsepnya mencerminkan manajemen arsip (all, Active, Archived)
+export type CageStatusFilter = "all" | "Active" | "Archived";
+// Menambahkan opsi filter siklus baru
+export type CageCycleStatusFilter = "all" | "Active" | "Inactive";
 
 export type CagesListFilters = {
   search?: string;
   locationId?: string;
   strainId?: number;
   status?: CageStatusFilter;
+  cycleStatus?: CageCycleStatusFilter; // 👈 Tambah filter siklus baru
 };
 
 export type CageListItem = {
@@ -18,6 +22,7 @@ export type CageListItem = {
   capacity: number;
   status: string;
   activeCyclePopulation: number | null;
+  activeCycleStartDate: string | null;
 };
 
 export type CageFormOptions = {

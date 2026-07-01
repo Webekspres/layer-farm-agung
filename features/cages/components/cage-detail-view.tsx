@@ -192,7 +192,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
                 variant="destructive"
                 onClick={() => setCloseOpen(true)}
               >
-                Tutup Siklus / Afkir Kandang
+                Tutup Siklus Kandang
               </Button>
             </div>
           </div>
@@ -316,7 +316,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Tutup Siklus / Afkir Kandang</DialogTitle>
+            <DialogTitle>Tutup Siklus Kandang</DialogTitle>
           </DialogHeader>
           {cage.activeCycle ? (
             <form action={closeAction}>

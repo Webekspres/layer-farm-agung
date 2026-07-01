@@ -20,6 +20,8 @@ export async function listAdminCagesStatus(
     where: {
       status: "Active",
       location: { tenant_id: tenantId },
+    //   Hanya menampilkan kandang yang siklus nya sedang aktif
+      cycle_settings: { some: { status: "Active" } },
     },
     include: {
       location: { select: { name: true } },

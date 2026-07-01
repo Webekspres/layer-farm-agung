@@ -43,6 +43,8 @@ export async function listFieldCages(
       status: "Active",
       location: { tenant_id: tenantId },
       id: { in: assignedCageIds },
+      // Only show cages that have an active cycle
+      cycle_settings: { some: { status: "Active" } },
     },
     include: {
       location: { select: { name: true } },

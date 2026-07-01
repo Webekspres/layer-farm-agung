@@ -1,12 +1,11 @@
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CageListItem, CagesListFilters } from "@/features/cages/types";
-
 import type { PaginationMeta } from "@/lib/pagination";
 
 function buildWhere(
   tenantId: string,
-  { search, locationId, strainId, status }: CagesListFilters,
+  { search, locationId, strainId, status, cycleStatus }: CagesListFilters,
 ): Prisma.CageWhereInput {
   const where: Prisma.CageWhereInput = {
     location: { tenant_id: tenantId },
@@ -20,8 +19,22 @@ function buildWhere(
     where.strain_id = strainId;
   }
 
-  if (status) {
-    where.status = status;
+  // 🔒 Perbaikan Filter Status Master (Default: Active, Archived -> Inactive di DB)
+  if (!status || status === "Active") {
+    where.status = "Active";
+  } else if (status === "Archived") {
+    where.status = "Inactive";
+  } // Jika "all", where.status tidak di-set agar menampilkan semua data master
+
+  // 🔒 Tambahan Filter Kondisi Siklus Baru (Membaca relasi cycle_settings)
+  if (cycleStatus === "Active") {
+    where.cycle_settings = {
+      some: { status: "Active" },
+    };
+  } else if (cycleStatus === "Inactive") {
+    where.cycle_settings = {
+      none: { status: "Active" },
+    };
   }
 
   const q = search?.trim();
@@ -55,7 +68,7 @@ export async function listCages(
       where: { status: "Active" },
       take: 1,
       orderBy: { start_date: "desc" },
-      select: { initial_population: true },
+      select: { initial_population: true, start_date: true },
     },
   } as const;
 
@@ -86,6 +99,8 @@ export async function listCages(
         status: row.status,
         activeCyclePopulation:
           row.cycle_settings[0]?.initial_population ?? null,
+        activeCycleStartDate:
+          row.cycle_settings[0]?.start_date?.toISOString() ?? null,
       })),
       total,
       page: safePage,
@@ -110,8 +125,9 @@ export async function listCages(
     cageType: row.cage_type,
     capacity: row.capacity,
     status: row.status,
-    activeCyclePopulation:
-      row.cycle_settings[0]?.initial_population ?? null,
+    activeCyclePopulation: row.cycle_settings[0]?.initial_population ?? null,
+    activeCycleStartDate:
+      row.cycle_settings[0]?.start_date?.toISOString() ?? null,
   }));
 
   return {
