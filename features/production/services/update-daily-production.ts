@@ -1,4 +1,6 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
+import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
+import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import type { UpdateDailyProductionInput } from "@/features/production/schemas/update-daily-production";
 import prisma from "@/lib/prisma";
 
@@ -20,6 +22,8 @@ export async function updateDailyProduction(
     select: {
       id: true,
       cage_id: true,
+      tb: true,
+      cage: { select: { location_id: true } },
     },
   });
 
@@ -41,14 +45,43 @@ export async function updateDailyProduction(
     };
   }
 
+  // Reconcile egg stock so it stays consistent with the edited TB count.
+  const tbDelta = input.tb - existing.tb;
+  const eggItem =
+    tbDelta !== 0
+      ? await prisma.item.findFirst({
+          where: { tenant_id: tenantId, type: "Egg" },
+          select: { id: true },
+        })
+      : null;
+
   try {
-    await prisma.dailyProduction.update({
-      where: { id: recordId },
-      data: {
-        tb: input.tb,
-        tr: input.tr,
-        tp: input.tp,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.dailyProduction.update({
+        where: { id: recordId },
+        data: {
+          tb: input.tb,
+          tr: input.tr,
+          tp: input.tp,
+        },
+      });
+
+      if (eggItem && tbDelta !== 0) {
+        await applyStockMutation(tx, {
+          itemId: eggItem.id,
+          locationId: existing.cage.location_id,
+          // Positive delta = extra harvest; negative delta = correction down.
+          mutationType:
+            tbDelta > 0
+              ? StockMutationType.IN_HARVEST
+              : StockMutationType.OUT_ADJUSTMENT,
+          quantity: Math.abs(tbDelta),
+          referenceId: recordId,
+          // Correcting a prior IN — allow the balance to drop even if other
+          // movements have since reduced it.
+          allowNegative: tbDelta < 0,
+        });
+      }
     });
   } catch {
     return {

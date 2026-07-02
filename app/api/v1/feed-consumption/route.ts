@@ -35,5 +35,17 @@ export async function POST(request: NextRequest) {
     return apiError(result.error, 400);
   }
 
-  return apiSuccess({ recorded: true }, "Konsumsi pakan berhasil dicatat.", 201);
+  const message = result.lowStock
+    ? "Konsumsi pakan berhasil dicatat. Peringatan: stok pakan sudah di bawah ambang batas."
+    : "Konsumsi pakan berhasil dicatat.";
+
+  return apiSuccess(
+    {
+      recorded: true,
+      lowStock: result.lowStock,
+      remainingStock: result.remainingStock,
+    },
+    message,
+    201,
+  );
 }

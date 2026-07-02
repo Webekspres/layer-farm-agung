@@ -1,4 +1,6 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
+import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
+import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
 import prisma from "@/lib/prisma";
 
@@ -25,6 +27,7 @@ export async function recordDailyProduction(
     select: {
       id: true,
       status: true,
+      location_id: true,
       cycle_settings: {
         where: { status: "Active" },
         take: 1,
@@ -62,19 +65,39 @@ export async function recordDailyProduction(
 
   const recordDate = startOfUtcDate(input.recordDate);
 
+  // Egg inventory auto-increments from the "telur bagus" (TB) count only.
+  const eggItem = await prisma.item.findFirst({
+    where: { tenant_id: tenantId, type: "Egg" },
+    select: { id: true },
+  });
+
   try {
-    await prisma.dailyProduction.create({
-      data: {
-        tenant_id: tenantId,
-        cage_id: input.cageId,
-        user_id: userId,
-        record_date: recordDate,
-        tb: input.tb,
-        tr: input.tr,
-        tp: input.tp,
-        weight: input.weight ?? null,
-        is_synced: true,
-      },
+    await prisma.$transaction(async (tx) => {
+      const production = await tx.dailyProduction.create({
+        data: {
+          tenant_id: tenantId,
+          cage_id: input.cageId,
+          user_id: userId,
+          record_date: recordDate,
+          tb: input.tb,
+          tr: input.tr,
+          tp: input.tp,
+          weight: input.weight ?? null,
+          is_synced: true,
+        },
+        select: { id: true },
+      });
+
+      // Only TB feeds egg stock; skip silently if the tenant has no Egg item.
+      if (eggItem && input.tb > 0) {
+        await applyStockMutation(tx, {
+          itemId: eggItem.id,
+          locationId: cage.location_id,
+          mutationType: StockMutationType.IN_HARVEST,
+          quantity: input.tb,
+          referenceId: production.id,
+        });
+      }
     });
   } catch {
     return { ok: false, error: "Gagal menyimpan produksi harian." };

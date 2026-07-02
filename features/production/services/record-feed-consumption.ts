@@ -1,9 +1,11 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
+import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
+import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import type { FeedConsumptionInput } from "@/features/production/schemas/feed-consumption";
 import prisma from "@/lib/prisma";
 
 export type RecordFeedConsumptionResult =
-  | { ok: true }
+  | { ok: true; lowStock: boolean; remainingStock: number }
   | { ok: false; error: string };
 
 function startOfUtcDate(date: Date) {
@@ -23,7 +25,7 @@ export async function recordFeedConsumption(
       id: input.cageId,
       location: { tenant_id: tenantId },
     },
-    select: { id: true, status: true },
+    select: { id: true, status: true, location_id: true },
   });
 
   if (!cage) {
@@ -54,8 +56,7 @@ export async function recordFeedConsumption(
   }
 
   const isFeedType =
-    item.type.toLowerCase() === "pakan" ||
-    item.type.toLowerCase() === "feed";
+    item.type.toLowerCase() === "pakan" || item.type.toLowerCase() === "feed";
   if (!isFeedType) {
     return { ok: false, error: "Item yang dipilih bukan jenis pakan." };
   }
@@ -63,21 +64,44 @@ export async function recordFeedConsumption(
   const recordDate = startOfUtcDate(input.recordDate);
 
   try {
-    await prisma.feedConsumption.create({
-      data: {
-        tenant_id: tenantId,
-        cage_id: input.cageId,
-        item_id: input.itemId,
-        user_id: userId,
-        record_date: recordDate,
+    const outcome = await prisma.$transaction(async (tx) => {
+      const feedConsumption = await tx.feedConsumption.create({
+        data: {
+          tenant_id: tenantId,
+          cage_id: input.cageId,
+          item_id: input.itemId,
+          user_id: userId,
+          record_date: recordDate,
+          quantity: input.quantity,
+          notes: input.notes ?? null,
+          is_synced: true,
+        },
+        select: { id: true },
+      });
+
+      const stock = await applyStockMutation(tx, {
+        itemId: input.itemId,
+        locationId: cage.location_id,
+        mutationType: StockMutationType.OUT_FEED,
         quantity: input.quantity,
-        notes: input.notes ?? null,
-        is_synced: true,
-      },
+        referenceId: feedConsumption.id,
+      });
+
+      if (!stock.ok) {
+        // Rolls back the FeedConsumption insert too.
+        throw new StockError(stock.error);
+      }
+
+      return { lowStock: stock.lowStock, remainingStock: stock.newQuantity };
     });
-  } catch {
+
+    return { ok: true, lowStock: outcome.lowStock, remainingStock: outcome.remainingStock };
+  } catch (error) {
+    if (error instanceof StockError) {
+      return { ok: false, error: error.message };
+    }
     return { ok: false, error: "Gagal menyimpan konsumsi pakan." };
   }
-
-  return { ok: true };
 }
+
+class StockError extends Error {}

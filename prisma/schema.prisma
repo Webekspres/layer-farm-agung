@@ -13,6 +13,18 @@ datasource db {
 }
 
 // ==========================================
+// ENUMS & CONSTANTS
+// ==========================================
+enum ItemType {
+  Feed
+  Medicine
+  Vitamin
+  Vaccine
+  Egg
+  Other
+}
+
+// ==========================================
 // DOMAIN 1: AUTH & TENANT (MODUL 1)
 // ==========================================
 
@@ -287,7 +299,7 @@ model Item {
   id              String   @id @default(uuid()) @db.Uuid
   tenant_id       String   @db.Uuid
   name            String
-  type            String
+  type            ItemType
   unit            String
   min_stock_alert Float?
   created_at      DateTime @default(now())
@@ -299,6 +311,7 @@ model Item {
   purchase_order_items PurchaseOrderItem[]
   feed_consumptions    FeedConsumption[]
   vaccine_schedules    VaccineSchedule[]
+  medical_records      MedicalRecord[]
 }
 
 model InventoryStock {
@@ -311,6 +324,8 @@ model InventoryStock {
   // Relations
   item     Item     @relation(fields: [item_id], references: [id], onDelete: Cascade)
   location Location @relation(fields: [location_id], references: [id], onDelete: Cascade)
+
+  @@unique([item_id, location_id])
 }
 
 model StockMutation {
@@ -416,7 +431,12 @@ model MedicalRecord {
   indication           String
   sick_population      Int      @default(0)
   mortality_count      Int      @default(0)
+  /** Free-text nama obat (fallback bila item tidak ada di inventori). */
   medicine_name        String
+  /** Opsional: item obat/vitamin dari inventori yang dipakai. */
+  item_id              String?  @db.Uuid
+  /** Jumlah item inventori yang dipakai (dalam unit item). */
+  quantity_used        Float?
   dosage_and_duration  String
   application_method   String
   treatment_notes      String?
@@ -425,8 +445,9 @@ model MedicalRecord {
   created_at           DateTime @default(now())
 
   // Relations
-  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
-  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  cage Cage  @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  item Item? @relation(fields: [item_id], references: [id], onDelete: SetNull)
 }
 
 model SyncQueue {

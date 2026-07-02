@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { ItemType } from "@/generated/prisma/enums";
 
 export type FeedItemOption = {
   id: string;
@@ -7,8 +8,12 @@ export type FeedItemOption = {
 };
 
 /**
- * Returns items of type "Pakan" or "Feed" for the given tenant.
+ * Returns items of type Feed for the given tenant.
  * Used by mobile dropdown when selecting which feed was consumed.
+ *
+ * @deprecated Legacy endpoint. Prefer `GET /api/v1/items?type=Feed`
+ * (`listItemsForCage`), which also returns available stock. Kept for
+ * backward compatibility.
  */
 export async function listFeedItems(
   tenantId: string,
@@ -16,10 +21,7 @@ export async function listFeedItems(
   const items = await prisma.item.findMany({
     where: {
       tenant_id: tenantId,
-      OR: [
-        { type: { equals: "Pakan", mode: "insensitive" } },
-        { type: { equals: "Feed", mode: "insensitive" } },
-      ],
+      type: ItemType.Feed,
     },
     select: { id: true, name: true, unit: true },
     orderBy: { name: "asc" },

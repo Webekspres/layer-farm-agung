@@ -40,7 +40,6 @@ export const mainNavItems: NavItem[] = [
     href: "/dashboard/inventory",
     icon: Package,
     permission: "manage_inventory",
-    badge: "Soon",
   },
   {
     title: "Keuangan",

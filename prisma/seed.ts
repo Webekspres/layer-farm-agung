@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma";
 import { createUserWithCredential } from "@/features/auth/services/create-user";
 import { WIRED_PERMISSIONS } from "@/features/permissions/config/wired-permissions";
+import { ItemType } from "@/generated/prisma/enums";
 import {
   ADMIN_ROLE_NAME,
   resolveRolePermissionNames,
@@ -191,9 +192,8 @@ async function main() {
   let seedCage = existingCage;
 
   if (!seedCage) {
-    const { generateCageQrCode } = await import(
-      "@/features/cages/lib/generate-qr-code"
-    );
+    const { generateCageQrCode } =
+      await import("@/features/cages/lib/generate-qr-code");
 
     seedCage = await prisma.cage.create({
       data: {
@@ -218,9 +218,8 @@ async function main() {
   }
 
   if (seedCage && staffUser) {
-    const { upsertCageStaffAssignment } = await import(
-      "@/features/cages/lib/cage-staff-db"
-    );
+    const { upsertCageStaffAssignment } =
+      await import("@/features/cages/lib/cage-staff-db");
     await upsertCageStaffAssignment(seedCage.id, staffUser.id);
   }
 
@@ -235,6 +234,130 @@ async function main() {
       address: "Jl. Contoh No. 1",
     },
   });
+
+  // 👈 2. SUNTIK DATA MASTER PAKAN MENGGUNAKAN ENUM DENGAN ID TETAP (STATIC UUID)
+  // Menggunakan static UUID agar data tidak berantakan/duplikat ketika script seed dijalankan ulang.
+  const sampleFeeds = [
+    {
+      id: "00000000-0000-4000-8000-000000000101",
+      name: "Piala 241+",
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000102",
+      name: "Malindo Feedmill",
+    },
+  ];
+
+  for (const feed of sampleFeeds) {
+    await prisma.item.upsert({
+      where: { id: feed.id },
+      update: {
+        name: feed.name,
+        type: ItemType.Feed,
+        unit: "kg",
+      },
+      create: {
+        id: feed.id,
+        tenant_id: defaultTenant.id,
+        name: feed.name,
+        type: ItemType.Feed,
+        unit: "kg",
+      },
+    });
+  }
+
+  // Master item lintas tipe: obat, vitamin, telur (auto dari panen), dan lainnya (solar).
+  const sampleItems = [
+    {
+      id: "00000000-0000-4000-8000-000000000201",
+      name: "Amoksisilin",
+      type: ItemType.Medicine,
+      unit: "gram",
+      min_stock_alert: 500,
+      initialStock: 2000,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000202",
+      name: "Vitamin B Kompleks",
+      type: ItemType.Vitamin,
+      unit: "ml",
+      min_stock_alert: 300,
+      initialStock: 1000,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000203",
+      name: "Telur (persediaan)",
+      type: ItemType.Egg,
+      unit: "butir",
+      min_stock_alert: null,
+      initialStock: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000204",
+      name: "Solar",
+      type: ItemType.Other,
+      unit: "liter",
+      min_stock_alert: 50,
+      initialStock: 200,
+    },
+  ] as const;
+
+  for (const item of sampleItems) {
+    await prisma.item.upsert({
+      where: { id: item.id },
+      update: {
+        name: item.name,
+        type: item.type,
+        unit: item.unit,
+        min_stock_alert: item.min_stock_alert,
+      },
+      create: {
+        id: item.id,
+        tenant_id: defaultTenant.id,
+        name: item.name,
+        type: item.type,
+        unit: item.unit,
+        min_stock_alert: item.min_stock_alert,
+      },
+    });
+
+    await prisma.inventoryStock.upsert({
+      where: {
+        item_id_location_id: {
+          item_id: item.id,
+          location_id: mainLocation.id,
+        },
+      },
+      update: {},
+      create: {
+        item_id: item.id,
+        location_id: mainLocation.id,
+        quantity: item.initialStock,
+      },
+    });
+  }
+
+  // Stok awal untuk pakan yang sudah di-seed sebelumnya, dengan ambang batas rendah-stok.
+  for (const feed of sampleFeeds) {
+    await prisma.item.update({
+      where: { id: feed.id },
+      data: { min_stock_alert: 100 },
+    });
+    await prisma.inventoryStock.upsert({
+      where: {
+        item_id_location_id: {
+          item_id: feed.id,
+          location_id: mainLocation.id,
+        },
+      },
+      update: {},
+      create: {
+        item_id: feed.id,
+        location_id: mainLocation.id,
+        quantity: 1000,
+      },
+    });
+  }
 
   console.log("Seed selesai.");
   console.log("Superadmin: superadmin / password123!");

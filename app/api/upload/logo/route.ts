@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   const ext = extMap[file.type] ?? "png";
 
   const tenantId = session.user.tenantId!;
-  const s3Key = `logos/tenant-${tenantId}.${ext}`;
+  const s3Key = `tenants/${tenantId}/logo.${ext}`;
   const publicPath = `/api/storage/${s3Key}`;
 
   // Ensure our MinIO bucket exists before we start uploading

@@ -37,4 +37,50 @@ describe("medicalRecordSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  test("accepts an inventory item with quantityUsed", () => {
+    const result = medicalRecordSchema.safeParse({
+      cageId: validUuid,
+      indication: "Lemas",
+      medicineName: "Amoksisilin",
+      dosageAndDuration: "3 hari",
+      applicationMethod: "Minum",
+      treatmentDate: "2026-06-25",
+      itemId: validUuid,
+      quantityUsed: "12.5",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.itemId).toBe(validUuid);
+      expect(result.data.quantityUsed).toBe(12.5);
+    }
+  });
+
+  test("requires quantityUsed when itemId is present", () => {
+    const result = medicalRecordSchema.safeParse({
+      cageId: validUuid,
+      indication: "Lemas",
+      medicineName: "Amoksisilin",
+      dosageAndDuration: "3 hari",
+      applicationMethod: "Minum",
+      treatmentDate: "2026-06-25",
+      itemId: validUuid,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  test("stays valid free-text only (no item linked)", () => {
+    const result = medicalRecordSchema.safeParse({
+      cageId: validUuid,
+      indication: "Lemas",
+      medicineName: "Jamu herbal",
+      dosageAndDuration: "3 hari",
+      applicationMethod: "Minum",
+      treatmentDate: "2026-06-25",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.itemId).toBeUndefined();
+    }
+  });
 });

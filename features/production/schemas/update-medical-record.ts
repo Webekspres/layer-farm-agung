@@ -1,17 +1,7 @@
 import { z } from "zod";
+import { APPLICATION_METHODS } from "@/features/production/schemas/medical-record";
 
-export const APPLICATION_METHODS = [
-  "Minum",
-  "Suntik",
-  "Semprot",
-  "Tetes",
-  "Campur Pakan",
-] as const;
-
-export type ApplicationMethod = (typeof APPLICATION_METHODS)[number];
-
-export const medicalRecordSchema = z.object({
-  cageId: z.string().uuid("Kandang tidak valid."),
+export const updateMedicalRecordSchema = z.object({
   indication: z
     .string()
     .min(3, "Indikasi/gejala minimal 3 karakter.")
@@ -34,20 +24,19 @@ export const medicalRecordSchema = z.object({
     .string()
     .min(1, "Dosis dan durasi wajib diisi.")
     .max(300, "Dosis dan durasi maksimal 300 karakter."),
-  applicationMethod: z.enum(APPLICATION_METHODS as unknown as [string, ...string[]], {
-    message: `Metode pemberian harus salah satu dari: ${APPLICATION_METHODS.join(", ")}.`,
-  }),
+  applicationMethod: z.enum(
+    APPLICATION_METHODS as unknown as [string, ...string[]],
+    {
+      message: `Metode pemberian harus salah satu dari: ${APPLICATION_METHODS.join(", ")}.`,
+    },
+  ),
   treatmentNotes: z.preprocess(
     (v) => (v === "" || v === null ? undefined : v),
     z.string().max(1000, "Catatan maksimal 1000 karakter.").optional(),
   ),
-  treatmentDate: z.coerce.date({ message: "Tanggal pengobatan tidak valid." }),
-  // Optional link to an inventory item (Medicine/Vitamin). When present, its
-  // stock is deducted; when absent, the record is free-text only.
-  itemId: z.preprocess(
-    (v) => (v === "" || v === null ? undefined : v),
-    z.string().uuid("Item obat/vitamin tidak valid.").optional(),
-  ),
+  // Only meaningful when the original record has an item linked; the service
+  // rejects this if the record has no item_id. The linked item itself is not
+  // editable — only how much of it was used.
   quantityUsed: z.preprocess(
     (v) => (v === "" || v === null ? undefined : v),
     z.coerce
@@ -56,12 +45,8 @@ export const medicalRecordSchema = z.object({
       .max(100_000, "Jumlah pemakaian melebihi batas wajar.")
       .optional(),
   ),
-}).refine(
-  (data) => (data.itemId ? data.quantityUsed != null : true),
-  {
-    message: "Isi jumlah pemakaian bila memilih item obat/vitamin.",
-    path: ["quantityUsed"],
-  },
-);
+});
 
-export type MedicalRecordInput = z.infer<typeof medicalRecordSchema>;
+export type UpdateMedicalRecordInput = z.infer<
+  typeof updateMedicalRecordSchema
+>;

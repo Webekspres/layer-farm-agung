@@ -99,7 +99,8 @@ Backend di repo ini menyediakan:
 |------|------|--------|-----------------|
 | `/dashboard` | Dashboard | 🟡 | KPI eksekutif (HDP/FCR) 🔲 |
 | `/dashboard/production` | **Input harian** | 🟡 | Tab rekap: telur ✅; pakan/populasi/pengobatan placeholder |
-| `/dashboard/inventory` | Inventori | 🟡 | Placeholder "Soon" |
+| `/dashboard/inventory` | Inventori | ✅ | `Item` CRUD (master + tipe), stok per item |
+| `/dashboard/inventory/[itemId]` | Detail item | ✅ | Stok per lokasi, kartu stok (mutasi), penyesuaian stok |
 | `/dashboard/finance` | Keuangan | 🟡 | Placeholder "Soon" |
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
@@ -116,8 +117,6 @@ Backend di repo ini menyediakan:
 
 | Path (usulan) | Model |
 |---------------|-------|
-| `/dashboard/items` | `Item` |
-| `/dashboard/inventory/stocks` | `InventoryStock` |
 | `/dashboard/purchase-orders` | `PurchaseOrder` |
 | `/dashboard/population` | `PopulationMutation` |
 | `/dashboard/health/vaccines` | `VaccineSchedule` |
@@ -144,8 +143,15 @@ Backend di repo ini menyediakan:
 | `GET` | `/api/v1/cages/[cageId]/daily-history` | `manage_production` | ✅ | `list-cage-daily-history` |
 | `GET` | `/api/v1/egg-grades` | `manage_production` | ✅ | `list-egg-grade-options` (legacy API) |
 | `POST` | `/api/v1/production` | `manage_production` | ✅ | `record-daily-production` (TB/TR/TP, multi-record) |
-| `PATCH` | `/api/v1/production/[recordId]` | `manage_production` | ✅ | `update-daily-production` |
-| `POST` | `/api/v1/feed-consumption` | `manage_inventory` | 🔲 | stub `501` |
+| `PATCH` | `/api/v1/production/[recordId]` | `manage_production` | ✅ | `update-daily-production` (rekonsiliasi stok telur) |
+| `POST` | `/api/v1/feed-consumption` | `manage_production` | ✅ | `record-feed-consumption` (potong stok pakan, OUT_FEED) |
+| `PATCH` | `/api/v1/feed-consumption/[recordId]` | `manage_production` | ✅ | `update-feed-consumption` (rekonsiliasi delta stok) |
+| `POST` | `/api/v1/medical-records` | `manage_production` | ✅ | `record-medical-record` (opsional potong obat/vitamin, OUT_MEDICAL) |
+| `PATCH` | `/api/v1/medical-records/[recordId]` | `manage_production` | ✅ | `update-medical-record` (rekonsiliasi delta stok bila tertaut item) |
+| `POST` | `/api/v1/population-mutation` | `manage_production` | ✅ | `record-population-mutation` |
+| `PATCH` | `/api/v1/population-mutation/[recordId]` | `manage_production` | ✅ | `update-population-mutation` |
+| `GET` | `/api/v1/items` | `manage_production` | ✅ | `list-items-for-cage` (Feed/Medicine/Vitamin + stok tersedia) |
+| `GET` | `/api/v1/feed-items` | `manage_production` | ✅ | `list-feed-items` (legacy) |
 
 **Format respons:** `{ success, message?, data? }` / `{ success: false, error }` — lihat `lib/api/response.ts`.
 
@@ -209,7 +215,7 @@ Backend di repo ini menyediakan:
 | 5 | Offline sync | ~15% | schema | antrean lokal |
 | 6 | Mutasi populasi | ~20% | 🔲 | UI antrean |
 | 7 | Vendor & procurement | ~35% | vendor ✅ | — |
-| 8 | Inventory | ~8% | placeholder | mock diets |
+| 8 | Inventory | ~65% | Item CRUD + stok + kartu stok + penyesuaian; potong stok pakan & obat/vitamin; telur auto-IN | picker item nyata + peringatan stok |
 | 9 | Early warning | ~0% | 🔲 | 🔲 |
 | 10 | Executive dashboard | ~10% | placeholder | — |
 | 11 | Sales | ~0% | 🔲 | — |
@@ -227,12 +233,13 @@ Backend di repo ini menyediakan:
 - [x] Dashboard Input harian: tab rekap + tabel telur TB/TR/TP
 - [x] `ProductionTarget` CRUD (di halaman strain)
 - [x] Migrasi `DailyProduction` TB/TR/TP + multi-record
-- [ ] API feed-consumption + service inventori
-- [ ] API population + medical
+- [x] API feed-consumption + service inventori (potong stok pakan, OUT_FEED)
+- [x] API population + medical (medical opsional potong obat/vitamin, OUT_MEDICAL)
+- [x] Inventori admin (`Item` CRUD, `InventoryStock` view, kartu stok, penyesuaian stok)
+- [x] Telur auto-menambah stok (IN_HARVEST dari TB) + rekonsiliasi saat edit produksi
 - [ ] Tab rekap pakan, populasi, pengobatan (data nyata)
 - [ ] Kolom HDP % di rekap telur
 - [ ] Siklus kandang penuh (`CycleSetting` di detail kandang)
-- [ ] Inventori admin (`Item`, `InventoryStock`)
 - [ ] Modul 13: vaksinasi + reminder
 
 ## 9. Backlog mobile (Expo)

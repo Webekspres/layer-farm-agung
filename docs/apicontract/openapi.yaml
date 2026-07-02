@@ -239,8 +239,8 @@ paths:
       tags: [Cages]
       summary: Riwayat input harian per kandang
       description: |
-        Daftar entri multi-record untuk satu kandang pada tanggal tertentu.
-        Saat ini `productions` terisi; `feed`, `population`, `medical` menyusul.
+        Daftar entri multi-record (produksi, konsumsi pakan, mutasi populasi,
+        pengobatan) untuk satu kandang pada tanggal tertentu.
       operationId: getCageDailyHistory
       parameters:
         - $ref: "#/components/parameters/CageId"
@@ -431,12 +431,62 @@ paths:
                 message: Konsumsi pakan berhasil dicatat.
                 data:
                   recorded: true
+                  lowStock: false
+                  remainingStock: 975
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  /api/v1/feed-consumption/{recordId}:
+    patch:
+      tags: [Feed]
+      summary: Perbarui entri konsumsi pakan
+      description: |
+        Edit jumlah/catatan konsumsi pakan. Staff harus ditugaskan ke kandang
+        terkait. Item pakan yang dipakai tidak dapat diubah — hanya jumlah dan
+        catatan. Selisih jumlah direkonsiliasi ke `InventoryStock` (menambah
+        stok bila jumlah dikurangi, memotong lagi bila jumlah dinaikkan).
+      operationId: updateFeedConsumption
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFeedConsumptionInput"
+      responses:
+        "200":
+          description: Konsumsi pakan diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/population-mutation:
     post:
@@ -481,6 +531,52 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/population-mutation/{recordId}:
+    patch:
+      tags: [Production]
+      summary: Perbarui entri mutasi populasi
+      description: |
+        Edit jenis mutasi, jumlah, dan catatan. Staff harus ditugaskan ke
+        kandang terkait. Tidak menyentuh inventori.
+      operationId: updatePopulationMutation
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePopulationMutationInput"
+      responses:
+        "200":
+          description: Mutasi populasi diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/medical-records:
     post:
       tags: [Production]
@@ -504,6 +600,8 @@ paths:
               applicationMethod: Minum
               treatmentNotes: Observasi lanjutan
               treatmentDate: "2026-06-11"
+              itemId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+              quantityUsed: 20
       responses:
         "201":
           description: Catatan pengobatan berhasil dicatat
@@ -521,6 +619,113 @@ paths:
                 message: Catatan pengobatan berhasil dicatat.
                 data:
                   recorded: true
+                  lowStock: false
+                  remainingStock: 1980
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/medical-records/{recordId}:
+    patch:
+      tags: [Production]
+      summary: Perbarui catatan pengobatan
+      description: |
+        Edit indikasi, populasi sakit/mati, obat, dosis, metode, dan catatan.
+        Staff harus ditugaskan ke kandang terkait. Item obat/vitamin yang
+        ditautkan tidak dapat diubah — hanya jumlah pemakaian (`quantityUsed`),
+        bila catatan aslinya terkait item. Selisih jumlah direkonsiliasi ke
+        `InventoryStock`.
+      operationId: updateMedicalRecord
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMedicalRecordInput"
+      responses:
+        "200":
+          description: Catatan pengobatan diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/items:
+    get:
+      tags: [Catalog]
+      summary: Daftar item inventori (dengan stok tersedia)
+      description: |
+        Daftar item tenant untuk picker operasional staff, beserta stok tersedia
+        di lokasi kandang. Dipakai untuk Konsumsi pakan (`type=Feed`) dan
+        Pengobatan (`type=Medicine,Vitamin`). `Vaccine` tidak boleh diminta di
+        sini (menu Vaksinasi terpisah, Modul 13). Permission: `manage_production`.
+      operationId: listItems
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            Satu atau beberapa tipe dipisah koma. Diperbolehkan: Feed, Medicine, Vitamin.
+          example: Medicine,Vitamin
+        - name: cageId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Kandang untuk menentukan lokasi stok tersedia.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ItemOption"
+              example:
+                success: true
+                message: Daftar item berhasil diambil.
+                data:
+                  - id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                    name: Amoksisilin
+                    unit: gram
+                    availableQuantity: 2000
+                    minStockAlert: 500
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -531,7 +736,7 @@ paths:
   /api/v1/feed-items:
     get:
       tags: [Catalog]
-      summary: Daftar item pakan
+      summary: Daftar item pakan (legacy; gunakan /items?type=Feed)
       description: |
         Mendapatkan daftar item pakan aktif untuk dropdown pilihan pakan.
       operationId: listFeedItems
@@ -838,6 +1043,76 @@ components:
           minimum: 0
           maximum: 10000
 
+    UpdateFeedConsumptionInput:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah pakan terkoreksi (kg). Item pakan tidak dapat diubah.
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdatePopulationMutationInput:
+      type: object
+      required: [mutationType, quantity]
+      properties:
+        mutationType:
+          type: string
+          enum: [Mati, Afkir, Masuk, Pindah]
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdateMedicalRecordInput:
+      type: object
+      required:
+        - indication
+        - medicineName
+        - dosageAndDuration
+        - applicationMethod
+      properties:
+        indication:
+          type: string
+          minLength: 3
+          maxLength: 500
+        sickPopulation:
+          type: integer
+          minimum: 0
+        mortalityCount:
+          type: integer
+          minimum: 0
+        medicineName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        dosageAndDuration:
+          type: string
+          minLength: 1
+          maxLength: 300
+        applicationMethod:
+          type: string
+          enum: [Minum, Suntik, Semprot, Tetes, Campur Pakan]
+        treatmentNotes:
+          type: string
+          maxLength: 1000
+        quantityUsed:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: |
+            Jumlah pemakaian terkoreksi. Hanya berlaku bila catatan aslinya
+            tertaut ke item inventori (`itemId` tidak dapat diubah lewat endpoint ini).
+
     CageProductionHistoryItem:
       type: object
       required: [id, tb, tr, tp, total, recordedBy, createdAt]
@@ -853,6 +1128,103 @@ components:
           type: integer
         total:
           type: integer
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CageFeedHistoryItem:
+      type: object
+      required: [id, itemName, itemUnit, quantity, notes, recordedBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        itemUnit:
+          type: string
+        quantity:
+          type: number
+          format: float
+        notes:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CagePopulationHistoryItem:
+      type: object
+      required: [id, mutationType, quantity, notes, recordedBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mutationType:
+          type: string
+          enum: [Mati, Afkir, Masuk, Pindah]
+        quantity:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CageMedicalHistoryItem:
+      type: object
+      required:
+        - id
+        - indication
+        - sickPopulation
+        - mortalityCount
+        - medicineName
+        - itemName
+        - itemUnit
+        - quantityUsed
+        - dosageAndDuration
+        - applicationMethod
+        - treatmentNotes
+        - recordedBy
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        indication:
+          type: string
+        sickPopulation:
+          type: integer
+        mortalityCount:
+          type: integer
+        medicineName:
+          type: string
+        itemName:
+          type: string
+          nullable: true
+          description: Nama item Medicine/Vitamin bila ditautkan ke inventori.
+        itemUnit:
+          type: string
+          nullable: true
+        quantityUsed:
+          type: number
+          format: float
+          nullable: true
+        dosageAndDuration:
+          type: string
+        applicationMethod:
+          type: string
+          enum: [Minum, Suntik, Semprot, Tetes, Campur Pakan]
+        treatmentNotes:
+          type: string
+          nullable: true
         recordedBy:
           type: string
         createdAt:
@@ -887,13 +1259,16 @@ components:
             $ref: "#/components/schemas/CageProductionHistoryItem"
         feed:
           type: array
-          items: {}
+          items:
+            $ref: "#/components/schemas/CageFeedHistoryItem"
         population:
           type: array
-          items: {}
+          items:
+            $ref: "#/components/schemas/CagePopulationHistoryItem"
         medical:
           type: array
-          items: {}
+          items:
+            $ref: "#/components/schemas/CageMedicalHistoryItem"
 
     FeedConsumptionInput:
       type: object
@@ -925,6 +1300,13 @@ components:
         recorded:
           type: boolean
           const: true
+        lowStock:
+          type: boolean
+          description: true bila sisa stok pakan <= min_stock_alert setelah pemotongan.
+        remainingStock:
+          type: number
+          format: float
+          description: Sisa stok pakan di lokasi kandang setelah pemotongan.
 
     PopulationMutationInput:
       type: object
@@ -988,6 +1370,19 @@ components:
         treatmentDate:
           type: string
           format: date
+        itemId:
+          type: string
+          format: uuid
+          description: |
+            Opsional. Item Medicine/Vitamin dari inventori yang dipakai; stoknya
+            dipotong (OUT_MEDICAL). Bila kosong, catatan tetap tersimpan sebagai
+            teks bebas (`medicineName`).
+        quantityUsed:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah item dipakai (dalam unit item). Wajib bila `itemId` diisi.
 
     RecordMedicalRecordResult:
       type: object
@@ -995,6 +1390,14 @@ components:
         recorded:
           type: boolean
           const: true
+        lowStock:
+          type: boolean
+          description: true bila sisa stok obat/vitamin <= min_stock_alert (bila item ditautkan).
+        remainingStock:
+          type: number
+          format: float
+          nullable: true
+          description: Sisa stok item setelah pemotongan; null bila tanpa item.
 
     FeedItemOption:
       type: object
@@ -1007,3 +1410,24 @@ components:
           type: string
         unit:
           type: string
+
+    ItemOption:
+      type: object
+      required: [id, name, unit, availableQuantity]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string
+        availableQuantity:
+          type: number
+          format: float
+          description: Stok tersedia di lokasi kandang (atau total tenant bila tanpa cageId).
+        minStockAlert:
+          type: number
+          format: float
+          nullable: true
+          description: Ambang batas stok rendah (null bila tidak diatur).

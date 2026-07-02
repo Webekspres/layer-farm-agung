@@ -80,9 +80,13 @@ Detail endpoint: **[apicontract/openapi.yaml](./apicontract/openapi.yaml)**.
 | `POST /api/v1/cages/scan` | ✅ |
 | `GET /api/v1/cages/{cageId}/daily-history` | ✅ |
 | `GET /api/v1/egg-grades` | ✅ (legacy) |
-| `POST /api/v1/production` | ✅ TB/TR/TP, multi-record |
-| `PATCH /api/v1/production/{recordId}` | ✅ |
-| `POST /api/v1/feed-consumption` | 🔲 stub `501` |
+| `POST /api/v1/production` | ✅ TB/TR/TP, multi-record; TB auto-menambah stok telur (IN_HARVEST) |
+| `PATCH /api/v1/production/{recordId}` | ✅ rekonsiliasi stok telur saat TB berubah |
+| `POST /api/v1/feed-consumption` | ✅ potong stok pakan (OUT_FEED) + peringatan stok rendah |
+| `POST /api/v1/medical-records` | ✅ opsional potong stok obat/vitamin (OUT_MEDICAL) |
+| `POST /api/v1/population-mutation` | ✅ |
+| `GET /api/v1/items?type=…&cageId=…` | ✅ picker item + stok tersedia (Feed/Medicine/Vitamin) |
+| `GET /api/v1/feed-items` | ✅ (legacy; gunakan `/items?type=Feed`) |
 
 ---
 
