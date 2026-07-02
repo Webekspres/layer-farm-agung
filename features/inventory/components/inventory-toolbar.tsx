@@ -70,7 +70,7 @@ export function InventoryToolbar({ onCreateClick }: InventoryToolbarProps) {
           />
         </div>
         <Select value={type} onValueChange={(v) => updateFilter("type", v)}>
-          <SelectTrigger className="w-full sm:w-[180px]">
+          <SelectTrigger className="w-full sm:w-45">
             <SelectValue placeholder="Tipe" />
           </SelectTrigger>
           <SelectContent>
