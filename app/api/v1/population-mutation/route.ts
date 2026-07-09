@@ -35,5 +35,17 @@ export async function POST(request: NextRequest) {
     return apiError(result.error, 400);
   }
 
-  return apiSuccess({ recorded: true }, "Mutasi populasi berhasil dicatat.", 201);
+  const message = result.idempotent
+    ? "Mutasi populasi sudah tercatat sebelumnya."
+    : "Mutasi populasi berhasil dicatat.";
+
+  return apiSuccess(
+    {
+      recorded: true,
+      idempotent: result.idempotent,
+      recordId: result.recordId,
+    },
+    message,
+    result.idempotent ? 200 : 201,
+  );
 }

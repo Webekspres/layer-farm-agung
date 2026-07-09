@@ -4,20 +4,31 @@ import {
   computeCyclePopulation,
   isPopulationDecreaseType,
 } from "@/features/cages/lib/compute-cycle-population";
+import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { PopulationMutationInput } from "@/features/production/schemas/population-mutation";
 import { validateOperationalBusinessDate, normalizeBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordPopulationMutationResult =
-  | { ok: true }
+  | { ok: true; idempotent: boolean; recordId: string }
   | { ok: false; error: string };
-
 
 export async function recordPopulationMutation(
   tenantId: string,
   userId: string,
   input: PopulationMutationInput,
 ): Promise<RecordPopulationMutationResult> {
+  if (input.clientMutationId) {
+    const existing = await prisma.populationMutation.findUnique({
+      where: { client_mutation_id: input.clientMutationId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return { ok: true, idempotent: true, recordId: existing.id };
+    }
+  }
+
   const cage = await prisma.cage.findFirst({
     where: {
       id: input.cageId,
@@ -45,6 +56,7 @@ export async function recordPopulationMutation(
   }
 
   const recordDate = dateCheck.date;
+  const isSynced = !input.fromSync;
 
   if (isPopulationDecreaseType(input.mutationType)) {
     const current = await resolveActiveCyclePopulation(
@@ -65,7 +77,7 @@ export async function recordPopulationMutation(
   }
 
   try {
-    await prisma.populationMutation.create({
+    const record = await prisma.populationMutation.create({
       data: {
         cage_id: input.cageId,
         user_id: userId,
@@ -73,14 +85,27 @@ export async function recordPopulationMutation(
         quantity: input.quantity,
         notes: input.notes ?? null,
         record_date: recordDate,
-        is_synced: true,
+        is_synced: isSynced,
+        client_mutation_id: input.clientMutationId ?? null,
       },
+      select: { id: true },
     });
-  } catch {
+
+    return { ok: true, idempotent: false, recordId: record.id };
+  } catch (error) {
+    if (input.clientMutationId && isPrismaUniqueViolation(error)) {
+      const existing = await prisma.populationMutation.findUnique({
+        where: { client_mutation_id: input.clientMutationId },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return { ok: true, idempotent: true, recordId: existing.id };
+      }
+    }
+
     return { ok: false, error: "Gagal menyimpan mutasi populasi." };
   }
-
-  return { ok: true };
 }
 
 /**

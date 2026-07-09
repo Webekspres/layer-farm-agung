@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { operationalBusinessDateSchema } from "@/lib/business-date";
+import { idempotentPostFields } from "@/features/production/lib/client-mutation-id";
 
 export const POPULATION_MUTATION_TYPES = [
   "Mati",
@@ -25,6 +26,7 @@ export const populationMutationSchema = z.object({
     z.string().max(500, "Catatan maksimal 500 karakter.").optional(),
   ),
   recordDate: operationalBusinessDateSchema,
+  ...idempotentPostFields,
 });
 
 export type PopulationMutationInput = z.infer<typeof populationMutationSchema>;

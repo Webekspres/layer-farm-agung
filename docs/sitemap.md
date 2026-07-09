@@ -6,7 +6,7 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 | | |
 |--|--|
 | **Terakhir diperbarui** | 2026-07-09 |
-| **Progress proyek** | **~56%** keseluruhan (13 modul) · D3 ~90% — lihat [implementation_plan.md](./implementation_plan.md) |
+| **Progress proyek** | **~65%** keseluruhan (13 modul) · D3 ~95% — lihat [implementation_plan.md](./implementation_plan.md) |
 | **Repo ini** | Next.js 16 — **admin dashboard + API provider** |
 | **Mobile lapangan** | [`aapm-mobile`](../aapm-mobile) — React Native + Expo SDK 54 |
 | **Ekosistem** | [`docs/ecosystem.md`](./ecosystem.md) |
@@ -60,7 +60,7 @@ Backend di repo ini menyediakan:
 |--------|--------|----------|
 | **D1** Identity & tenant | Auth, RBAC, users, tenants | ~95% |
 | **D2** Master data | Lokasi, kandang, strain, grade, vendor, PO | ~85% |
-| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~90% |
+| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~95% |
 | **D4** Finansial | Penjualan, cashflow, dashboard KPI penuh | ~5% |
 
 ---
@@ -199,7 +199,7 @@ Backend di repo ini menyediakan:
 | `kandang/[id]/production/[recordId]` | ✅ | Edit TB/TR/TP |
 | `(tabs)/profile` | ✅ | Session + logout |
 | Vaksinasi | 🔲 | `VaccineSchedule` — Modul 13 |
-| Offline sync flush | 🔲 | `SyncQueue` + antrean `AsyncStorage` |
+| Offline sync flush | 🟡 | Antrean + idempotency ✅; reliabilitas + UX picker 🔲 — lihat [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
 
 **Legacy redirect:** `kandang/[id]/produksi`, `kandang/[id]/pakan` → flow baru.
 
@@ -215,7 +215,7 @@ Backend di repo ini menyediakan:
 | 2 | Master data peternakan | ~80% | ✅/🟡 | read-only |
 | 3 | Strain & standardisasi | ~65% | 🟡 target HDP/FCR | — |
 | 4 | Front office input | ~85% | rekap 4 tab + HDP | ✅ unified form |
-| 5 | Offline sync | ~15% | schema | 🔲 antrean belum flush |
+| 5 | Offline sync | ~70% | schema + idempotency ✅ | antrean + flush ✅ |
 | 6 | Mutasi populasi | ~70% | rekap tab | ✅ API + ledger |
 | 7 | Vendor & procurement | ~75% | vendor ✅ + PO minimal | — |
 | 8 | Inventory | ~75% | CRUD + stok + kartu + penyesuaian + PO IN | ✅ picker item |

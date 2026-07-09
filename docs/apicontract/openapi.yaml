@@ -1018,14 +1018,38 @@ components:
           format: float
           minimum: 0
           description: Total berat telur (kg), opsional
+        clientMutationId:
+          type: string
+          format: uuid
+          description: Idempotency key dari client (wajib untuk antrean offline).
+        fromSync:
+          type: boolean
+          default: false
+          description: true bila record dibuat dari flush antrean offline.
+
+    IdempotentPostFields:
+      type: object
+      properties:
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
 
     RecordProductionResult:
       type: object
-      required: [recorded]
+      required: [recorded, idempotent, recordId]
       properties:
         recorded:
           type: boolean
           const: true
+        idempotent:
+          type: boolean
+          description: true bila clientMutationId sudah pernah diproses.
+        recordId:
+          type: string
+          format: uuid
 
     UpdateDailyProductionInput:
       type: object
@@ -1293,6 +1317,12 @@ components:
         notes:
           type: string
           maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
 
     RecordFeedConsumptionResult:
       type: object
@@ -1300,6 +1330,11 @@ components:
         recorded:
           type: boolean
           const: true
+        idempotent:
+          type: boolean
+        recordId:
+          type: string
+          format: uuid
         lowStock:
           type: boolean
           description: true bila sisa stok pakan <= min_stock_alert setelah pemotongan.
@@ -1328,6 +1363,12 @@ components:
         notes:
           type: string
           maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
 
     RecordPopulationMutationResult:
       type: object
@@ -1335,6 +1376,11 @@ components:
         recorded:
           type: boolean
           const: true
+        idempotent:
+          type: boolean
+        recordId:
+          type: string
+          format: uuid
 
     MedicalRecordInput:
       type: object
@@ -1383,6 +1429,12 @@ components:
           minimum: 0.01
           maximum: 100000
           description: Jumlah item dipakai (dalam unit item). Wajib bila `itemId` diisi.
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
 
     RecordMedicalRecordResult:
       type: object
@@ -1390,6 +1442,11 @@ components:
         recorded:
           type: boolean
           const: true
+        idempotent:
+          type: boolean
+        recordId:
+          type: string
+          format: uuid
         lowStock:
           type: boolean
           description: true bila sisa stok obat/vitamin <= min_stock_alert (bila item ditautkan).

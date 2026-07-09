@@ -35,17 +35,21 @@ export async function POST(request: NextRequest) {
     return apiError(result.error, 400);
   }
 
-  const message = result.lowStock
-    ? "Konsumsi pakan berhasil dicatat. Peringatan: stok pakan sudah di bawah ambang batas."
-    : "Konsumsi pakan berhasil dicatat.";
+  const message = result.idempotent
+    ? "Konsumsi pakan sudah tercatat sebelumnya."
+    : result.lowStock
+      ? "Konsumsi pakan berhasil dicatat. Peringatan: stok pakan sudah di bawah ambang batas."
+      : "Konsumsi pakan berhasil dicatat.";
 
   return apiSuccess(
     {
       recorded: true,
+      idempotent: result.idempotent,
+      recordId: result.recordId,
       lowStock: result.lowStock,
       remainingStock: result.remainingStock,
     },
     message,
-    201,
+    result.idempotent ? 200 : 201,
   );
 }

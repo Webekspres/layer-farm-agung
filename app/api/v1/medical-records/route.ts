@@ -35,17 +35,21 @@ export async function POST(request: NextRequest) {
     return apiError(result.error, 400);
   }
 
-  const message = result.lowStock
-    ? "Catatan pengobatan berhasil dicatat. Peringatan: stok obat/vitamin sudah di bawah ambang batas."
-    : "Catatan pengobatan berhasil dicatat.";
+  const message = result.idempotent
+    ? "Catatan pengobatan sudah tercatat sebelumnya."
+    : result.lowStock
+      ? "Catatan pengobatan berhasil dicatat. Peringatan: stok obat/vitamin sudah di bawah ambang batas."
+      : "Catatan pengobatan berhasil dicatat.";
 
   return apiSuccess(
     {
       recorded: true,
+      idempotent: result.idempotent,
+      recordId: result.recordId,
       lowStock: result.lowStock,
       remainingStock: result.remainingStock,
     },
     message,
-    201,
+    result.idempotent ? 200 : 201,
   );
 }

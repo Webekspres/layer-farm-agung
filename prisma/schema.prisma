@@ -366,6 +366,7 @@ model DailyProduction {
   tp           Int      @default(0)
   weight       Float?
   is_synced    Boolean  @default(true)
+  client_mutation_id String? @unique @db.Uuid
   created_at   DateTime @default(now())
 
   // Relations
@@ -384,6 +385,7 @@ model FeedConsumption {
   quantity    Float
   notes       String?
   is_synced   Boolean  @default(true)
+  client_mutation_id String? @unique @db.Uuid
   created_at  DateTime @default(now())
 
   // Relations
@@ -402,6 +404,7 @@ model PopulationMutation {
   notes         String?
   record_date   DateTime @db.Date
   is_synced     Boolean  @default(true)
+  client_mutation_id String? @unique @db.Uuid
   created_at    DateTime @default(now())
 
   // Relations
@@ -442,6 +445,7 @@ model MedicalRecord {
   treatment_notes      String?
   treatment_date       DateTime @db.Date
   is_synced            Boolean  @default(true)
+  client_mutation_id   String?  @unique @db.Uuid
   created_at           DateTime @default(now())
 
   // Relations

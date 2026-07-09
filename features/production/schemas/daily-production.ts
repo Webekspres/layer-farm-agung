@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { operationalBusinessDateSchema } from "@/lib/business-date";
+import { idempotentPostFields } from "@/features/production/lib/client-mutation-id";
 
 export const MAX_EGG_COUNT_PER_ENTRY = 10_000;
 
@@ -25,6 +26,7 @@ export const dailyProductionSchema = z
     tr: eggCountField.default(0),
     tp: eggCountField.default(0),
     weight: weightField,
+    ...idempotentPostFields,
   })
   .superRefine((data, ctx) => {
     const total = data.tb + data.tr + data.tp;

@@ -1,21 +1,45 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { FeedConsumptionInput } from "@/features/production/schemas/feed-consumption";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordFeedConsumptionResult =
-  | { ok: true; lowStock: boolean; remainingStock: number }
+  | {
+      ok: true;
+      idempotent: boolean;
+      recordId: string;
+      lowStock: boolean;
+      remainingStock: number;
+    }
   | { ok: false; error: string };
 
+class StockError extends Error {}
 
 export async function recordFeedConsumption(
   tenantId: string,
   userId: string,
   input: FeedConsumptionInput,
 ): Promise<RecordFeedConsumptionResult> {
-  // Verify cage belongs to this tenant
+  if (input.clientMutationId) {
+    const existing = await prisma.feedConsumption.findUnique({
+      where: { client_mutation_id: input.clientMutationId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return {
+        ok: true,
+        idempotent: true,
+        recordId: existing.id,
+        lowStock: false,
+        remainingStock: 0,
+      };
+    }
+  }
+
   const cage = await prisma.cage.findFirst({
     where: {
       id: input.cageId,
@@ -28,7 +52,6 @@ export async function recordFeedConsumption(
     return { ok: false, error: "Kandang tidak ditemukan di tenant ini." };
   }
 
-  // Verify user is assigned to this cage
   const assigned = await isUserAssignedToCage(userId, input.cageId);
   if (!assigned) {
     return { ok: false, error: "Anda tidak ditugaskan ke kandang ini." };
@@ -38,7 +61,6 @@ export async function recordFeedConsumption(
     return { ok: false, error: "Kandang tidak aktif." };
   }
 
-  // Verify item belongs to this tenant and is a feed type
   const item = await prisma.item.findFirst({
     where: {
       id: input.itemId,
@@ -63,6 +85,7 @@ export async function recordFeedConsumption(
   }
 
   const recordDate = dateCheck.date;
+  const isSynced = !input.fromSync;
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {
@@ -75,7 +98,8 @@ export async function recordFeedConsumption(
           record_date: recordDate,
           quantity: input.quantity,
           notes: input.notes ?? null,
-          is_synced: true,
+          is_synced: isSynced,
+          client_mutation_id: input.clientMutationId ?? null,
         },
         select: { id: true },
       });
@@ -89,20 +113,45 @@ export async function recordFeedConsumption(
       });
 
       if (!stock.ok) {
-        // Rolls back the FeedConsumption insert too.
         throw new StockError(stock.error);
       }
 
-      return { lowStock: stock.lowStock, remainingStock: stock.newQuantity };
+      return {
+        recordId: feedConsumption.id,
+        lowStock: stock.lowStock,
+        remainingStock: stock.newQuantity,
+      };
     });
 
-    return { ok: true, lowStock: outcome.lowStock, remainingStock: outcome.remainingStock };
+    return {
+      ok: true,
+      idempotent: false,
+      recordId: outcome.recordId,
+      lowStock: outcome.lowStock,
+      remainingStock: outcome.remainingStock,
+    };
   } catch (error) {
+    if (input.clientMutationId && isPrismaUniqueViolation(error)) {
+      const existing = await prisma.feedConsumption.findUnique({
+        where: { client_mutation_id: input.clientMutationId },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return {
+          ok: true,
+          idempotent: true,
+          recordId: existing.id,
+          lowStock: false,
+          remainingStock: 0,
+        };
+      }
+    }
+
     if (error instanceof StockError) {
       return { ok: false, error: error.message };
     }
+
     return { ok: false, error: "Gagal menyimpan konsumsi pakan." };
   }
 }
-
-class StockError extends Error {}

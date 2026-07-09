@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { operationalBusinessDateSchema } from "@/lib/business-date";
+import { idempotentPostFields } from "@/features/production/lib/client-mutation-id";
 
 export const APPLICATION_METHODS = [
   "Minum",
@@ -57,6 +58,7 @@ export const medicalRecordSchema = z.object({
       .max(100_000, "Jumlah pemakaian melebihi batas wajar.")
       .optional(),
   ),
+  ...idempotentPostFields,
 }).refine(
   (data) => (data.itemId ? data.quantityUsed != null : true),
   {

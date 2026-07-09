@@ -1,14 +1,20 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { MedicalRecordInput } from "@/features/production/schemas/medical-record";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordMedicalRecordResult =
-  | { ok: true; lowStock: boolean; remainingStock: number | null }
+  | {
+      ok: true;
+      idempotent: boolean;
+      recordId: string;
+      lowStock: boolean;
+      remainingStock: number | null;
+    }
   | { ok: false; error: string };
-
 
 class StockError extends Error {}
 
@@ -17,7 +23,23 @@ export async function recordMedicalRecord(
   userId: string,
   input: MedicalRecordInput,
 ): Promise<RecordMedicalRecordResult> {
-  // Verify cage belongs to this tenant
+  if (input.clientMutationId) {
+    const existing = await prisma.medicalRecord.findUnique({
+      where: { client_mutation_id: input.clientMutationId },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return {
+        ok: true,
+        idempotent: true,
+        recordId: existing.id,
+        lowStock: false,
+        remainingStock: null,
+      };
+    }
+  }
+
   const cage = await prisma.cage.findFirst({
     where: {
       id: input.cageId,
@@ -30,14 +52,11 @@ export async function recordMedicalRecord(
     return { ok: false, error: "Kandang tidak ditemukan di tenant ini." };
   }
 
-  // Verify user is assigned to this cage
   const assigned = await isUserAssignedToCage(userId, input.cageId);
   if (!assigned) {
     return { ok: false, error: "Anda tidak ditugaskan ke kandang ini." };
   }
 
-  // When an inventory item is linked, verify it belongs to the tenant and is a
-  // Medicine or Vitamin (vitamin is also used in pengobatan per client).
   if (input.itemId) {
     const item = await prisma.item.findFirst({
       where: { id: input.itemId, tenant_id: tenantId },
@@ -60,6 +79,7 @@ export async function recordMedicalRecord(
   }
 
   const treatmentDate = dateCheck.date;
+  const isSynced = !input.fromSync;
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {
@@ -77,7 +97,8 @@ export async function recordMedicalRecord(
           application_method: input.applicationMethod,
           treatment_notes: input.treatmentNotes ?? null,
           treatment_date: treatmentDate,
-          is_synced: true,
+          is_synced: isSynced,
+          client_mutation_id: input.clientMutationId ?? null,
         },
         select: { id: true },
       });
@@ -95,21 +116,49 @@ export async function recordMedicalRecord(
           throw new StockError(stock.error);
         }
 
-        return { lowStock: stock.lowStock, remainingStock: stock.newQuantity };
+        return {
+          recordId: record.id,
+          lowStock: stock.lowStock,
+          remainingStock: stock.newQuantity,
+        };
       }
 
-      return { lowStock: false, remainingStock: null as number | null };
+      return {
+        recordId: record.id,
+        lowStock: false,
+        remainingStock: null as number | null,
+      };
     });
 
     return {
       ok: true,
+      idempotent: false,
+      recordId: outcome.recordId,
       lowStock: outcome.lowStock,
       remainingStock: outcome.remainingStock,
     };
   } catch (error) {
+    if (input.clientMutationId && isPrismaUniqueViolation(error)) {
+      const existing = await prisma.medicalRecord.findUnique({
+        where: { client_mutation_id: input.clientMutationId },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return {
+          ok: true,
+          idempotent: true,
+          recordId: existing.id,
+          lowStock: false,
+          remainingStock: null,
+        };
+      }
+    }
+
     if (error instanceof StockError) {
       return { ok: false, error: error.message };
     }
+
     return { ok: false, error: "Gagal menyimpan catatan pengobatan." };
   }
 }
