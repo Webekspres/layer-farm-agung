@@ -5,10 +5,10 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-06-24 |
-| **Progress proyek** | **~38%** keseluruhan · **~42%** Domain 3 — lihat [`weekly progress/24-06-2026.md`](./weekly%20progress/24-06-2026.md) |
+| **Terakhir diperbarui** | 2026-07-09 |
+| **Progress proyek** | **~56%** keseluruhan (13 modul) · D3 ~90% — lihat [implementation_plan.md](./implementation_plan.md) |
 | **Repo ini** | Next.js 16 — **admin dashboard + API provider** |
-| **Mobile lapangan** | [`aapm-mobile`](../mobile-apps/aapm-mobile) — React Native + Expo SDK 54 |
+| **Mobile lapangan** | [`aapm-mobile`](../aapm-mobile) — React Native + Expo SDK 54 |
 | **Ekosistem** | [`docs/ecosystem.md`](./ecosystem.md) |
 | **Schema DB** | [`prisma/schema.prisma`](../prisma/schema.prisma) |
 | **Nav kode** | [`features/dashboard/config/navigation.ts`](../features/dashboard/config/navigation.ts) |
@@ -21,14 +21,16 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 | Aplikasi | Stack | Cakupan |
 |----------|-------|---------|
 | **AAPM Admin** (repo ini) | Next.js 16, shadcn, Prisma | CRUD master data, user/RBAC, rekap operasional, keuangan |
-| **AAPM Mobile** ([`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile)) | React Native + Expo SDK 54 | Input harian kandang: produksi TB/TR/TP, pakan, populasi, pengobatan, QR, offline sync |
+| **AAPM Mobile** ([`../aapm-mobile`](../aapm-mobile)) | React Native + Expo SDK 54 | Input harian kandang: produksi TB/TR/TP, pakan, populasi, pengobatan, QR |
 
 **Repo ini tidak lagi memakai Serwist / PWA.** Tidak ada service worker, manifest, atau rute `/kandang` / `/input-harian`.
 
 Backend di repo ini menyediakan:
 - **Better Auth** — `app/api/auth/*` (session/cookie; mobile Expo ✅)
 - **Server Actions** — mutasi dari dashboard admin
-- **Route Handlers** — `app/api/v1/*` operasional untuk mobile (🟡 partial)
+- **Route Handlers** — `app/api/v1/*` operasional untuk mobile (✅ core endpoints)
+
+**Tanggal operasional:** semua rekap/input memakai kalender **WIB** (`lib/business-date.ts`, `Asia/Jakarta`). Lihat [implementation_plan.md § Infra WIB](./implementation_plan.md#infra--tanggal-operasional-wib-selesai-2026-07-09).
 
 ---
 
@@ -52,14 +54,14 @@ Backend di repo ini menyediakan:
 | 🔲 **Planned** | Belum diimplementasi |
 | 📱 **Mobile** | Dikerjakan di app React Native + Expo |
 
-**Progress domain (perkiraan, 2026-06-24):**
+**Progress domain (perkiraan, 2026-07-09):**
 
 | Domain | Fokus | Progress |
 |--------|--------|----------|
 | **D1** Identity & tenant | Auth, RBAC, users, tenants | ~95% |
-| **D2** Master data | Lokasi, kandang, strain, grade, vendor, target | ~68% |
-| **D3** Operasional | Produksi, inventori, sync, kesehatan | ~42% |
-| **D4** Finansial | Penjualan, cashflow, dashboard KPI | ~5% |
+| **D2** Master data | Lokasi, kandang, strain, grade, vendor, PO | ~85% |
+| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~90% |
+| **D4** Finansial | Penjualan, cashflow, dashboard KPI penuh | ~5% |
 
 ---
 
@@ -98,7 +100,7 @@ Backend di repo ini menyediakan:
 | Path | Menu | Status | Model / catatan |
 |------|------|--------|-----------------|
 | `/dashboard` | Dashboard | 🟡 | KPI dasar ✅ (produksi, populasi, stok kritis); FCR/early warning 🔲 |
-| `/dashboard/production` | **Input harian** | 🟡 | Tab rekap 4 jenis ✅; kolom HDP % ✅ |
+| `/dashboard/production` | **Input harian** | 🟡 | Grid status kandang ✅; 4 tab rekap data nyata ✅; kolom HDP % ✅; date toolbar WIB ✅ |
 | `/dashboard/inventory` | Inventori | ✅ | `Item` CRUD (master + tipe), stok per item |
 | `/dashboard/inventory/[itemId]` | Detail item | ✅ | Stok per lokasi, kartu stok (mutasi), penyesuaian stok |
 | `/dashboard/purchase-orders` | Pesanan pembelian | ✅ | PO minimal: buat + terima → `IN_PURCHASE` |
@@ -107,7 +109,7 @@ Backend di repo ini menyediakan:
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
 | `/dashboard/cages` | Kandang | ✅ | `Cage`, QR, siklus on-create |
-| `/dashboard/cages/[id]` | Detail kandang | 🟡 | Staff assignment ✅; siklus penuh 🔲 |
+| `/dashboard/cages/[id]` | Detail kandang | 🟡 | Staff assignment ✅; metrik siklus (populasi, HDP, FCR, mutasi, kesehatan) ✅; riwayat siklus enriched ✅; vaksin/drill-down 🔲 |
 | `/dashboard/strains` | Strain | ✅ | `Strain` + `ProductionTarget` (HDP/FCR per umur) |
 | `/dashboard/egg-grades` | Grade telur | ✅ | `EggGrade` (penjualan; bukan input lapangan) |
 | `/dashboard/vendors` | Vendor | ✅ | `Vendor` |
@@ -131,7 +133,7 @@ Backend di repo ini menyediakan:
 | `/api/auth/*` | ✅ | Admin web + mobile (Expo) |
 | `/api/storage/*` | ✅ | Upload/logo |
 | `/api/upload/logo` | ✅ | Branding tenant |
-| `/api/v1/*` | 🟡 | **Mobile API v1** — lihat tabel di bawah |
+| `/api/v1/*` | ✅ | **Mobile API v1** — core operasional; lihat tabel di bawah |
 
 #### Mobile API v1 (`app/api/v1/`)
 
@@ -174,8 +176,8 @@ Backend di repo ini menyediakan:
 
 ## 6. Sitemap — Mobile (`aapm-mobile`)
 
-> Implementasi UI di [`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile).  
-> **Progress mobile:** [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.md)
+> Implementasi UI di [`../aapm-mobile`](../aapm-mobile).  
+> **Progress mobile:** [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md)
 
 ### Alur utama
 
@@ -192,8 +194,8 @@ Backend di repo ini menyediakan:
 | `(tabs)/input` | ✅ | QR tile + daftar kandang |
 | `scan/qr` | ✅ | `POST /api/v1/cages/scan` → hub |
 | `kandang/[id]` hub | ✅ | `GET /api/v1/cages/{id}` |
-| `kandang/[id]/input` | 🟡 | Form unified: produksi ✅; pakan/populasi/pengobatan antrean lokal |
-| `kandang/[id]/riwayat` | ✅ | `GET …/daily-history`; navigasi tanggal; edit semua tipe |
+| `kandang/[id]/input` | ✅ | Form unified 4 section — submit API langsung (produksi, pakan, populasi, pengobatan) |
+| `kandang/[id]/riwayat` | ✅ | `GET …/daily-history`; navigasi tanggal WIB; edit semua tipe |
 | `kandang/[id]/production/[recordId]` | ✅ | Edit TB/TR/TP |
 | `(tabs)/profile` | ✅ | Session + logout |
 | Vaksinasi | 🔲 | `VaccineSchedule` — Modul 13 |
@@ -210,18 +212,18 @@ Backend di repo ini menyediakan:
 | # | Modul | Progress | Admin | Mobile |
 |---|--------|----------|-------|--------|
 | 1 | User management | ~95% | ✅ | ✅ login |
-| 2 | Master data peternakan | ~70% | ✅/🟡 | read-only |
-| 3 | Strain & standardisasi | ~60% | 🟡 target HDP/FCR | — |
-| 4 | Front office input | ~75% | rekap tab | 🟡 unified form |
-| 5 | Offline sync | ~15% | schema | antrean lokal |
-| 6 | Mutasi populasi | ~20% | 🔲 | UI antrean |
-| 7 | Vendor & procurement | ~35% | vendor ✅ | — |
-| 8 | Inventory | ~65% | Item CRUD + stok + kartu stok + penyesuaian; potong stok pakan & obat/vitamin; telur auto-IN | picker item nyata + peringatan stok |
+| 2 | Master data peternakan | ~80% | ✅/🟡 | read-only |
+| 3 | Strain & standardisasi | ~65% | 🟡 target HDP/FCR | — |
+| 4 | Front office input | ~85% | rekap 4 tab + HDP | ✅ unified form |
+| 5 | Offline sync | ~15% | schema | 🔲 antrean belum flush |
+| 6 | Mutasi populasi | ~70% | rekap tab | ✅ API + ledger |
+| 7 | Vendor & procurement | ~75% | vendor ✅ + PO minimal | — |
+| 8 | Inventory | ~75% | CRUD + stok + kartu + penyesuaian + PO IN | ✅ picker item |
 | 9 | Early warning | ~0% | 🔲 | 🔲 |
-| 10 | Executive dashboard | ~10% | placeholder | — |
+| 10 | Executive dashboard | ~40% | KPI dasar ✅ | — |
 | 11 | Sales | ~0% | 🔲 | — |
 | 12 | Cashflow | ~0% | 🔲 | — |
-| 13 | Health / vaccination | ~12% | 🔲 | pengobatan antrean; vaksin 🔲 |
+| 13 | Health / vaccination | ~25% | rekap pengobatan ✅ | pengobatan ✅; vaksin 🔲 |
 
 **Vaksinasi ≠ pengobatan:** `VaccineSchedule` (jadwal preventif + reminder) vs `MedicalRecord` (laporan saat flock sakit).
 
@@ -232,29 +234,35 @@ Backend di repo ini menyediakan:
 - [x] API v1 produksi (cages, scan, production POST/PATCH, daily-history)
 - [x] Auth mobile end-to-end (cookie dari Expo)
 - [x] Dashboard Input harian: tab rekap + tabel telur TB/TR/TP
+- [x] Tab rekap pakan, populasi, pengobatan (data nyata per tanggal WIB)
+- [x] Kolom HDP % di rekap telur
 - [x] `ProductionTarget` CRUD (di halaman strain)
 - [x] Migrasi `DailyProduction` TB/TR/TP + multi-record
 - [x] API feed-consumption + service inventori (potong stok pakan, OUT_FEED)
 - [x] API population + medical (medical opsional potong obat/vitamin, OUT_MEDICAL)
 - [x] Inventori admin (`Item` CRUD, `InventoryStock` view, kartu stok, penyesuaian stok)
 - [x] Telur auto-menambah stok (IN_HARVEST dari TB) + rekonsiliasi saat edit produksi
-- [ ] Tab rekap pakan, populasi, pengobatan (data nyata)
-- [ ] Kolom HDP % di rekap telur
+- [x] PO minimal (`/dashboard/purchase-orders`) + `IN_PURCHASE`
+- [x] Populasi ledger (`compute-cycle-population`) + validasi mutasi
+- [x] Dashboard KPI dasar (`get-dashboard-stats`)
+- [x] Infra tanggal operasional WIB (`lib/business-date.ts`)
+- [ ] Halaman mutasi stok global (`/dashboard/inventory/mutations`)
 - [ ] Siklus kandang penuh (`CycleSetting` di detail kandang)
 - [ ] Modul 13: vaksinasi + reminder
+- [ ] D4: penjualan + cashflow
 
 ## 9. Backlog mobile (Expo)
 
-Lihat [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.md).
+Lihat [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md).
 
 - [x] API client + login staff
 - [x] Shell + navigasi (Home, Input, Profil)
-- [x] Form input harian unified (accordion)
+- [x] Form input harian unified (accordion) — 4 section submit API
 - [x] Produksi TB/TR/TP + submit API
+- [x] Konsumsi pakan, mutasi populasi, pengobatan — submit API
 - [x] QR scanner kamera
-- [x] Riwayat kandang + edit produksi multi-record
-- [ ] API feed / populasi / pengobatan + flush antrean
-- [x] Date picker riwayat (navigasi prev/next)
+- [x] Riwayat kandang + edit multi-record + navigasi tanggal WIB
+- [ ] Flush antrean offline (`pending-input-queue`) saat online
 - [ ] Layar vaksinasi + reminder
 - [ ] OpenAPI types codegen
 
@@ -266,14 +274,15 @@ Lihat [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.
 /                    → redirect
 /login
 
-/dashboard                 🟡
-/dashboard/production      🟡  (menu: Input harian)
-/dashboard/inventory       🟡
-/dashboard/finance         🟡
+/dashboard                 🟡  (KPI dasar ✅)
+/dashboard/production      🟡  (Input harian — rekap + HDP ✅)
+/dashboard/inventory       ✅
+/dashboard/purchase-orders   ✅
+/dashboard/finance         🟡  (placeholder)
 /dashboard/profile         ✅
 /dashboard/locations       ✅
 /dashboard/cages           ✅
-/dashboard/cages/[id]      🟡
+/dashboard/cages/[id]      🟡  (metrik siklus + riwayat enriched ✅)
 /dashboard/strains         ✅
 /dashboard/egg-grades      ✅
 /dashboard/vendors         ✅
@@ -282,7 +291,7 @@ Lihat [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.
 /dashboard/roles           ✅
 
 /api/auth/*                ✅
-/api/v1/*                  🟡
+/api/v1/*                  ✅  (core operasional)
 /api/storage/*             ✅
 /api/upload/logo           ✅
 ```

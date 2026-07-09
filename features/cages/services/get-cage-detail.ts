@@ -2,7 +2,22 @@ import {
   getAssignedStaffIds,
   getCageQrCode,
 } from "@/features/cages/lib/cage-staff-db";
+import {
+  buildSummariesForCycles,
+  loadCageCycleRawData,
+  type CycleOperationalSummary,
+} from "@/features/cages/services/get-cycle-operational-summary";
+import { startOfTodayBusiness } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
+
+export type CageCycleDetail = {
+  id: string;
+  startDate: Date;
+  endDate: Date | null;
+  initialPopulation: number;
+  status: string;
+  summary: CycleOperationalSummary;
+};
 
 export type CageDetail = {
   id: string;
@@ -14,19 +29,8 @@ export type CageDetail = {
   location: { id: string; name: string };
   strain: { id: number; name: string };
   assignedStaffIds: string[];
-  activeCycle: {
-    id: string;
-    startDate: Date;
-    initialPopulation: number;
-    status: string;
-  } | null;
-  history: Array<{
-    id: string;
-    startDate: Date;
-    endDate: Date | null;
-    initialPopulation: number;
-    status: string;
-  }>;
+  activeCycle: CageCycleDetail | null;
+  history: CageCycleDetail[];
 };
 
 export async function getCageDetail(
@@ -49,13 +53,49 @@ export async function getCageDetail(
 
   if (!cage) return null;
 
-  const [qrCode, assignedStaffIds] = await Promise.all([
+  const [qrCode, assignedStaffIds, raw] = await Promise.all([
     getCageQrCode(cage.id),
     getAssignedStaffIds(cage.id),
+    loadCageCycleRawData(cage.id, tenantId),
   ]);
 
-  const activeCycleRow = cage.cycle_settings.find((c) => c.status === "Active") ?? null;
-  const historyRows = cage.cycle_settings.filter((c) => c.status !== "Active");
+  const asOfDate = startOfTodayBusiness();
+  const summaryMap = await buildSummariesForCycles(
+    cage.cycle_settings,
+    cage.strain.id,
+    cage.capacity,
+    raw,
+    asOfDate,
+  );
+
+  const activeCycleRow =
+    cage.cycle_settings.find((cycle) => cycle.status === "Active") ?? null;
+  const historyRows = cage.cycle_settings
+    .filter((cycle) => cycle.status !== "Active")
+    .sort((a, b) => {
+      const aEnd = a.end_date?.getTime() ?? 0;
+      const bEnd = b.end_date?.getTime() ?? 0;
+      if (bEnd !== aEnd) return bEnd - aEnd;
+      return b.start_date.getTime() - a.start_date.getTime();
+    });
+
+  function toCycleDetail(
+    row: (typeof cage.cycle_settings)[number],
+  ): CageCycleDetail {
+    const summary = summaryMap.get(row.id);
+    if (!summary) {
+      throw new Error(`Ringkasan siklus tidak ditemukan: ${row.id}`);
+    }
+
+    return {
+      id: row.id,
+      startDate: row.start_date,
+      endDate: row.end_date,
+      initialPopulation: row.initial_population,
+      status: row.status,
+      summary,
+    };
+  }
 
   return {
     id: cage.id,
@@ -67,20 +107,7 @@ export async function getCageDetail(
     location: cage.location,
     strain: cage.strain,
     assignedStaffIds,
-    activeCycle: activeCycleRow
-      ? {
-          id: activeCycleRow.id,
-          startDate: activeCycleRow.start_date,
-          initialPopulation: activeCycleRow.initial_population,
-          status: activeCycleRow.status,
-        }
-      : null,
-    history: historyRows.map((h) => ({
-      id: h.id,
-      startDate: h.start_date,
-      endDate: h.end_date,
-      initialPopulation: h.initial_population,
-      status: h.status,
-    })),
+    activeCycle: activeCycleRow ? toCycleDetail(activeCycleRow) : null,
+    history: historyRows.map(toCycleDetail),
   };
 }

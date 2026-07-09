@@ -1,8 +1,22 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ComponentType } from "react";
 import Link from "next/link";
-import { ArrowLeft, Calendar, Users, Loader2, Play, CheckCircle2, History, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  Loader2,
+  Play,
+  CheckCircle2,
+  History,
+  AlertCircle,
+  Egg,
+  TrendingUp,
+  Package,
+  HeartPulse,
+  Activity,
+} from "lucide-react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,34 +52,70 @@ import {
 import { CageQrPanel } from "@/features/cages/components/cage-qr-panel";
 import { CageStaffPanel } from "@/features/cages/components/cage-staff-panel";
 import type { CageDetail } from "@/features/cages/services/get-cage-detail";
+import type { CycleOperationalSummary } from "@/features/cages/services/get-cycle-operational-summary";
+import { formatHdpPercent } from "@/features/production/lib/compute-hdp";
 import type { TenantStaffOption } from "@/features/cages/services/list-tenant-staff-options";
+import { cn } from "@/lib/utils";
 
-function getAgeInWeeksAndDays(startDate: Date) {
-  const start = new Date(startDate);
-  const today = new Date();
-  const diffTime = Math.max(0, today.getTime() - start.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const weeks = Math.floor(diffDays / 7);
-  const days = diffDays % 7;
-  return `${weeks} Minggu${days > 0 ? ` ${days} Hari` : ""}`;
+function formatCount(value: number) {
+  return value.toLocaleString("id-ID");
 }
 
-function getDurationInWeeksAndDays(startDate: Date, endDate: Date) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const diffTime = Math.max(0, end.getTime() - start.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const weeks = Math.floor(diffDays / 7);
-  const days = diffDays % 7;
-  return `${weeks} Minggu${days > 0 ? ` ${days} Hari` : ""}`;
+function formatCycleAge(summary: Pick<CycleOperationalSummary, "ageWeeks" | "ageDaysRemainder">) {
+  const { ageWeeks, ageDaysRemainder } = summary;
+  return `${ageWeeks} Minggu${ageDaysRemainder > 0 ? ` ${ageDaysRemainder} Hari` : ""}`;
 }
 
-function formatDate(date: Date) {
-  return date.toLocaleDateString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+function formatFcr(value: number | null) {
+  if (value === null) return "—";
+  return value.toFixed(2);
+}
+
+function formatPercent(value: number | null) {
+  if (value === null) return "—";
+  return `${value.toFixed(1)}%`;
+}
+
+function formatMutationSummary(summary: CycleOperationalSummary) {
+  const { initialPopulation, currentPopulation, mutations } = summary;
+  const loss = mutations.mati + mutations.afkir;
+  const parts = [`Awal ${formatCount(initialPopulation)}`];
+
+  if (loss > 0) {
+    parts.push(`−${formatCount(loss)} mati/afkir`);
+  }
+  if (mutations.masuk > 0) {
+    parts.push(`+${formatCount(mutations.masuk)} masuk`);
+  }
+  if (mutations.pindah > 0) {
+    parts.push(`−${formatCount(mutations.pindah)} pindah`);
+  }
+
+  parts.push(`→ ${formatCount(currentPopulation)}`);
+  return parts.join(" ");
+}
+
+type MetricCardProps = {
+  label: string;
+  value: string;
+  description?: string;
+  icon: ComponentType<{ className?: string }>;
+  valueClassName?: string;
+};
+
+function MetricCard({ label, value, description, icon: Icon, valueClassName }: MetricCardProps) {
+  return (
+    <div className="rounded-lg border border-emerald-500/15 bg-background/60 p-4">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+        <Icon className="size-3.5" />
+        {label}
+      </div>
+      <p className={cn("text-lg font-bold text-foreground", valueClassName)}>{value}</p>
+      {description ? (
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      ) : null}
+    </div>
+  );
 }
 
 type CageDetailViewProps = {
@@ -160,39 +210,100 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
 
         {cage.activeCycle ? (
           <div className="rounded-xl border border-emerald-500/20 bg-linear-to-r from-emerald-500/5 to-teal-500/5 p-6">
-            <div className="grid gap-6 sm:grid-cols-3">
-              <div className="space-y-1">
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-1 sm:col-span-2 lg:col-span-4">
                 <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
                   <Calendar className="size-4" />
                   Tanggal Mulai
                 </div>
                 <p className="text-lg font-bold text-foreground">
-                  {formatDate(cage.activeCycle.startDate)}
+                  {formatBusinessDateFromDb(cage.activeCycle.startDate)}
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <History className="size-4" />
-                  Umur Siklus
-                </div>
-                <p className="text-lg font-bold text-foreground">
-                  {getAgeInWeeksAndDays(cage.activeCycle.startDate)}
-                </p>
-              </div>
+              <MetricCard
+                icon={Users}
+                label="Populasi Saat Ini"
+                value={`${formatCount(cage.activeCycle.summary.currentPopulation)} Ekor`}
+                description={`Awal ${formatCount(cage.activeCycle.initialPopulation)} ekor`}
+              />
 
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <Users className="size-4" />
-                  Populasi Awal
-                </div>
-                <p className="text-lg font-bold text-foreground">
-                  {cage.activeCycle.initialPopulation.toLocaleString("id-ID")} Ekor
-                </p>
-              </div>
+              <MetricCard
+                icon={History}
+                label="Umur Siklus"
+                value={formatCycleAge(cage.activeCycle.summary)}
+              />
+
+              <MetricCard
+                icon={Activity}
+                label="Kapasitas"
+                value={formatPercent(cage.activeCycle.summary.capacityPercent)}
+                description={`dari ${formatCount(cage.capacity)} ekor`}
+                valueClassName={
+                  (cage.activeCycle.summary.capacityPercent ?? 0) > 100
+                    ? "text-destructive"
+                    : undefined
+                }
+              />
+
+              <MetricCard
+                icon={TrendingUp}
+                label="HDP Hari Ini"
+                value={formatHdpPercent(cage.activeCycle.summary.production.todayHdp)}
+                description={
+                  cage.activeCycle.summary.production.targetHdp !== null
+                    ? `Target ${formatHdpPercent(cage.activeCycle.summary.production.targetHdp)}`
+                    : `TB ${formatCount(cage.activeCycle.summary.production.todayTb)} butir`
+                }
+                valueClassName={
+                  cage.activeCycle.summary.production.todayHdp !== null &&
+                  cage.activeCycle.summary.production.targetHdp !== null &&
+                  cage.activeCycle.summary.production.todayHdp >=
+                    cage.activeCycle.summary.production.targetHdp
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : cage.activeCycle.summary.production.todayHdp !== null &&
+                        cage.activeCycle.summary.production.targetHdp !== null
+                      ? "text-destructive"
+                      : undefined
+                }
+              />
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <MetricCard
+                icon={Egg}
+                label="Kumulatif TB"
+                value={`${formatCount(cage.activeCycle.summary.production.cumulativeTb)} Butir`}
+                description={`TR ${formatCount(cage.activeCycle.summary.production.cumulativeTr)} · TP ${formatCount(cage.activeCycle.summary.production.cumulativeTp)}`}
+              />
+
+              <MetricCard
+                icon={Package}
+                label="FCR Siklus"
+                value={formatFcr(cage.activeCycle.summary.feed.fcr)}
+                description={`Pakan ${formatCount(cage.activeCycle.summary.feed.totalQuantity)} kg`}
+              />
+
+              <MetricCard
+                icon={Users}
+                label="Mutasi"
+                value={`Mati ${formatCount(cage.activeCycle.summary.mutations.mati)} · Afkir ${formatCount(cage.activeCycle.summary.mutations.afkir)}`}
+                description={formatMutationSummary(cage.activeCycle.summary)}
+              />
+
+              <MetricCard
+                icon={HeartPulse}
+                label="Kesehatan"
+                value={`${formatCount(cage.activeCycle.summary.medical.eventCount)} Kejadian`}
+                description={
+                  cage.activeCycle.summary.medical.mortalityTotal > 0
+                    ? `Mortalitas pengobatan ${formatCount(cage.activeCycle.summary.medical.mortalityTotal)} ekor`
+                    : "Belum ada catatan pengobatan"
+                }
+              />
+            </div>
+
+            <div className="flex justify-end">
               <Button
                 variant="destructive"
                 onClick={() => setCloseOpen(true)}
@@ -236,24 +347,48 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
             <TableHeader className="bg-muted/40">
               <TableRow>
                 <TableHead>Periode Siklus</TableHead>
-                <TableHead>Populasi Awal</TableHead>
-                <TableHead className="text-right">Durasi Siklus</TableHead>
+                <TableHead className="text-right">Awal</TableHead>
+                <TableHead className="text-right">Akhir</TableHead>
+                <TableHead className="text-right">Mati+Afkir</TableHead>
+                <TableHead className="text-right">Total TB</TableHead>
+                <TableHead className="text-right">HDP Rata</TableHead>
+                <TableHead className="text-right">FCR</TableHead>
+                <TableHead className="text-right">Durasi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cage.history.map((h) => (
-                <TableRow key={h.id} className="hover:bg-muted/10">
-                  <TableCell className="font-medium text-foreground">
-                    {formatDate(h.startDate)} — {h.endDate ? formatDate(h.endDate) : "-"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {h.initialPopulation.toLocaleString("id-ID")} Ekor
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-foreground">
-                    {h.endDate ? getDurationInWeeksAndDays(h.startDate, h.endDate) : "-"}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {cage.history.map((h) => {
+                const loss = h.summary.mutations.mati + h.summary.mutations.afkir;
+                return (
+                  <TableRow key={h.id} className="hover:bg-muted/10">
+                    <TableCell className="font-medium text-foreground">
+                      {formatBusinessDateFromDb(h.startDate)} —{" "}
+                      {h.endDate ? formatBusinessDateFromDb(h.endDate) : "-"}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatCount(h.initialPopulation)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-foreground">
+                      {formatCount(h.summary.currentPopulation)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatCount(loss)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatCount(h.summary.production.cumulativeTb)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatHdpPercent(h.summary.production.averageHdp)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatFcr(h.summary.feed.fcr)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium text-foreground">
+                      {formatCycleAge(h.summary)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
