@@ -2,17 +2,15 @@ import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
+import {
+  validateOperationalBusinessDate,
+} from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordDailyProductionResult =
   | { ok: true }
   | { ok: false; error: string };
 
-function startOfUtcDate(date: Date) {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
 
 export async function recordDailyProduction(
   tenantId: string,
@@ -63,7 +61,12 @@ export async function recordDailyProduction(
     };
   }
 
-  const recordDate = startOfUtcDate(input.recordDate);
+  const dateCheck = validateOperationalBusinessDate(input.recordDate);
+  if (!dateCheck.ok) {
+    return { ok: false, error: dateCheck.error };
+  }
+
+  const recordDate = dateCheck.date;
 
   // Egg inventory auto-increments from the "telur bagus" (TB) count only.
   const eggItem = await prisma.item.findFirst({

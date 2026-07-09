@@ -1,5 +1,8 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import type { UpdatePopulationMutationInput } from "@/features/production/schemas/update-population-mutation";
+import {
+  validatePopulationMutationUpdate,
+} from "@/features/production/services/record-population-mutation";
 import prisma from "@/lib/prisma";
 
 export type UpdatePopulationMutationResult =
@@ -14,7 +17,7 @@ export async function updatePopulationMutation(
 ): Promise<UpdatePopulationMutationResult> {
   const existing = await prisma.populationMutation.findFirst({
     where: { id: recordId, cage: { location: { tenant_id: tenantId } } },
-    select: { id: true, cage_id: true },
+    select: { id: true, cage_id: true, record_date: true },
   });
 
   if (!existing) {
@@ -33,6 +36,18 @@ export async function updatePopulationMutation(
       error: "Anda tidak ditugaskan ke kandang ini.",
       status: 403,
     };
+  }
+
+  const validation = await validatePopulationMutationUpdate(
+    existing.cage_id,
+    recordId,
+    input.mutationType,
+    input.quantity,
+    existing.record_date,
+  );
+
+  if (!validation.ok) {
+    return { ok: false, error: validation.error, status: 400 };
   }
 
   try {

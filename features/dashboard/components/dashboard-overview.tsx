@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Egg, Package, TrendingUp, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -9,42 +10,48 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { ServerSession } from "@/features/auth/lib/session";
+import type { DashboardStats } from "@/features/dashboard/services/get-dashboard-stats";
 
 type DashboardOverviewProps = {
   session: ServerSession;
+  stats: DashboardStats | null;
 };
 
-const statCards = [
-  {
-    title: "Produksi hari ini",
-    value: "—",
-    description: "Butir telur tercatat",
-    icon: Egg,
-  },
-  {
-    title: "Populasi aktif",
-    value: "—",
-    description: "Ekor di semua kandang",
-    icon: TrendingUp,
-  },
-  {
-    title: "Stok kritis",
-    value: "—",
-    description: "Item di bawah minimum",
-    icon: Package,
-  },
-  {
-    title: "Pengguna aktif",
-    value: "—",
-    description: "Akun tenant aktif",
-    icon: Users,
-  },
-] as const;
+function formatCount(value: number) {
+  return value.toLocaleString("id-ID");
+}
 
-export function DashboardOverview({ session }: DashboardOverviewProps) {
+export function DashboardOverview({ session, stats }: DashboardOverviewProps) {
   const displayName = session.user.fullName ?? session.user.name ?? "Pengguna";
   const activeTenant =
     session.session.activeTenantId ?? session.user.tenantId;
+
+  const statCards = [
+    {
+      title: "Produksi hari ini",
+      value: stats ? formatCount(stats.todayEggTotal) : "—",
+      description: "Butir telur bagus (TB) tercatat",
+      icon: Egg,
+    },
+    {
+      title: "Populasi aktif",
+      value: stats ? formatCount(stats.activePopulationTotal) : "—",
+      description: "Ekor di kandang ber-siklus aktif",
+      icon: TrendingUp,
+    },
+    {
+      title: "Stok kritis",
+      value: stats ? formatCount(stats.lowStockItemCount) : "—",
+      description: "Item di bawah ambang batas",
+      icon: Package,
+    },
+    {
+      title: "Pengguna aktif",
+      value: stats ? formatCount(stats.activeUserCount) : "—",
+      description: "Akun tenant aktif",
+      icon: Users,
+    },
+  ] as const;
 
   return (
     <>
@@ -73,6 +80,34 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
           </Card>
         ))}
       </div>
+
+      {stats && stats.lowStockItems.length > 0 ? (
+        <Card className="border-border/80 shadow-sm">
+          <CardHeader>
+            <CardTitle className="font-heading text-base">
+              Stok kritis
+            </CardTitle>
+            <CardDescription>
+              Item inventori di atau di bawah ambang batas minimum.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {stats.lowStockItems.map((item) => (
+              <Link
+                key={item.id}
+                href={`/dashboard/inventory/${item.id}`}
+                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50"
+              >
+                <span className="font-medium">{item.name}</span>
+                <Badge variant="destructive">
+                  {item.totalQuantity.toLocaleString("id-ID")} {item.unit} / min{" "}
+                  {item.minStockAlert.toLocaleString("id-ID")}
+                </Badge>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="border-border/80 shadow-sm">

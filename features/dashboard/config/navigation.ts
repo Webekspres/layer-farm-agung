@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Building2,
+  ClipboardList,
   Egg,
   Layers,
   LayoutDashboard,
@@ -39,6 +40,12 @@ export const mainNavItems: NavItem[] = [
     title: "Inventori",
     href: "/dashboard/inventory",
     icon: Package,
+    permission: "manage_inventory",
+  },
+  {
+    title: "Pesanan pembelian",
+    href: "/dashboard/purchase-orders",
+    icon: ClipboardList,
     permission: "manage_inventory",
   },
   {

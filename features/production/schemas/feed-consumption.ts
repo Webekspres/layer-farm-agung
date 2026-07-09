@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { operationalBusinessDateSchema } from "@/lib/business-date";
 
 export const FEED_MUTATION_TYPES = ["Pakan", "Feed"] as const;
 
 export const feedConsumptionSchema = z.object({
   cageId: z.string().uuid("Kandang tidak valid."),
   itemId: z.string().uuid("Item pakan tidak valid."),
-  recordDate: z.coerce.date({ message: "Tanggal konsumsi tidak valid." }),
+  recordDate: operationalBusinessDateSchema,
   quantity: z.coerce
     .number({ message: "Jumlah harus berupa angka." })
     .positive("Jumlah pakan harus lebih dari 0.")

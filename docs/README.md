@@ -28,6 +28,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 |------|-----|
 | **[ecosystem.md](./ecosystem.md)** | **Arsitektur dua repo** — backend (ini) + [`aapm-mobile`](../mobile-apps/aapm-mobile) |
 | **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; progress implementasi |
+| **[implementation_plan.md](./implementation_plan.md)** | **Rencana eksekusi** fase berikutnya (PO, populasi, KPI, mobile) — checklist agent-ready |
 | **[apicontract/](./apicontract/)** | Kontrak **OpenAPI 3.1** untuk mobile (`openapi.yaml`) |
 
 ## Sumber kebenaran lain

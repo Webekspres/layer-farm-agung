@@ -1,4 +1,6 @@
 import { getAssignedCageIdsForUser } from "@/features/cages/lib/cage-staff-db";
+import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
+import { startOfTodayUtc } from "@/features/production/lib/parse-production-date";
 import prisma from "@/lib/prisma";
 
 export type FieldCageListItem = {
@@ -20,12 +22,6 @@ export type FieldCageStats = {
   recordedTodayCount: number;
 };
 
-function startOfTodayUtc() {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()),
-  );
-}
 
 export async function listFieldCages(
   tenantId: string,
@@ -43,7 +39,6 @@ export async function listFieldCages(
       status: "Active",
       location: { tenant_id: tenantId },
       id: { in: assignedCageIds },
-      // Only show cages that have an active cycle
       cycle_settings: { some: { status: "Active" } },
     },
     include: {
@@ -53,7 +48,7 @@ export async function listFieldCages(
         where: { status: "Active" },
         take: 1,
         orderBy: { start_date: "desc" },
-        select: { initial_population: true },
+        select: { id: true },
       },
       daily_productions: {
         where: {
@@ -67,7 +62,15 @@ export async function listFieldCages(
     orderBy: [{ location: { name: "asc" } }, { name: "asc" }],
   });
 
-  const cages: FieldCageListItem[] = rows.map((row) => ({
+  const populations = await Promise.all(
+    rows.map((row) =>
+      row.cycle_settings[0]
+        ? resolveActiveCyclePopulation(row.id)
+        : Promise.resolve(null),
+    ),
+  );
+
+  const cages: FieldCageListItem[] = rows.map((row, index) => ({
     id: row.id,
     name: row.name,
     locationName: row.location.name,
@@ -75,8 +78,7 @@ export async function listFieldCages(
     cageType: row.cage_type,
     capacity: row.capacity,
     status: row.status,
-    activeCyclePopulation:
-      row.cycle_settings[0]?.initial_population ?? null,
+    activeCyclePopulation: populations[index],
     recordedToday: row.daily_productions.length > 0,
   }));
 

@@ -3,10 +3,7 @@
 import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -15,11 +12,17 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  calendarDateToRecordDate,
+  formatProductionDatePickerLabel,
   formatProductionDateParam,
   isProductionToday,
+  isCalendarDateAfterBusinessToday,
   parseProductionRecordDate,
+  recordDateToCalendarDate,
   shiftProductionDate,
+  startOfTodayUtc,
 } from "@/features/production/lib/parse-production-date";
+import { cn } from "@/lib/utils";
 
 export function ProductionDateToolbar() {
   const router = useRouter();
@@ -32,10 +35,11 @@ export function ProductionDateToolbar() {
 
   function navigateTo(date: Date | undefined) {
     if (!date) return;
+    const recordDate = calendarDateToRecordDate(date);
     const next = new URLSearchParams(searchParams.toString());
-    const param = formatProductionDateParam(date);
+    const param = formatProductionDateParam(recordDate);
 
-    if (isProductionToday(date)) {
+    if (isProductionToday(recordDate)) {
       next.delete("date");
     } else {
       next.set("date", param);
@@ -47,6 +51,8 @@ export function ProductionDateToolbar() {
     });
   }
 
+  const calendarDate = recordDateToCalendarDate(recordDate);
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-2">
@@ -56,7 +62,11 @@ export function ProductionDateToolbar() {
           variant="outline"
           size="icon"
           aria-label="Hari sebelumnya"
-          onClick={() => navigateTo(shiftProductionDate(recordDate, -1))}
+          onClick={() =>
+            navigateTo(
+              recordDateToCalendarDate(shiftProductionDate(recordDate, -1)),
+            )
+          }
         >
           <ChevronLeft className="size-4" />
         </Button>
@@ -73,7 +83,7 @@ export function ProductionDateToolbar() {
             >
               <CalendarIcon className="mr-2.5 size-4 text-muted-foreground" />
               {recordDate ? (
-                format(recordDate, "dd MMMM yyyy", { locale: id })
+                formatProductionDatePickerLabel(recordDate)
               ) : (
                 <span>Pilih tanggal</span>
               )}
@@ -82,11 +92,12 @@ export function ProductionDateToolbar() {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
-              selected={recordDate}
+              selected={calendarDate}
               onSelect={navigateTo}
               // Mengunci tanggal masa depan agar staff tidak bisa melihat rekap esok hari
               disabled={(date) =>
-                date > new Date() || date < new Date("1900-01-01")
+                isCalendarDateAfterBusinessToday(date) ||
+                date < new Date("1900-01-01")
               }
             />
           </PopoverContent>
@@ -99,7 +110,11 @@ export function ProductionDateToolbar() {
           size="icon"
           aria-label="Hari berikutnya"
           disabled={viewingToday}
-          onClick={() => navigateTo(shiftProductionDate(recordDate, 1))}
+          onClick={() =>
+            navigateTo(
+              recordDateToCalendarDate(shiftProductionDate(recordDate, 1)),
+            )
+          }
         >
           <ChevronRight className="size-4" />
         </Button>
@@ -110,7 +125,7 @@ export function ProductionDateToolbar() {
         <Button
           type="button"
           variant="secondary"
-          onClick={() => navigateTo(new Date())}
+          onClick={() => navigateTo(recordDateToCalendarDate(startOfTodayUtc()))}
         >
           Kembali ke hari ini
         </Button>

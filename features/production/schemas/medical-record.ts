@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { operationalBusinessDateSchema } from "@/lib/business-date";
 
 export const APPLICATION_METHODS = [
   "Minum",
@@ -41,7 +42,7 @@ export const medicalRecordSchema = z.object({
     (v) => (v === "" || v === null ? undefined : v),
     z.string().max(1000, "Catatan maksimal 1000 karakter.").optional(),
   ),
-  treatmentDate: z.coerce.date({ message: "Tanggal pengobatan tidak valid." }),
+  treatmentDate: operationalBusinessDateSchema,
   // Optional link to an inventory item (Medicine/Vitamin). When present, its
   // stock is deducted; when absent, the record is free-text only.
   itemId: z.preprocess(

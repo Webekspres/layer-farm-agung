@@ -1,3 +1,4 @@
+import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
 import prisma from "@/lib/prisma";
 import { isUuid } from "@/lib/uuid";
 
@@ -31,7 +32,7 @@ export async function getCageForProduction(
         where: { status: "Active" },
         take: 1,
         orderBy: { start_date: "desc" },
-        select: { initial_population: true },
+        select: { id: true },
       },
     },
   });
@@ -39,6 +40,9 @@ export async function getCageForProduction(
   if (!row) return null;
 
   const activeCycle = row.cycle_settings[0];
+  const activeCyclePopulation = activeCycle
+    ? await resolveActiveCyclePopulation(cageId)
+    : null;
 
   return {
     id: row.id,
@@ -47,6 +51,6 @@ export async function getCageForProduction(
     strainName: row.strain.name,
     status: row.status,
     hasActiveCycle: Boolean(activeCycle),
-    activeCyclePopulation: activeCycle?.initial_population ?? null,
+    activeCyclePopulation,
   };
 }

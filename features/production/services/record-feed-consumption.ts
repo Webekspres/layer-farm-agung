@@ -2,17 +2,13 @@ import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import type { FeedConsumptionInput } from "@/features/production/schemas/feed-consumption";
+import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordFeedConsumptionResult =
   | { ok: true; lowStock: boolean; remainingStock: number }
   | { ok: false; error: string };
 
-function startOfUtcDate(date: Date) {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
 
 export async function recordFeedConsumption(
   tenantId: string,
@@ -61,7 +57,12 @@ export async function recordFeedConsumption(
     return { ok: false, error: "Item yang dipilih bukan jenis pakan." };
   }
 
-  const recordDate = startOfUtcDate(input.recordDate);
+  const dateCheck = validateOperationalBusinessDate(input.recordDate);
+  if (!dateCheck.ok) {
+    return { ok: false, error: dateCheck.error };
+  }
+
+  const recordDate = dateCheck.date;
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {

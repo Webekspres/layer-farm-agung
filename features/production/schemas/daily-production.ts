@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { operationalBusinessDateSchema } from "@/lib/business-date";
 
 export const MAX_EGG_COUNT_PER_ENTRY = 10_000;
 
@@ -19,9 +20,7 @@ const weightField = z.preprocess(
 export const dailyProductionSchema = z
   .object({
     cageId: z.string().uuid("Kandang tidak valid."),
-    recordDate: z.coerce.date({
-      message: "Tanggal panen tidak valid.",
-    }),
+    recordDate: operationalBusinessDateSchema,
     tb: eggCountField.default(0),
     tr: eggCountField.default(0),
     tp: eggCountField.default(0),

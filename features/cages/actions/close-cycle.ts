@@ -7,6 +7,7 @@ import {
   requireManageMasterDataSession,
 } from "@/features/master-data/lib/access";
 import { closeCycleSchema } from "@/features/cages/schemas/cycle";
+import { isAfterTodayBusiness } from "@/lib/business-date";
 
 export type ActionState = {
   error?: string;
@@ -65,10 +66,8 @@ export async function closeCycleAction(
     };
   }
 
-  // Ensure end date is not a future date
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (endDate > today) {
+  // Ensure end date is not a future date (WIB calendar)
+  if (isAfterTodayBusiness(endDate)) {
     return {
       error: "Tanggal selesai tidak boleh di masa depan.",
     };

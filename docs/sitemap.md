@@ -97,10 +97,12 @@ Backend di repo ini menyediakan:
 
 | Path | Menu | Status | Model / catatan |
 |------|------|--------|-----------------|
-| `/dashboard` | Dashboard | 🟡 | KPI eksekutif (HDP/FCR) 🔲 |
-| `/dashboard/production` | **Input harian** | 🟡 | Tab rekap: telur ✅; pakan/populasi/pengobatan placeholder |
+| `/dashboard` | Dashboard | 🟡 | KPI dasar ✅ (produksi, populasi, stok kritis); FCR/early warning 🔲 |
+| `/dashboard/production` | **Input harian** | 🟡 | Tab rekap 4 jenis ✅; kolom HDP % ✅ |
 | `/dashboard/inventory` | Inventori | ✅ | `Item` CRUD (master + tipe), stok per item |
 | `/dashboard/inventory/[itemId]` | Detail item | ✅ | Stok per lokasi, kartu stok (mutasi), penyesuaian stok |
+| `/dashboard/purchase-orders` | Pesanan pembelian | ✅ | PO minimal: buat + terima → `IN_PURCHASE` |
+| `/dashboard/purchase-orders/[poId]` | Detail PO | ✅ | Terima barang ke lokasi |
 | `/dashboard/finance` | Keuangan | 🟡 | Placeholder "Soon" |
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
@@ -117,7 +119,6 @@ Backend di repo ini menyediakan:
 
 | Path (usulan) | Model |
 |---------------|-------|
-| `/dashboard/purchase-orders` | `PurchaseOrder` |
 | `/dashboard/population` | `PopulationMutation` |
 | `/dashboard/health/vaccines` | `VaccineSchedule` |
 | `/dashboard/sales` | `SalesOrder` |
@@ -192,7 +193,7 @@ Backend di repo ini menyediakan:
 | `scan/qr` | ✅ | `POST /api/v1/cages/scan` → hub |
 | `kandang/[id]` hub | ✅ | `GET /api/v1/cages/{id}` |
 | `kandang/[id]/input` | 🟡 | Form unified: produksi ✅; pakan/populasi/pengobatan antrean lokal |
-| `kandang/[id]/riwayat` | ✅ | `GET …/daily-history`; edit → `PATCH …/production/{id}` |
+| `kandang/[id]/riwayat` | ✅ | `GET …/daily-history`; navigasi tanggal; edit semua tipe |
 | `kandang/[id]/production/[recordId]` | ✅ | Edit TB/TR/TP |
 | `(tabs)/profile` | ✅ | Session + logout |
 | Vaksinasi | 🔲 | `VaccineSchedule` — Modul 13 |
@@ -253,7 +254,7 @@ Lihat [`aapm-mobile/docs/progress.md`](../mobile-apps/aapm-mobile/docs/progress.
 - [x] QR scanner kamera
 - [x] Riwayat kandang + edit produksi multi-record
 - [ ] API feed / populasi / pengobatan + flush antrean
-- [ ] Date picker riwayat
+- [x] Date picker riwayat (navigasi prev/next)
 - [ ] Layar vaksinasi + reminder
 - [ ] OpenAPI types codegen
 

@@ -2,17 +2,13 @@ import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import type { MedicalRecordInput } from "@/features/production/schemas/medical-record";
+import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordMedicalRecordResult =
   | { ok: true; lowStock: boolean; remainingStock: number | null }
   | { ok: false; error: string };
 
-function startOfUtcDate(date: Date) {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
 
 class StockError extends Error {}
 
@@ -58,7 +54,12 @@ export async function recordMedicalRecord(
     }
   }
 
-  const treatmentDate = startOfUtcDate(input.treatmentDate);
+  const dateCheck = validateOperationalBusinessDate(input.treatmentDate);
+  if (!dateCheck.ok) {
+    return { ok: false, error: dateCheck.error };
+  }
+
+  const treatmentDate = dateCheck.date;
 
   try {
     const outcome = await prisma.$transaction(async (tx) => {

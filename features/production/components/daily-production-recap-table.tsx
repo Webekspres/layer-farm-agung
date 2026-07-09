@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { crackRatioExceedsThreshold } from "@/features/production/lib/crack-ratio";
+import { formatHdpPercent } from "@/features/production/lib/compute-hdp";
 import type { DailyProductionRecapRow } from "@/features/production/services/list-daily-production-recap";
 
 type DailyProductionRecapTableProps = {
@@ -45,6 +46,7 @@ export function DailyProductionRecapTable({
             <TableHead className="text-right">TR</TableHead>
             <TableHead className="text-right">TP</TableHead>
             <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right">HDP %</TableHead>
             <TableHead>Staff</TableHead>
             <TableHead>Waktu</TableHead>
           </TableRow>
@@ -57,6 +59,10 @@ export function DailyProductionRecapTable({
               row.tr,
               row.tp,
             );
+            const belowTarget =
+              row.hdpPercent !== null &&
+              row.targetHdp !== null &&
+              row.hdpPercent < row.targetHdp;
 
             return (
               <TableRow key={row.id}>
@@ -83,6 +89,19 @@ export function DailyProductionRecapTable({
                 </TableCell>
                 <TableCell className="text-right tabular-nums font-medium">
                   {total.toLocaleString("id-ID")}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  <span className="inline-flex items-center justify-end gap-2">
+                    {formatHdpPercent(row.hdpPercent)}
+                    {belowTarget ? (
+                      <Badge
+                        variant="outline"
+                        className="border-warning text-warning"
+                      >
+                        &lt; target
+                      </Badge>
+                    ) : null}
+                  </span>
                 </TableCell>
                 <TableCell>{row.recordedBy}</TableCell>
                 <TableCell className="text-muted-foreground">

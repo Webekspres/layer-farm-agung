@@ -30,6 +30,11 @@ import {
 } from "@/components/ui/table";
 import { createCycleAction } from "@/features/cages/actions/create-cycle";
 import { closeCycleAction } from "@/features/cages/actions/close-cycle";
+import {
+  formatBusinessDate,
+  formatBusinessDateFromDb,
+  startOfTodayBusiness,
+} from "@/lib/business-date";
 import { CageQrPanel } from "@/features/cages/components/cage-qr-panel";
 import { CageStaffPanel } from "@/features/cages/components/cage-staff-panel";
 import type { CageDetail } from "@/features/cages/services/get-cage-detail";
@@ -93,7 +98,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
     when: closeOpen,
   });
 
-  const todayString = new Date().toISOString().split("T")[0];
+  const todayString = formatBusinessDate(startOfTodayBusiness());
 
   return (
     <div className="flex flex-col gap-6">
@@ -331,7 +336,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
                     id="end-date"
                     name="endDate"
                     type="date"
-                    min={new Date(cage.activeCycle.startDate).toISOString().split("T")[0]}
+                    min={formatBusinessDateFromDb(cage.activeCycle.startDate)}
                     max={todayString}
                     defaultValue={todayString}
                     required

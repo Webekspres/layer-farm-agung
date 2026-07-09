@@ -1,16 +1,9 @@
 import { z } from "zod";
+import { businessDateNotFutureSchema } from "@/lib/business-date";
 
 export const createCycleSchema = z.object({
   cageId: z.string().uuid("Kandang tidak valid."),
-  startDate: z.coerce
-    .date({
-      message: "Pilih tanggal mulai yang valid.",
-    })
-    .refine((date) => {
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      return date <= today;
-    }, "Tanggal mulai tidak boleh di masa depan."),
+  startDate: businessDateNotFutureSchema,
   initialPopulation: z.coerce
     .number()
     .int("Populasi awal harus berupa angka bulat.")
@@ -19,7 +12,5 @@ export const createCycleSchema = z.object({
 
 export const closeCycleSchema = z.object({
   cycleId: z.string().uuid("Siklus tidak valid."),
-  endDate: z.coerce.date({
-    message: "Pilih tanggal selesai yang valid.",
-  }),
+  endDate: businessDateNotFutureSchema,
 });

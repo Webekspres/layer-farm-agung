@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { operationalBusinessDateSchema } from "@/lib/business-date";
 
 export const POPULATION_MUTATION_TYPES = [
   "Mati",
@@ -23,7 +24,7 @@ export const populationMutationSchema = z.object({
     (v) => (v === "" || v === null ? undefined : v),
     z.string().max(500, "Catatan maksimal 500 karakter.").optional(),
   ),
-  recordDate: z.coerce.date({ message: "Tanggal mutasi tidak valid." }),
+  recordDate: operationalBusinessDateSchema,
 });
 
 export type PopulationMutationInput = z.infer<typeof populationMutationSchema>;
