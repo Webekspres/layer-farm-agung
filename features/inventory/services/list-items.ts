@@ -1,16 +1,21 @@
 import prisma from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
+import { ItemType } from "@/generated/prisma/enums";
+import { isSaprodiItemType } from "@/features/inventory/lib/saprodi-item-types";
 import type { ItemListItem, InventoryListFilters } from "@/features/inventory/types";
 import type { PaginationMeta } from "@/lib/pagination";
 
+/** Inventori list = Saprodi only; Egg lives in Egg Ledger (production/sales). */
 function buildWhere(
   tenantId: string,
   { search, type }: InventoryListFilters,
 ): Prisma.ItemWhereInput {
   const where: Prisma.ItemWhereInput = { tenant_id: tenantId };
 
-  if (type) {
+  if (type && isSaprodiItemType(type)) {
     where.type = type;
+  } else {
+    where.type = { not: ItemType.Egg };
   }
 
   const q = search?.trim();

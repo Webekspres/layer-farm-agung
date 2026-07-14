@@ -34,6 +34,8 @@ export type SalesOrderListItem = {
 export type SalesOrderFormOptions = {
   customers: { id: string; name: string }[];
   eggGrades: { id: number; name: string }[];
+  /** Lokasi gudang + stok telur (Item Egg) tersedia di lokasi itu. */
+  locations: { id: string; name: string; eggStock: number }[];
 };
 
 export type CashflowListFilters = {

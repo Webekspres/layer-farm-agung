@@ -170,6 +170,7 @@ model Location {
   tenant           Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   cages            Cage[]
   inventory_stocks InventoryStock[]
+  sales_orders     SalesOrder[]
 }
 
 model Cage {
@@ -251,7 +252,7 @@ model EggGrade {
   name        String   @unique
   description String?
 
-  // Relations — penjualan (Modul 11); bukan input lapangan TB/TR/TP
+  // Katalog opsional (label harga); stok jual = Item Egg dari panen TB, bukan grade
   sales_order_items SalesOrderItem[]
 }
 
@@ -500,6 +501,8 @@ model SalesOrder {
   id           String   @id @default(uuid()) @db.Uuid
   tenant_id    String   @db.Uuid
   customer_id  String   @db.Uuid
+  /** Lokasi gudang stok telur (Item Egg) yang dipotong via OUT_SALES. */
+  location_id  String?  @db.Uuid
   sale_date    DateTime @db.Date
   status       String   @default("Paid")
   total_amount Decimal  @db.Decimal(15, 2)
@@ -508,20 +511,23 @@ model SalesOrder {
   // Relations
   tenant            Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   customer          Customer         @relation(fields: [customer_id], references: [id], onDelete: Restrict)
+  location          Location?        @relation(fields: [location_id], references: [id], onDelete: Restrict)
   sales_order_items SalesOrderItem[]
 }
 
 model SalesOrderItem {
   id           String  @id @default(uuid()) @db.Uuid
   sale_id      String  @db.Uuid
-  egg_grade_id Int
+  /** Label harga opsional; tidak memecah stok gudang. */
+  egg_grade_id Int?
   quantity     Int
-  weight       Float
+  /** Berat opsional (surat jalan); tidak masuk rumus total. */
+  weight       Float?
   unit_price   Decimal @db.Decimal(15, 2)
 
   // Relations
   sales_order SalesOrder @relation(fields: [sale_id], references: [id], onDelete: Cascade)
-  egg_grade   EggGrade   @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+  egg_grade   EggGrade?  @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
 }
 
 model OpexCategory {

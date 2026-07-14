@@ -34,6 +34,7 @@ export async function createSalesOrderAction(
 
   const parsed = createSalesOrderSchema.safeParse({
     customerId: formData.get("customerId"),
+    locationId: formData.get("locationId"),
     saleDate: formData.get("saleDate"),
     items,
   });
@@ -51,5 +52,7 @@ export async function createSalesOrderAction(
   }
 
   revalidatePath("/dashboard/finance");
+  revalidatePath("/dashboard/inventory");
+  revalidatePath("/dashboard/inventory/mutations");
   return { success: true, saleId: result.saleId };
 }

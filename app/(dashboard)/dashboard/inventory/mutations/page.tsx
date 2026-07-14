@@ -48,7 +48,7 @@ export default async function StockMutationsPage({
     <>
       <PageHeader
         title="Mutasi stok"
-        description="Riwayat pergerakan stok (masuk/keluar) seluruh item inventori. Gunakan filter untuk menyaring berdasarkan item, jenis mutasi, lokasi, dan tanggal."
+        description="Ledger bersama: saprodi (pakan/obat/vaksin) serta panen/penjualan telur (IN_HARVEST / OUT_SALES). Katalog item inventori tetap saprodi saja."
       />
       {needsTenantSelection ? (
         <TenantRequiredPanel />

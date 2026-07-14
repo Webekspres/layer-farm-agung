@@ -46,7 +46,7 @@ export async function getDashboardStats(
         _sum: { tb: true },
       }),
       prisma.item.findMany({
-        where: { tenant_id: tenantId },
+        where: { tenant_id: tenantId, type: { not: "Egg" } },
         select: {
           id: true,
           name: true,

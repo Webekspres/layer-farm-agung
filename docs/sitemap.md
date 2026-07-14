@@ -101,18 +101,18 @@ Backend di repo ini menyediakan:
 |------|------|--------|-----------------|
 | `/dashboard` | Dashboard | 🟡 | KPI dasar ✅ (produksi, populasi, stok kritis); FCR/early warning 🔲 |
 | `/dashboard/production` | **Input harian** | 🟡 | Grid status kandang ✅; 4 tab rekap data nyata ✅; kolom HDP % ✅; date toolbar WIB ✅ |
-| `/dashboard/inventory` | Inventori | ✅ | `Item` CRUD (master + tipe), stok per item |
+| `/dashboard/inventory` | Inventori | ✅ | Saprodi only (Egg Ledger terpisah — [`egg-ledger-architecture.md`](./egg-ledger-architecture.md)) |
 | `/dashboard/inventory/mutations` | Mutasi stok | ✅ | Ledger global `StockMutation` + filter |
 | `/dashboard/inventory/[itemId]` | Detail item | ✅ | Stok per lokasi, kartu stok (mutasi), penyesuaian stok |
 | `/dashboard/purchase-orders` | Pesanan pembelian | ✅ | PO minimal: buat + terima → `IN_PURCHASE` |
 | `/dashboard/purchase-orders/[poId]` | Detail PO | ✅ | Terima barang ke lokasi |
-| `/dashboard/finance` | Keuangan | ✅ | Tabs arus kas / penjualan / pelanggan |
+| `/dashboard/finance` | Keuangan | ✅ | Tabs arus kas / penjualan / pelanggan; penjualan potong stok Egg (`OUT_SALES`) — lihat [`egg-sales-stock.md`](./egg-sales-stock.md) |
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
 | `/dashboard/cages` | Kandang | ✅ | `Cage`, QR, siklus on-create |
 | `/dashboard/cages/[id]` | Detail kandang | 🟡 | Staff assignment ✅; metrik siklus (populasi, HDP, FCR, mutasi, kesehatan) ✅; riwayat siklus enriched ✅; vaksin/drill-down 🔲 |
 | `/dashboard/strains` | Strain | ✅ | `Strain` + `ProductionTarget` (HDP/FCR per umur) |
-| `/dashboard/egg-grades` | Grade telur | ✅ | `EggGrade` (penjualan; bukan input lapangan) |
+| `/dashboard/egg-grades` | Grade telur | ✅ | `EggGrade` katalog opsional (label harga); stok jual = TB → Item Egg — [`egg-sales-stock.md`](./egg-sales-stock.md) |
 | `/dashboard/vendors` | Vendor | ✅ | `Vendor` |
 | `/dashboard/tenants` | Tenant | ✅ | `Tenant` |
 | `/dashboard/users` | Pengguna | ✅ | `User` |

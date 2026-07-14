@@ -42,7 +42,7 @@ export default async function InventoryPage({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="Inventori"
-          description="Master item (pakan, obat, vitamin, telur, lainnya) beserta stok per tenant. Klik item untuk melihat stok & kartu stok."
+          description="Saprodi (pakan, obat, vaksin, vitamin, lainnya) dan stok per lokasi. Stok telur jual dikelola lewat panen & Keuangan — bukan item saprodi."
         />
         <Button variant="outline" asChild>
           <Link href="/dashboard/inventory/mutations">
