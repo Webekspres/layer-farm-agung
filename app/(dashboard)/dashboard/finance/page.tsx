@@ -69,9 +69,9 @@ export default async function FinancePage({ searchParams }: FinancePageProps) {
           : Promise.resolve(emptyPagination),
         activeTab === "sales"
           ? getSalesOrderFormOptions(tenantId!)
-          : Promise.resolve({ customers: [], eggGrades: [] }),
+          : Promise.resolve({ customers: [], eggGrades: [], locations: [] }),
       ])
-    : [emptyPagination, { customers: [], eggGrades: [] }];
+    : [emptyPagination, { customers: [], eggGrades: [], locations: [] }];
 
   const customersResult = hasTenant
     ? activeTab === "customers"
