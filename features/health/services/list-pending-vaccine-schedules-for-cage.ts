@@ -1,9 +1,10 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
-import prisma from "@/lib/prisma";
 import type {
   PendingVaccineScheduleItem,
   VaccineScheduleStatus,
 } from "@/features/health/types";
+import { formatBusinessDateFromDb } from "@/lib/business-date";
+import prisma from "@/lib/prisma";
 
 /**
  * Vaccine schedules for one cage, surfaced to the assigned staff via mobile.
@@ -41,7 +42,7 @@ export async function listVaccineSchedulesForCage(
     itemId: row.item_id,
     itemName: row.item.name,
     itemUnit: row.item.unit,
-    scheduledDate: row.scheduled_date.toISOString(),
+    scheduledDate: formatBusinessDateFromDb(row.scheduled_date),
     status: row.status as VaccineScheduleStatus,
     notes: row.notes,
   }));

@@ -5,6 +5,7 @@ import type {
   VaccineScheduleListItem,
   VaccineScheduleStatus,
 } from "@/features/health/types";
+import { formatBusinessDateFromDb } from "@/lib/business-date";
 import type { PaginationMeta } from "@/lib/pagination";
 
 function buildWhere(
@@ -53,7 +54,7 @@ function toListItem(row: {
     itemId: row.item.id,
     itemName: row.item.name,
     itemUnit: row.item.unit,
-    scheduledDate: row.scheduled_date.toISOString(),
+    scheduledDate: formatBusinessDateFromDb(row.scheduled_date),
     status: row.status as VaccineScheduleStatus,
     notes: row.notes,
     quantityUsed: row.quantity_used,

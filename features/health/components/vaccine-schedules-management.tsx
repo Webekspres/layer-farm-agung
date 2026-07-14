@@ -72,11 +72,17 @@ type VaccineSchedulesManagementProps = {
   formOptions: VaccineScheduleFormOptions;
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("id-ID", {
+function formatDate(value: string) {
+  // Wire format is `YYYY-MM-DD`; also tolerate legacy ISO strings.
+  const dayPart = value.includes("T") ? value.slice(0, 10) : value;
+  const [year, month, day] = dayPart.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toLocaleDateString("id-ID", {
     day: "numeric",
     month: "short",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
