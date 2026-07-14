@@ -14,13 +14,6 @@ import { parseBusinessDate } from "@/lib/business-date";
  * real `@/lib/prisma` / `apply-stock-mutation`.
  */
 
-type StockMutationParams = {
-  itemId: string;
-  locationId: string;
-  mutationType: string;
-  quantity: number;
-  referenceId: string;
-};
 type StockMutationResult =
   | { ok: true; newQuantity: number; lowStock: boolean; minStockAlert: number | null }
   | { ok: false; error: string };
@@ -31,28 +24,28 @@ const LOCATION = "00000000-0000-4000-8000-000000000020";
 const EGG_ITEM = "00000000-0000-4000-8000-000000000030";
 const SALE_ID = "00000000-0000-4000-8000-000000000040";
 
-const findFirstCustomer = mock((_args: unknown) =>
+const findFirstCustomer = mock(() =>
   Promise.resolve({ id: CUSTOMER, name: "Buyer A" } as {
     id: string;
     name: string;
   } | null),
 );
-const findFirstLocation = mock((_args: unknown) =>
+const findFirstLocation = mock(() =>
   Promise.resolve({ id: LOCATION } as { id: string } | null),
 );
-const findManyEggGrade = mock((_args: unknown) =>
+const findManyEggGrade = mock(() =>
   Promise.resolve([{ id: 1 }] as { id: number }[]),
 );
-const findFirstEggItem = mock((_args: unknown) =>
+const findFirstEggItem = mock(() =>
   Promise.resolve({ id: EGG_ITEM } as { id: string } | null),
 );
-const salesOrderCreate = mock((_args: unknown) =>
+const salesOrderCreate = mock(() =>
   Promise.resolve({ id: SALE_ID }),
 );
-const cashflowCreate = mock((_args: unknown) => Promise.resolve({}));
+const cashflowCreate = mock(() => Promise.resolve({}));
 
 const applyStockMutation = mock(
-  (_tx: unknown, _params: StockMutationParams): Promise<StockMutationResult> =>
+  (): Promise<StockMutationResult> =>
     Promise.resolve({
       ok: true,
       newQuantity: 50,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,16 @@ export function EditUserDialog({
   const [roleId, setRoleId] = useState("");
   const [tenantId, setTenantId] = useState("global");
   const [isActive, setIsActive] = useState(true);
+  const [syncKey, setSyncKey] = useState<string | null>(null);
+  const nextKey = open && user ? `${user.id}:${open}` : null;
+  if (nextKey !== syncKey) {
+    setSyncKey(nextKey);
+    if (user && open) {
+      setRoleId(String(user.roleId));
+      setTenantId(user.tenantId ?? "global");
+      setIsActive(user.isActive);
+    }
+  }
 
   const superadminSelected =
     Boolean(roleId) && isSuperadminRole(roleId, formOptions.roles);
@@ -83,13 +93,6 @@ export function EditUserDialog({
       ),
     );
   }
-
-  useEffect(() => {
-    if (!user || !open) return;
-    setRoleId(String(user.roleId));
-    setTenantId(user.tenantId ?? "global");
-    setIsActive(user.isActive);
-  }, [user, open]);
 
   useActionFeedback(updateState, {
     successMessage: "Pengguna berhasil diperbarui.",

@@ -23,33 +23,25 @@ type ScheduleRow = {
   item: { type: string };
 };
 
-type StockMutationParams = {
-  itemId: string;
-  locationId: string;
-  mutationType: string;
-  quantity: number;
-  referenceId: string;
-};
 type StockMutationResult =
   | { ok: true; newQuantity: number; lowStock: boolean; minStockAlert: number }
   | { ok: false; error: string };
-type UpdateManyArgs = { data: Record<string, unknown> };
 
-const findUniqueClientMutation = mock((_args: unknown) =>
+const findUniqueClientMutation = mock(() =>
   Promise.resolve(null as { id: string } | null),
 );
-const findFirstSchedule = mock((_args: unknown) =>
+const findFirstSchedule = mock(() =>
   Promise.resolve(null as ScheduleRow | null),
 );
-const updateMany = mock((_args: UpdateManyArgs) =>
+const updateMany = mock(() =>
   Promise.resolve({ count: 1 }),
 );
 
-const isUserAssignedToCage = mock((_userId: string, _cageId: string) =>
+const isUserAssignedToCage = mock(() =>
   Promise.resolve(true),
 );
 const applyStockMutation = mock(
-  (_tx: unknown, _params: StockMutationParams): Promise<StockMutationResult> =>
+  (): Promise<StockMutationResult> =>
     Promise.resolve({
       ok: true,
       newQuantity: 80,

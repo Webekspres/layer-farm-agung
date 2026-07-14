@@ -246,8 +246,9 @@ export function ProfilePanel({ session, tenantBranding = null }: ProfilePanelPro
                 {currentLogoUrl && !previewUrl && (
                   <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3">
                     <div className="size-12 shrink-0 rounded-md border border-border bg-background p-1 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={currentLogoUrl}
+                        src={displayLogo!}
                         alt="Logo saat ini"
                         className="size-full object-contain rounded"
                         onError={(e) => {
@@ -267,8 +268,9 @@ export function ProfilePanel({ session, tenantBranding = null }: ProfilePanelPro
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
                       <div className="size-14 shrink-0 rounded-md border border-border bg-background p-1 flex items-center justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={previewUrl}
+                          src={displayLogo!}
                           alt="Preview logo baru"
                           className="size-full object-contain rounded"
                         />

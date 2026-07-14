@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useTransition } from "react";
+import { useUrlSyncedSearch } from "@/hooks/use-url-synced-search";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -30,11 +31,7 @@ export function StockMutationsToolbar({
   const [, startTransition] = useTransition();
 
   const qParam = searchParams.get("q") ?? "";
-  const [search, setSearch] = useState(qParam);
-
-  useEffect(() => {
-    setSearch(qParam);
-  }, [qParam]);
+  const [search, setSearch] = useUrlSyncedSearch(qParam);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

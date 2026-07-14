@@ -11,7 +11,7 @@ export async function GET() {
         "Content-Type": "text/yaml; charset=utf-8",
       },
     });
-  } catch (error) {
+  } catch {
     return new NextResponse("OpenAPI spec file not found", { status: 404 });
   }
 }

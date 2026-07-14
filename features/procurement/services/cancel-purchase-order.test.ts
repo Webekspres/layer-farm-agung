@@ -10,10 +10,8 @@ type PoRow = {
   purchase_order_items: { quantity_received: number }[];
 };
 
-type UpdateManyArgs = { where: Record<string, unknown>; data: { status: string } };
-
-const findFirstPo = mock((_args: unknown) => Promise.resolve(null as PoRow | null));
-const updateMany = mock((_args: UpdateManyArgs) => Promise.resolve({ count: 1 }));
+const findFirstPo = mock(() => Promise.resolve(null as PoRow | null));
+const updateMany = mock(() => Promise.resolve({ count: 1 }));
 
 const fakePrisma = {
   purchaseOrder: { findFirst: findFirstPo, updateMany },

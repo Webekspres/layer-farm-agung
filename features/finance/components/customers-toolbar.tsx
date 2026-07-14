@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useTransition } from "react";
+import { useUrlSyncedSearch } from "@/hooks/use-url-synced-search";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,7 @@ export function CustomersToolbar({ onCreateClick }: CustomersToolbarProps) {
   const [, startTransition] = useTransition();
 
   const qParam = searchParams.get("q") ?? "";
-  const [search, setSearch] = useState(qParam);
-
-  useEffect(() => {
-    setSearch(qParam);
-  }, [qParam]);
+  const [search, setSearch] = useUrlSyncedSearch(qParam);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

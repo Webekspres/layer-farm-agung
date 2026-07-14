@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireApiPermissionWithTenant } from "@/lib/api/require-api-session";
-import { apiError, apiSuccess, apiValidationError } from "@/lib/api/response";
+import { apiError, apiSuccess } from "@/lib/api/response";
 import { parseProductionRecordDate } from "@/features/production/lib/parse-production-date";
 import { listCageDailyHistory } from "@/features/production/services/list-cage-daily-history";
 

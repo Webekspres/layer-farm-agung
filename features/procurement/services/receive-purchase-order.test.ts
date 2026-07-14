@@ -21,35 +21,22 @@ type PoLineRow = {
 };
 type PoRow = { id: string; status: string; purchase_order_items: PoLineRow[] };
 
-type StockMutationParams = {
-  itemId: string;
-  locationId: string;
-  mutationType: string;
-  quantity: number;
-  referenceId: string;
-};
 type StockMutationResult =
   | { ok: true; newQuantity: number; lowStock: boolean; minStockAlert: number | null }
   | { ok: false; error: string };
 
-type ItemUpdateArgs = {
-  where: { id: string };
-  data: { quantity_received: { increment: number } };
-};
-type PoUpdateManyArgs = { where: Record<string, unknown>; data: { status: string } };
-
-const findFirstPo = mock((_args: unknown) => Promise.resolve(null as PoRow | null));
-const findFirstLocation = mock((_args: unknown) =>
+const findFirstPo = mock(() => Promise.resolve(null as PoRow | null));
+const findFirstLocation = mock(() =>
   Promise.resolve({ id: "loc-1" } as { id: string } | null),
 );
-const itemUpdate = mock((_args: ItemUpdateArgs) => Promise.resolve({}));
-const itemFindMany = mock((_args: unknown) =>
+const itemUpdate = mock(() => Promise.resolve({}));
+const itemFindMany = mock(() =>
   Promise.resolve([] as { quantity: number; quantity_received: number }[]),
 );
-const poUpdateMany = mock((_args: PoUpdateManyArgs) => Promise.resolve({ count: 1 }));
+const poUpdateMany = mock(() => Promise.resolve({ count: 1 }));
 
 const applyStockMutation = mock(
-  (_tx: unknown, _params: StockMutationParams): Promise<StockMutationResult> =>
+  (): Promise<StockMutationResult> =>
     Promise.resolve({ ok: true, newQuantity: 100, lowStock: false, minStockAlert: null }),
 );
 
