@@ -191,6 +191,7 @@ model Cage {
   daily_productions    DailyProduction[]
   feed_consumptions    FeedConsumption[]
   population_mutations PopulationMutation[]
+  population_transfers_in PopulationMutation[] @relation("PopulationTransferTarget")
   vaccine_schedules    VaccineSchedule[]
   medical_records      MedicalRecord[]
   staff_assignments    CageStaffAssignment[]
@@ -279,11 +280,12 @@ model SupplierContact {
 }
 
 model PurchaseOrder {
-  id           String   @id @default(uuid()) @db.Uuid
-  vendor_id    String   @db.Uuid
-  order_date   DateTime @db.Date
-  status       String   @default("Pending")
-  total_amount Decimal  @db.Decimal(15, 2)
+  id         String   @id @default(uuid()) @db.Uuid
+  vendor_id  String   @db.Uuid
+  order_date DateTime @db.Date
+  /** Pending | PartiallyReceived | Received | Cancelled */
+  status       String  @default("Pending")
+  total_amount Decimal @db.Decimal(15, 2)
   created_at   DateTime @default(now())
 
   // Relations
@@ -341,11 +343,12 @@ model StockMutation {
 }
 
 model PurchaseOrderItem {
-  id         String  @id @default(uuid()) @db.Uuid
-  po_id      String  @db.Uuid
-  item_id    String  @db.Uuid
-  quantity   Float
-  unit_price Decimal @db.Decimal(15, 2)
+  id                String  @id @default(uuid()) @db.Uuid
+  po_id             String  @db.Uuid
+  item_id           String  @db.Uuid
+  quantity          Float
+  quantity_received Float   @default(0)
+  unit_price        Decimal @db.Decimal(15, 2)
 
   // Relations
   purchase_order PurchaseOrder @relation(fields: [po_id], references: [id], onDelete: Cascade)
@@ -406,10 +409,13 @@ model PopulationMutation {
   is_synced     Boolean  @default(true)
   client_mutation_id String? @unique @db.Uuid
   created_at    DateTime @default(now())
+  /** Kandang tujuan saat mutation_type = "Pindah" (mutasi lintas kandang). */
+  target_cage_id String? @db.Uuid
 
   // Relations
-  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Restrict)
-  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  cage        Cage  @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  user        User  @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  target_cage Cage? @relation("PopulationTransferTarget", fields: [target_cage_id], references: [id], onDelete: Restrict)
 }
 
 model VaccineSchedule {
@@ -420,6 +426,14 @@ model VaccineSchedule {
   status         String   @default("Pending")
   notes          String?
   created_at     DateTime @default(now())
+
+  /** Jumlah vaksin dipakai (unit item) saat status berubah ke Completed. */
+  quantity_used        Float?
+  /** Staff/admin yang menyelesaikan vaksinasi (loose reference, tanpa FK). */
+  completed_by_user_id String?   @db.Uuid
+  completed_at          DateTime?
+  is_synced             Boolean   @default(true)
+  client_mutation_id    String?   @unique @db.Uuid
 
   // Relations
   cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)

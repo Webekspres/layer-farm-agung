@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Egg, Package, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, Egg, Package, TrendingUp, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -80,6 +80,36 @@ export function DashboardOverview({ session, stats }: DashboardOverviewProps) {
           </Card>
         ))}
       </div>
+
+      {stats && stats.earlyWarnings.length > 0 ? (
+        <Card className="border-destructive/40 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading text-base">
+              <AlertTriangle className="size-4 text-destructive" />
+              Peringatan dini HDP
+            </CardTitle>
+            <CardDescription>
+              Kandang dengan produksi hari ini di bawah 90% dari target HDP
+              strain.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {stats.earlyWarnings.map((warning) => (
+              <Link
+                key={warning.cageId}
+                href={`/dashboard/cages/${warning.cageId}`}
+                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50"
+              >
+                <span className="font-medium">{warning.cageName}</span>
+                <Badge variant="destructive">
+                  {warning.actualHdp.toFixed(1)}% / target{" "}
+                  {warning.targetHdp.toFixed(1)}%
+                </Badge>
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {stats && stats.lowStockItems.length > 0 ? (
         <Card className="border-border/80 shadow-sm">

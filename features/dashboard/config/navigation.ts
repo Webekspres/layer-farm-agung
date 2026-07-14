@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowRightLeft,
   Building2,
   ClipboardList,
   Egg,
@@ -8,6 +9,7 @@ import {
   MapPin,
   Package,
   Shield,
+  Syringe,
   Truck,
   Users,
   Wallet,
@@ -37,9 +39,21 @@ export const mainNavItems: NavItem[] = [
     permission: "manage_production",
   },
   {
+    title: "Vaksinasi",
+    href: "/dashboard/health/vaccines",
+    icon: Syringe,
+    permission: "manage_production",
+  },
+  {
     title: "Inventori",
     href: "/dashboard/inventory",
     icon: Package,
+    permission: "manage_inventory",
+  },
+  {
+    title: "Mutasi stok",
+    href: "/dashboard/inventory/mutations",
+    icon: ArrowRightLeft,
     permission: "manage_inventory",
   },
   {
@@ -53,7 +67,6 @@ export const mainNavItems: NavItem[] = [
     href: "/dashboard/finance",
     icon: Wallet,
     permission: "view_cashflow",
-    badge: "Soon",
   },
 ];
 

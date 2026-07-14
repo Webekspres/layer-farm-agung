@@ -29,7 +29,7 @@
 - **Response envelope:** `{ success, message, data }` / `{ success: false, error }` via `lib/api/response.ts`.
 - **Auth:** Better Auth session; `401` JSON without redirect. Permission + `tenant_id` scope on every write.
 - **CORS:** `proxy.ts` + optional `MOBILE_CORS_ORIGINS` for Expo dev.
-- **Implemented:** `GET /cages`, `GET /cages/[id]`, `GET /egg-grades`, `POST /production`. `POST /feed-consumption` = `501` until inventory service exists.
+- **Implemented:** `GET /cages`, `GET /cages/[id]`, `GET /egg-grades`, `POST /production`, `POST|PATCH /feed-consumption`, `POST|PATCH /population-mutation`, `POST|PATCH /medical-records`, `GET /items`, cages scan/history. Feed & medical deduct stock via `applyStockMutation`.
 
 ---
 

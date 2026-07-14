@@ -102,10 +102,11 @@ Backend di repo ini menyediakan:
 | `/dashboard` | Dashboard | 🟡 | KPI dasar ✅ (produksi, populasi, stok kritis); FCR/early warning 🔲 |
 | `/dashboard/production` | **Input harian** | 🟡 | Grid status kandang ✅; 4 tab rekap data nyata ✅; kolom HDP % ✅; date toolbar WIB ✅ |
 | `/dashboard/inventory` | Inventori | ✅ | `Item` CRUD (master + tipe), stok per item |
+| `/dashboard/inventory/mutations` | Mutasi stok | ✅ | Ledger global `StockMutation` + filter |
 | `/dashboard/inventory/[itemId]` | Detail item | ✅ | Stok per lokasi, kartu stok (mutasi), penyesuaian stok |
 | `/dashboard/purchase-orders` | Pesanan pembelian | ✅ | PO minimal: buat + terima → `IN_PURCHASE` |
 | `/dashboard/purchase-orders/[poId]` | Detail PO | ✅ | Terima barang ke lokasi |
-| `/dashboard/finance` | Keuangan | 🟡 | Placeholder "Soon" |
+| `/dashboard/finance` | Keuangan | ✅ | Tabs arus kas / penjualan / pelanggan |
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
 | `/dashboard/cages` | Kandang | ✅ | `Cage`, QR, siklus on-create |
@@ -122,9 +123,9 @@ Backend di repo ini menyediakan:
 | Path (usulan) | Model |
 |---------------|-------|
 | `/dashboard/population` | `PopulationMutation` |
-| `/dashboard/health/vaccines` | `VaccineSchedule` |
-| `/dashboard/sales` | `SalesOrder` |
-| `/dashboard/cashflow` | `CashflowTransaction` |
+| `/dashboard/health/vaccines` | `VaccineSchedule` ✅ |
+| `/dashboard/sales` | `SalesOrder` — P6 |
+| `/dashboard/cashflow` | `CashflowTransaction` — P6 (via `/dashboard/finance`) |
 
 ### 5.3 API & infrastruktur
 
@@ -198,8 +199,8 @@ Backend di repo ini menyediakan:
 | `kandang/[id]/riwayat` | ✅ | `GET …/daily-history`; navigasi tanggal WIB; edit semua tipe |
 | `kandang/[id]/production/[recordId]` | ✅ | Edit TB/TR/TP |
 | `(tabs)/profile` | ✅ | Session + logout |
-| Vaksinasi | 🔲 | `VaccineSchedule` — Modul 13 |
-| Offline sync flush | 🟡 | Antrean + idempotency ✅; reliabilitas + UX picker 🔲 — lihat [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
+| Vaksinasi | ✅ | Admin + mobile hub + API |
+| Offline sync flush | ✅ | Antrean + flush + warm + picker — [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
 
 **Legacy redirect:** `kandang/[id]/produksi`, `kandang/[id]/pakan` → flow baru.
 
@@ -215,15 +216,15 @@ Backend di repo ini menyediakan:
 | 2 | Master data peternakan | ~80% | ✅/🟡 | read-only |
 | 3 | Strain & standardisasi | ~65% | 🟡 target HDP/FCR | — |
 | 4 | Front office input | ~85% | rekap 4 tab + HDP | ✅ unified form |
-| 5 | Offline sync | ~70% | schema + idempotency ✅ | antrean + flush ✅ |
+| 5 | Offline sync | ~90% | schema + idempotency ✅ | antrean + flush + warm ✅ |
 | 6 | Mutasi populasi | ~70% | rekap tab | ✅ API + ledger |
 | 7 | Vendor & procurement | ~75% | vendor ✅ + PO minimal | — |
-| 8 | Inventory | ~75% | CRUD + stok + kartu + penyesuaian + PO IN | ✅ picker item |
-| 9 | Early warning | ~0% | 🔲 | 🔲 |
+| 8 | Inventory | ~85% | CRUD + stok + kartu + mutasi global + PO | ✅ picker item |
+| 9 | Early warning | ~40% | 🔲 | 🔲 |
 | 10 | Executive dashboard | ~40% | KPI dasar ✅ | — |
-| 11 | Sales | ~0% | 🔲 | — |
-| 12 | Cashflow | ~0% | 🔲 | — |
-| 13 | Health / vaccination | ~25% | rekap pengobatan ✅ | pengobatan ✅; vaksin 🔲 |
+| 11 | Sales | ~50% | 🔲 | — |
+| 12 | Cashflow | ~55% | 🔲 | — |
+| 13 | Health / vaccination | ~85% | rekap pengobatan + vaksin ✅ | pengobatan + vaksin ✅ |
 
 **Vaksinasi ≠ pengobatan:** `VaccineSchedule` (jadwal preventif + reminder) vs `MedicalRecord` (laporan saat flock sakit).
 
@@ -246,9 +247,9 @@ Backend di repo ini menyediakan:
 - [x] Populasi ledger (`compute-cycle-population`) + validasi mutasi
 - [x] Dashboard KPI dasar (`get-dashboard-stats`)
 - [x] Infra tanggal operasional WIB (`lib/business-date.ts`)
-- [ ] Halaman mutasi stok global (`/dashboard/inventory/mutations`)
+- [x] Halaman mutasi stok global (`/dashboard/inventory/mutations`)
 - [ ] Siklus kandang penuh (`CycleSetting` di detail kandang)
-- [ ] Modul 13: vaksinasi + reminder
+- [x] Modul 13: vaksinasi (jadwal + complete; reminder ringan via status Pending)
 - [ ] D4: penjualan + cashflow
 
 ## 9. Backlog mobile (Expo)
@@ -262,8 +263,8 @@ Lihat [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md).
 - [x] Konsumsi pakan, mutasi populasi, pengobatan — submit API
 - [x] QR scanner kamera
 - [x] Riwayat kandang + edit multi-record + navigasi tanggal WIB
-- [ ] Flush antrean offline (`pending-input-queue`) saat online
-- [ ] Layar vaksinasi + reminder
+- [x] Flush antrean offline (`pending-input-queue`) saat online
+- [x] Layar vaksinasi (hub kandang)
 - [ ] OpenAPI types codegen
 
 ---

@@ -1,4 +1,7 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import { ArrowRightLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/layout/page-header";
 import { TenantRequiredPanel } from "@/features/master-data/components/tenant-required-panel";
 import {
@@ -36,10 +39,18 @@ export default async function InventoryPage({
 
   return (
     <>
-      <PageHeader
-        title="Inventori"
-        description="Master item (pakan, obat, vitamin, telur, lainnya) beserta stok per tenant. Klik item untuk melihat stok & kartu stok."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageHeader
+          title="Inventori"
+          description="Master item (pakan, obat, vitamin, telur, lainnya) beserta stok per tenant. Klik item untuk melihat stok & kartu stok."
+        />
+        <Button variant="outline" asChild>
+          <Link href="/dashboard/inventory/mutations">
+            <ArrowRightLeft className="size-4" />
+            Mutasi stok
+          </Link>
+        </Button>
+      </div>
       {needsTenantSelection ? (
         <TenantRequiredPanel />
       ) : (
