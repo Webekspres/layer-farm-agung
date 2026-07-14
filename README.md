@@ -1,8 +1,17 @@
-# AyamAgung
+# Layer Pultry Farm Management: Agung
 
 **Sistem Manajemen Peternakan Ayam Petelur Terintegrasi**
 
-AyamAgung is a cloud-based **Progressive Web App (PWA)** built to digitize layer-farm operations end to end. The platform supports **population monitoring**, **production efficiency** tracking (including **HDP** and **FCR**), and **hybrid access** so teams can work in the field or office with **offline-first input** and **synchronization** when connectivity returns.
+**Layered Farm Agung (AAPM)** is a cloud-based farm management platform split across **two repos**:
+
+| Repo | Role |
+|------|------|
+| **layered-farm-agung** (this) | Admin dashboard, API (`/api/v1/*`), database, auth |
+| **[aapm-mobile](../mobile-apps/aapm-mobile)** | React Native + Expo app for **staff kandang** |
+
+See **[docs/ecosystem.md](./docs/ecosystem.md)** for architecture and local dev workflow.
+
+The platform supports **population monitoring**, **production efficiency** (HDP, FCR), master data, inventory, and finance — with mobile offline input handled outside this repo.
 
 ---
 
@@ -29,7 +38,7 @@ AyamAgung is a cloud-based **Progressive Web App (PWA)** built to digitize layer
 | **State** | **Zustand** |
 | **Data fetching** | **TanStack Query** |
 | **Validation & forms** | **Zod** · **React Hook Form** |
-| **PWA** | **Serwist** (service worker, caching, offline shell) |
+| **Mobile (lapangan)** | **[aapm-mobile](../mobile-apps/aapm-mobile)** — React Native + Expo SDK 54 |
 
 ---
 
@@ -42,8 +51,8 @@ The product is organized around **thirteen functional modules** that together co
 | 1 | **Centralized User Management** | Accounts, roles, and permissions with RBAC (Superadmin, Admin, Staff) and audit-friendly access patterns. |
 | 2 | **Master Data Peternakan** | Canonical farm structure: sites, houses, batches, and operational parameters used across the system. |
 | 3 | **Master Strain & Standardisasi** | Strain catalogs, breed standards, and target curves (production, feed, weight) for benchmarking and reporting. |
-| 4 | **Front Office PWA (Mobile Input)** | Field-optimized UI for fast, reliable data entry on phones and tablets. |
-| 5 | **Offline Sync Engine** | Local queues, conflict-safe sync, and reconciliation when the device reconnects to the cloud. |
+| 4 | **Front Office Mobile (Expo)** | Native mobile UI for field data entry — **not in this repo**. |
+| 5 | **Offline Sync Engine** | Local queues on mobile; `SyncQueue` + API in this backend repo. |
 | 6 | **Mutasi Populasi** | Mortality, transfers, grading, and other population movements with full traceability. |
 | 7 | **Vendor & Procurement** | Suppliers, purchase orders, receipts, and cost attribution to flocks or cost centers. |
 | 8 | **Inventory Control** | Feed, medicine, packaging, and spare parts with stock levels, movements, and alerts. |
@@ -72,31 +81,53 @@ Cross-domain relationships (for example flock → inventory consumption → ledg
 
 ## Development guidelines
 
+| Document | Purpose |
+|----------|---------|
+| **[DESIGN.md](./DESIGN.md)** | Brand & UI source of truth (colors, typography, components, copy) |
+| **[AGENTS.md](./AGENTS.md)** | Architecture, auth, testing, and agent conventions |
+| **[docs/sitemap.md](./docs/sitemap.md)** | Route map, module targets, and implementation progress |
+| **[docs/README.md](./docs/README.md)** | What to commit in `docs/` (MD yes, PDF/Office no) |
+| **`.cursor/rules/`** | Detailed Cursor rules (master-data tables, Tailwind v4, etc.) |
+
 ### Prerequisites
 
-- **Node.js** (LTS recommended; align with the version used in CI if defined)
-- **pnpm**, **npm**, or **yarn** — use one package manager consistently across the team
-- **PostgreSQL** for local and deployed databases
-- Environment variables for database URL, auth secrets, and any third-party keys (see `.env.example` when available)
+- **Bun** (package manager and test runner)
+- **Docker** (recommended) for PostgreSQL + MinIO locally
+- **Node.js** LTS (used by Next.js toolchain)
+- Copy [`.env.example`](./.env.example) → `.env` and set secrets
 
-### Getting started
+### Local database (hybrid — recommended)
+
+PostgreSQL runs in **Docker on host port `5433`** so it does not conflict with a system Postgres on `5432`.
+
+| Context | `DATABASE_URL` host |
+|---------|---------------------|
+| **`bun run dev` on your machine** | `127.0.0.1:5433` |
+| **App inside `docker compose`** | `db:5432` (service name) |
+
+Use **`127.0.0.1`**, not `localhost`, to avoid IPv6 hitting the wrong server on Windows.
 
 ```bash
-# Install dependencies
-npm install
+bun install
+cp .env.example .env          # edit BETTER_AUTH_SECRET
 
-# Copy and edit environment variables
-cp .env.example .env
+bun run docker:db             # Postgres on localhost:5433
+bun run db:generate
+bun run db:migrate
+bun run db:seed               # optional sample data
 
-# Generate Prisma Client (after schema is present)
-npx prisma generate
-
-# Apply migrations in development
-npx prisma migrate dev
-
-# Start the development server
-npm run dev
+bun run dev
 ```
+
+One-liner (DB + MinIO + dev): `bun run hybrid`
+
+**Verify DB** (optional):
+
+```bash
+docker exec layerfarm-agung-db psql -U layerfarm_user -d layerfarm_agung_db -c "SELECT 1;"
+```
+
+After restarting the DB container, restart `bun dev` so Prisma picks up a fresh connection.
 
 Open [http://localhost:3000](http://localhost:3000) in the browser.
 
@@ -104,22 +135,27 @@ Open [http://localhost:3000](http://localhost:3000) in the browser.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Next.js development server with hot reload |
-| `npm run build` | Production build |
-| `npm run start` | Run the production server locally |
-| `npm run lint` | ESLint |
+| `bun run dev` | Next.js development server with hot reload |
+| `bun run build` | Production build |
+| `bun run start` | Run the production server locally |
+| `bun run lint` | ESLint |
+| `bun test` | Bun unit tests (colocated `*.test.ts`) |
+| `bun run db:seed` | Seed roles, permissions, sample master data |
+| `bun run docker:db` | Start PostgreSQL only (host port **5433**) |
+| `bun run hybrid` | Docker services + Prisma generate + `dev` |
 
 ### Conventions
 
 - Prefer **Server Actions** for mutations that must run on the server with clear validation (**Zod**).
 - Use **TanStack Query** for server state on the client; use **Zustand** for UI and cross-cutting client state that is not server-sourced.
 - Keep RBAC checks close to the action or route boundary so permissions stay consistent.
-- For PWA behavior, follow **Serwist** configuration for precaching, runtime caching, and update prompts.
+- **No PWA/Serwist** in this repo. Mobile field ops use **React Native + Expo** calling **`/api/v1/*`** (see `AGENTS.md` and `docs/sitemap.md`).
 
 ### Deployment notes
 
-- Deploy the Next.js app to your chosen host (e.g. **Vercel**, container platform, or VM) with `DATABASE_URL` and production auth settings.
-- Run `prisma migrate deploy` against the production database as part of your release process.
+- Staging (Vercel + Neon + R2): see **[`docs/staging.md`](./docs/staging.md)**.
+- Deploy the Next.js app with `DATABASE_URL`, Better Auth URLs/secret, and `STORAGE_*` for object storage.
+- Run `bun run db:migrate:deploy` against the hosted database as part of your release process.
 
 ---
 

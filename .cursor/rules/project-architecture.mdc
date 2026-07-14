@@ -1,0 +1,60 @@
+---
+description: Feature-based architecture — where files belong (app, features, components, lib)
+alwaysApply: true
+---
+
+# Architecture & Directory Rules
+
+Next.js App Router **admin dashboard + API backend** for farm management (AAPM). **No Serwist/PWA/field routes** — mobile lapangan is React Native + Expo in a separate repo. **Feature-based (domain-driven)** layout. Do not invent new top-level folders or put domain logic in `lib/`.
+
+## `app/` — Routing only
+
+- Only: `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, route handlers, `globals.css`.
+- No heavy business logic or large UI here — import from `features/` or `components/layout/`.
+- Route groups: `(authentication)` (login), `(dashboard)` (admin shell). No `(field)` or mobile UI routes.
+- Mobile JSON API: `app/api/v1/*` only — thin handlers; domain logic in `features/*/services/`.
+- Root `proxy.ts` for route protection (not `middleware.ts`). `/api/v1/*` returns JSON 401 (no login redirect); CORS for Expo dev.
+
+## `features/` — Domain / business logic
+
+One folder per module: `auth`, `dashboard`, `production`, `cages`, etc.
+
+| Subfolder | Use for |
+|-----------|---------|
+| `components/` | UI only for this feature |
+| `actions/` | Server Actions (mutations, form submits) |
+| `services/` | DB helpers, domain operations (e.g. `create-user.ts`) |
+| `server/` | Server-only config wired to a library (e.g. Better Auth) |
+| `client/` | Client-only config (e.g. auth client) |
+| `lib/` | Feature helpers (session, permissions, password hashing) |
+| `config/` | Static config (nav items, constants) |
+| `schemas/` | Zod schemas for this feature |
+| `*.test.ts(x)` | Colocated unit tests (Bun) — see `testing-standards.mdc` |
+
+Example: `features/auth/actions/sign-in.ts`, `features/auth/server/auth.ts`, `features/dashboard/config/navigation.ts`.
+
+## `components/` — Global presentation
+
+| Subfolder | Use for |
+|-----------|---------|
+| `ui/` | shadcn primitives — avoid edits unless asked |
+| `shared/` | Reusable across domains (tables, badges, loaders) |
+| `layout/` | App shell (sidebar, header, theme switcher wrappers) |
+| `providers/` | App-wide providers (theme, navigation progress) |
+
+## `lib/` — Global infrastructure only
+
+- `prisma.ts`, `utils.ts` (`cn`), `api/` (`response`, `cors`, `require-api-session`), etc.
+- **No** domain logic, feature services, or entity CRUD.
+
+## Master data list pages
+
+Search + URL filters on admin tables: see **`master-data-tables.mdc`**.
+
+## Placement checklist
+
+1. Used across multiple domains? → `components/shared/` or `components/layout/`
+2. Single feature only? → `features/[name]/components/`
+3. Form submit / mutation? → `features/[name]/actions/`
+4. Domain DB operation? → `features/[name]/services/`
+5. Raw client singleton / generic util? → `lib/`

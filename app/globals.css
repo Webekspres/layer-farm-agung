@@ -1,26 +1,222 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.148 0.004 228.8);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.148 0.004 228.8);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.148 0.004 228.8);
+  --primary: oklch(0.527 0.154 150.069);
+  --primary-foreground: oklch(0.982 0.018 155.826);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.963 0.002 197.1);
+  --muted-foreground: oklch(0.56 0.021 213.5);
+  --accent: oklch(0.963 0.002 197.1);
+  --accent-foreground: oklch(0.218 0.008 223.9);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.925 0.005 214.3);
+  --input: oklch(0.925 0.005 214.3);
+  --ring: oklch(0.723 0.014 214.4);
+  --chart-1: oklch(0.837 0.128 66.29);
+  --chart-2: oklch(0.705 0.213 47.604);
+  --chart-3: oklch(0.646 0.222 41.116);
+  --chart-4: oklch(0.553 0.195 38.402);
+  --chart-5: oklch(0.47 0.157 37.304);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.987 0.002 197.1);
+  --sidebar-foreground: oklch(0.148 0.004 228.8);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.963 0.002 197.1);
+  --sidebar-accent-foreground: oklch(0.218 0.008 223.9);
+  --sidebar-border: oklch(0.925 0.005 214.3);
+  --sidebar-ring: oklch(0.723 0.014 214.4);
+
+  /* Sonner — light */
+  --sonner-normal-bg: var(--popover);
+  --sonner-normal-text: var(--popover-foreground);
+  --sonner-normal-border: var(--border);
+  --sonner-success-bg: color-mix(in oklch, var(--primary) 16%, var(--popover));
+  --sonner-success-text: color-mix(in oklch, var(--primary) 72%, var(--foreground));
+  --sonner-success-border: color-mix(in oklch, var(--primary) 32%, var(--border));
+  --sonner-error-bg: color-mix(in oklch, var(--destructive) 14%, var(--popover));
+  --sonner-error-text: var(--destructive);
+  --sonner-error-border: color-mix(in oklch, var(--destructive) 34%, var(--border));
+  --sonner-warning-bg: color-mix(in oklch, var(--chart-4) 18%, var(--popover));
+  --sonner-warning-text: color-mix(in oklch, var(--chart-4) 72%, var(--foreground));
+  --sonner-warning-border: color-mix(in oklch, var(--chart-4) 34%, var(--border));
+  --sonner-info-bg: color-mix(in oklch, var(--muted-foreground) 10%, var(--popover));
+  --sonner-info-text: var(--foreground);
+  --sonner-info-border: var(--border);
+}
+
+.dark {
+  --background: oklch(0.148 0.004 228.8);
+  --foreground: oklch(0.987 0.002 197.1);
+  --card: oklch(0.218 0.008 223.9);
+  --card-foreground: oklch(0.987 0.002 197.1);
+  --popover: oklch(0.218 0.008 223.9);
+  --popover-foreground: oklch(0.987 0.002 197.1);
+  --primary: oklch(0.448 0.119 151.328);
+  --primary-foreground: oklch(0.982 0.018 155.826);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.275 0.011 216.9);
+  --muted-foreground: oklch(0.723 0.014 214.4);
+  --accent: oklch(0.275 0.011 216.9);
+  --accent-foreground: oklch(0.987 0.002 197.1);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.56 0.021 213.5);
+  --chart-1: oklch(0.837 0.128 66.29);
+  --chart-2: oklch(0.705 0.213 47.604);
+  --chart-3: oklch(0.646 0.222 41.116);
+  --chart-4: oklch(0.553 0.195 38.402);
+  --chart-5: oklch(0.47 0.157 37.304);
+  --sidebar: oklch(0.218 0.008 223.9);
+  --sidebar-foreground: oklch(0.987 0.002 197.1);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: oklch(0.275 0.011 216.9);
+  --sidebar-accent-foreground: oklch(0.987 0.002 197.1);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.56 0.021 213.5);
+
+  /* Sonner — dark */
+  --sonner-normal-bg: var(--popover);
+  --sonner-normal-text: var(--popover-foreground);
+  --sonner-normal-border: var(--border);
+  --sonner-success-bg: color-mix(in oklch, var(--primary) 38%, var(--card));
+  --sonner-success-text: color-mix(
+    in oklch,
+    var(--primary-foreground) 88%,
+    var(--primary)
+  );
+  --sonner-success-border: color-mix(in oklch, var(--primary) 48%, var(--border));
+  --sonner-error-bg: color-mix(in oklch, var(--destructive) 34%, var(--card));
+  --sonner-error-text: color-mix(
+    in oklch,
+    var(--destructive) 68%,
+    var(--primary-foreground)
+  );
+  --sonner-error-border: color-mix(in oklch, var(--destructive) 46%, var(--border));
+  --sonner-warning-bg: color-mix(in oklch, var(--chart-4) 36%, var(--card));
+  --sonner-warning-text: color-mix(in oklch, var(--chart-1) 82%, var(--foreground));
+  --sonner-warning-border: color-mix(in oklch, var(--chart-4) 44%, var(--border));
+  --sonner-info-bg: var(--muted);
+  --sonner-info-text: var(--accent-foreground);
+  --sonner-info-border: var(--border);
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Hide scrollbar while keeping scroll (dialogs, panels) */
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+/* User/admin dialog layout — grid rows so the body scrolls inside max-height */
+@utility dialog-shell {
+  @apply max-h-[min(90vh,80dvh)] w-full max-w-[calc(100%-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-xl md:max-w-2xl;
+}
+
+@utility dialog-shell-wide {
+  @apply max-h-[min(90vh,80dvh)] w-full max-w-[calc(100%-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl;
+}
+
+@utility dialog-shell-sm {
+  @apply max-h-[min(90vh,80dvh)] w-full max-w-[calc(100%-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-md md:max-w-lg;
+}
+
+@utility dialog-header-padding {
+  @apply min-h-0 px-5 pt-5 pb-3 sm:px-7 sm:pt-6 md:px-8;
+}
+
+@utility dialog-body-scroll {
+  @apply scrollbar-hidden min-h-0 overflow-x-hidden overflow-y-auto overscroll-y-contain px-5 sm:px-7 md:px-8;
+}
+
+@utility dialog-footer-padding {
+  @apply mx-0 mb-0 shrink-0 gap-2 rounded-b-xl border-t border-border bg-muted/50 px-5 py-4 sm:flex-row sm:justify-end sm:px-7 md:px-8;
+}
+
+@utility dialog-form-fields {
+  @apply flex flex-col gap-5 py-1 pb-6 sm:pb-8;
+}
+
+/* Dashboard main area — spacing from sidebar/header (mobile → desktop) */
+@utility page-content {
+  @apply flex min-w-0 w-full max-w-full flex-1 flex-col gap-6;
+  @apply p-4 pb-8 pt-5;
+  @apply sm:gap-6 sm:p-5 sm:pb-10 sm:pt-6;
+  @apply md:gap-6 md:p-6 md:pb-10 md:pt-6;
+  @apply lg:gap-8 lg:p-8 lg:pb-12 lg:pt-8;
+  @apply xl:gap-8 xl:p-12 xl:pb-14 xl:pt-10;
 }

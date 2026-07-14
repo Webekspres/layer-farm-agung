@@ -1,0 +1,59 @@
+---
+description: Master data list pages — search, filters, toolbar, and server-side querying
+globs: features/**/components/*-toolbar.tsx,features/**/services/list-*.ts,features/**/lib/parse-filters.ts,app/(dashboard)/dashboard/**
+alwaysApply: false
+---
+
+# Master Data Tables (Search & Filters)
+
+Apply to **admin/master-data list pages** (tenant-scoped or global reference tables). Operational Domain 3+ lists should follow the same pattern when built.
+
+## Global catalog vs tenant master (RBAC)
+
+| Permission | Who (default) | Data |
+|------------|---------------|------|
+| `manage_master_data` | Admin tenant | Lokasi, kandang, vendor (`tenant_id`) |
+| `manage_global_catalog` | Superadmin only | Strain, grade telur (no `tenant_id`) |
+
+- **Pages & mutations** for global catalog: `requireManageGlobalCatalogSession()` (`manage_global_catalog` + `requireGlobalAdmin()`).
+- **Nav**: strain / grade items use `manage_global_catalog` and `globalOnly: true`.
+- **Tenant admin** consumes strain/grade only via **read-only options** in forms (e.g. `listStrainOptions()` for kandang) — no catalog CRUD UI.
+- Do not grant `manage_global_catalog` to admin tenant in `system-roles` seed defaults.
+
+## Required: search
+
+Every master-data table **must** have:
+
+1. **Search field** in a feature toolbar (`*-toolbar.tsx`) with debounced URL sync (`?q=`, ~350ms).
+2. **Server-side** filtering in `list-*.ts` (case-insensitive `contains` where appropriate).
+3. **`parse-*-filters.ts`** reading `searchParams` on the page.
+4. Page wrapped with `<Suspense>` around the management component (toolbar uses `useSearchParams`).
+5. Empty state distinguishes **no data** vs **no matches** (use `masterDataEmptyMessage`).
+
+## Required: filters (when relevant)
+
+Add **Select** filters only when they help real workflows. Skip filters that duplicate search or have no meaningful column.
+
+| Entity | Typical filters | Skip |
+|--------|-----------------|------|
+| Lokasi | Kandang: ada / kosong | Status (no column) |
+| Kandang | Lokasi, strain, status (Active/Inactive) | — |
+| Strain | Pemakaian: dipakai / belum dipakai | — |
+| Grade telur | Pemakaian: dipakai / belum dipakai | — |
+| Vendor | Kategori | — |
+
+Use URL query keys (short, stable): e.g. `location`, `strain`, `status`, `category`, `occupancy`, `usage`. Value `all` = omit from URL and from Prisma `where`.
+
+## Implementation checklist
+
+1. Extend `*ListFilters` type + `parse*ListFilters`.
+2. Apply filters in `buildWhere` inside `services/list-*.ts` (never filter only on the client).
+3. Toolbar: search + filter selects; preserve unrelated params when updating URL (`URLSearchParams` copy).
+4. `hasActiveFilter` in management: `q` trimmed **or** any filter param ≠ `all`.
+5. Revalidate list paths after mutations.
+
+## Do not
+
+- Client-only filter of full lists fetched without `where` (breaks at scale).
+- Add filters “for consistency” with no domain meaning.
+- Put toolbar logic in `app/` — keep in `features/[name]/components/`.

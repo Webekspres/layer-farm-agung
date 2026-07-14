@@ -1,0 +1,31 @@
+/**
+ * Production feature re-exports — canonical implementation lives in `@/lib/business-date`.
+ */
+export {
+  BUSINESS_TIMEZONE,
+  calendarDateToRecordDate,
+  calendarPickToBusinessDate,
+  formatBusinessDate,
+  formatBusinessDateFromDb,
+  formatBusinessDateLabel,
+  formatBusinessDatePickerLabel,
+  formatProductionDateLabel,
+  formatProductionDateParam,
+  formatProductionDatePickerLabel,
+  isCalendarDateAfterBusinessToday,
+  isCalendarPickAfterTodayBusiness,
+  isProductionToday,
+  isTodayBusiness,
+  parseBusinessDateParam,
+  parseProductionRecordDate,
+  recordDateToCalendarDate,
+  businessDateToCalendarPick,
+  shiftBusinessDate,
+  shiftProductionDate,
+  startOfTodayBusiness,
+  startOfTodayUtc,
+  startOfUtcDate,
+  normalizeBusinessDate,
+  todayBusinessDateValue,
+  validateOperationalBusinessDate,
+} from "@/lib/business-date";

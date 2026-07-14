@@ -1,0 +1,33 @@
+---
+description: Naming conventions — TS, components, files, Prisma
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Naming Conventions
+
+## TypeScript
+
+- Variables, functions, props: `camelCase`.
+- Types/interfaces: `PascalCase`.
+- Constants: `UPPER_SNAKE_CASE` or `camelCase` for config objects.
+
+## Files
+
+| Kind | Convention | Example |
+|------|------------|---------|
+| React components | `kebab-case.tsx` | `login-split-screen.tsx` |
+| Server actions / services | `kebab-case.ts` | `sign-in.ts`, `create-user.ts` |
+| Config / hooks | `kebab-case.ts` | `navigation.ts`, `use-mobile.ts` |
+
+Export component in `PascalCase`: `LoginSplitScreen` from `login-split-screen.tsx`.
+
+## Prisma / database
+
+- Model fields in schema may use `snake_case` with `@map` / `@@map`.
+- In application TypeScript, prefer `camelCase` when reading Prisma client results unless using raw field names.
+
+## Imports
+
+- Use `@/` path alias (`@/features/...`, `@/components/...`, `@/lib/...`).
+- `features/*` must not be imported from `lib/*` (dependency flows down: `app` → `features` → `components` → `lib`).

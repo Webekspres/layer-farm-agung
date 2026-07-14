@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: layerfarm-agung-db
+    restart: always
+    environment:
+      POSTGRES_USER: layerfarm_user
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: layerfarm_agung_db
+    # Host 5433 avoids clash with a local Windows/macOS PostgreSQL on 5432.
+    # From the host (bun run dev): 127.0.0.1:5433 — inside Compose network: db:5432
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: layerfarm-agung-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://layerfarm_user:secretpassword@db:5432/layerfarm_agung_db?schema=public"
+      STORAGE_ENDPOINT: "http://minio:9000"
+      STORAGE_ACCESS_KEY: "aapm_access_key"
+      STORAGE_SECRET_KEY: "aapm_secret_key_123"
+      STORAGE_BUCKET: "aapm-storage"
+    depends_on:
+      - db
+      - minio
+
+  minio:
+    image: minio/minio:latest
+    container_name: layerfarm-agung-minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "aapm_access_key"
+      MINIO_ROOT_PASSWORD: "aapm_secret_key_123"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+volumes:
+  postgres_data:
+  minio_data:

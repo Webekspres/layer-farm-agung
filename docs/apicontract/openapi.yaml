@@ -1,0 +1,1490 @@
+openapi: 3.1.0
+info:
+  title: AAPM Mobile API
+  version: 1.0.0
+  description: |
+    Kontrak API untuk aplikasi mobile **Layered Farm Agung (AAPM)** — operasional kandang.
+
+    - **Base path operasional:** `/api/v1/*`
+    - **Autentikasi:** [Better Auth](https://www.better-auth.com/) session cookie setelah login via `/api/auth/*`
+    - **Format respons:** envelope JSON standar (lihat komponen `ApiSuccess` / `ApiError`)
+    - **Implementasi server:** `app/api/v1/` di repo Next.js admin
+
+    Sumber kebenaran runtime: route handlers + `features/*/schemas/` + `lib/api/response.ts`.
+  contact:
+    name: Layered Farm Agung — tim pengembangan
+
+servers:
+  - url: http://localhost:3000
+    description: Development lokal
+  - url: http://127.0.0.1:3000
+    description: Development lokal (IPv4)
+  - url: "{scheme}://{host}"
+    description: LAN / staging / production (ganti host, mis. IP mesin dev untuk Expo fisik)
+    variables:
+      scheme:
+        default: http
+        enum: [http, https]
+      host:
+        default: 192.168.1.100:3000
+
+tags:
+  - name: Auth
+    description: |
+      Handlers Better Auth di `/api/auth/*`. Bukan bagian dari envelope `ApiSuccess` v1.
+      Mobile client harus menyimpan dan mengirim session cookie pada setiap panggilan `/api/v1/*`.
+  - name: Cages
+    description: Daftar dan detail kandang untuk layar home & QR scan
+  - name: Catalog
+    description: Data referensi global (grade telur, dll.)
+  - name: Production
+    description: Pencatatan produksi telur harian
+  - name: Feed
+    description: Konsumsi pakan — **belum diimplementasi** (501)
+
+security:
+  - cookieAuth: []
+
+paths:
+  /api/auth/sign-in/username:
+    post:
+      tags: [Auth]
+      summary: Login dengan username
+      description: |
+        Endpoint Better Auth (plugin `username`). Mengembalikan session cookie `Set-Cookie`
+        yang wajib dikirim ulang ke `/api/v1/*` dengan `credentials: include`.
+
+        Peran **staff** (`staff.kandang`) memiliki permission `manage_production` dan
+        `manage_inventory` untuk operasional mobile.
+      operationId: signInWithUsername
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInUsernameRequest"
+            example:
+              username: staff.kandang
+              password: password123
+      responses:
+        "200":
+          description: Login berhasil — session cookie diset
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BetterAuthSessionResponse"
+        "401":
+          description: Kredensial tidak valid
+        "403":
+          description: Akun atau tenant tidak aktif
+
+  /api/auth/sign-in/email:
+    post:
+      tags: [Auth]
+      summary: Login dengan email
+      operationId: signInWithEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInEmailRequest"
+      responses:
+        "200":
+          description: Login berhasil — session cookie diset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BetterAuthSessionResponse"
+        "401":
+          description: Kredensial tidak valid
+
+  /api/auth/get-session:
+    get:
+      tags: [Auth]
+      summary: Cek session aktif
+      operationId: getSession
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Session valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BetterAuthSessionResponse"
+        "401":
+          description: Tidak ada session
+
+  /api/v1/cages:
+    get:
+      tags: [Cages]
+      summary: Daftar kandang aktif tenant
+      description: |
+        Mengembalikan semua kandang `Active` pada tenant session, termasuk flag
+        `recordedToday` untuk progress input harian.
+      operationId: listCages
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/FieldCageStats"
+              example:
+                success: true
+                message: Daftar kandang berhasil dimuat.
+                data:
+                  totalActive: 2
+                  recordedTodayCount: 1
+                  cages:
+                    - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                      name: Kandang A1
+                      locationName: Farm Utama
+                      strainName: Lohmann Brown
+                      cageType: Closed House (Battery)
+                      capacity: 5000
+                      status: Active
+                      activeCyclePopulation: 4800
+                      recordedToday: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/cages/scan:
+    post:
+      tags: [Cages]
+      summary: Validasi scan QR kandang
+      description: |
+        Memvalidasi payload QR (deep link `aapmmobile://kandang/{qr_code}/produksi` atau token `KDG…`).
+        Staff harus ditugaskan ke kandang; kandang harus aktif dengan siklus berjalan.
+      operationId: scanCageQr
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [payload]
+              properties:
+                payload:
+                  type: string
+                  description: Teks mentah dari QR (URL deep link atau token)
+            example:
+              payload: aapmmobile://kandang/KDG4F8A2B1C0D3/produksi
+      responses:
+        "200":
+          description: Kandang valid untuk input produksi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CageForProduction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cages/{cageId}:
+    get:
+      tags: [Cages]
+      summary: Detail kandang untuk form produksi
+      description: |
+        Dipakai setelah scan QR berhasil. Memerlukan penugasan staff ke kandang
+        dan siklus aktif (`aapmmobile://kandang/{qr_code}/produksi`).
+      operationId: getCageById
+      parameters:
+        - $ref: "#/components/parameters/CageId"
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CageForProduction"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cages/{cageId}/daily-history:
+    get:
+      tags: [Cages]
+      summary: Riwayat input harian per kandang
+      description: |
+        Daftar entri multi-record (produksi, konsumsi pakan, mutasi populasi,
+        pengobatan) untuk satu kandang pada tanggal tertentu.
+      operationId: getCageDailyHistory
+      parameters:
+        - $ref: "#/components/parameters/CageId"
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Tanggal rekap (default hari ini)
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CageDailyHistory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/egg-grades:
+    get:
+      tags: [Catalog]
+      summary: Daftar grade telur
+      description: Katalog global untuk dropdown form produksi.
+      operationId: listEggGrades
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/EggGradeOption"
+              example:
+                success: true
+                message: Daftar grade telur berhasil dimuat.
+                data:
+                  - id: 1
+                    name: Grade A
+                  - id: 2
+                    name: Grade B
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/production:
+    post:
+      tags: [Production]
+      summary: Catat produksi telur harian
+      description: |
+        Catat satu entri panen harian dengan bucket TB (telur bagus), TR (telur retak), TP (telur pecah).
+        Boleh lebih dari satu entri per kandang per hari (mis. pagi/sore).
+        Validasi bisnis: kandang aktif, siklus aktif, total `tb + tr + tp >= 1`,
+        maksimal 10.000 butir per field.
+      operationId: recordDailyProduction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DailyProductionInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              recordDate: "2026-06-04"
+              tb: 1200
+              tr: 30
+              tp: 15
+              weight: 72.5
+      responses:
+        "201":
+          description: Produksi tercatat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RecordProductionResult"
+              example:
+                success: true
+                message: Produksi harian berhasil dicatat.
+                data:
+                  recorded: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/production/{recordId}:
+    patch:
+      tags: [Production]
+      summary: Perbarui entri produksi harian
+      description: |
+        Edit satu baris multi-record (Opsi B). Staff harus ditugaskan ke kandang
+        terkait. Body hanya TB/TR/TP.
+      operationId: updateDailyProduction
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDailyProductionInput"
+      responses:
+        "200":
+          description: Produksi diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/feed-consumption:
+    post:
+      tags: [Feed]
+      summary: Catat konsumsi pakan
+      description: |
+        Catat konsumsi pakan harian untuk kandang tertentu.
+      operationId: recordFeedConsumption
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeedConsumptionInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              itemId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+              recordDate: "2026-06-11"
+              quantity: 25.5
+              notes: Habis semua
+      responses:
+        "201":
+          description: Konsumsi pakan berhasil dicatat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RecordFeedConsumptionResult"
+              example:
+                success: true
+                message: Konsumsi pakan berhasil dicatat.
+                data:
+                  recorded: true
+                  lowStock: false
+                  remainingStock: 975
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/feed-consumption/{recordId}:
+    patch:
+      tags: [Feed]
+      summary: Perbarui entri konsumsi pakan
+      description: |
+        Edit jumlah/catatan konsumsi pakan. Staff harus ditugaskan ke kandang
+        terkait. Item pakan yang dipakai tidak dapat diubah — hanya jumlah dan
+        catatan. Selisih jumlah direkonsiliasi ke `InventoryStock` (menambah
+        stok bila jumlah dikurangi, memotong lagi bila jumlah dinaikkan).
+      operationId: updateFeedConsumption
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFeedConsumptionInput"
+      responses:
+        "200":
+          description: Konsumsi pakan diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/population-mutation:
+    post:
+      tags: [Production]
+      summary: Catat mutasi populasi
+      description: |
+        Catat mutasi/perubahan populasi ayam (Mati, Afkir, Masuk, Pindah).
+      operationId: recordPopulationMutation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PopulationMutationInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              mutationType: Mati
+              quantity: 5
+              recordDate: "2026-06-11"
+              notes: Sakit lemas
+      responses:
+        "201":
+          description: Mutasi populasi berhasil dicatat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RecordPopulationMutationResult"
+              example:
+                success: true
+                message: Mutasi populasi berhasil dicatat.
+                data:
+                  recorded: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/population-mutation/{recordId}:
+    patch:
+      tags: [Production]
+      summary: Perbarui entri mutasi populasi
+      description: |
+        Edit jenis mutasi, jumlah, dan catatan. Staff harus ditugaskan ke
+        kandang terkait. Tidak menyentuh inventori.
+      operationId: updatePopulationMutation
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePopulationMutationInput"
+      responses:
+        "200":
+          description: Mutasi populasi diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/medical-records:
+    post:
+      tags: [Production]
+      summary: Catat pengobatan
+      description: |
+        Catat pemberian obat/vitamin dan laporan kondisi kesehatan kandang.
+      operationId: recordMedicalRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MedicalRecordInput"
+            example:
+              cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              indication: Kurang nafsu makan
+              sickPopulation: 12
+              mortalityCount: 1
+              medicineName: Vita-B
+              dosageAndDuration: 2ml/L selama 3 hari
+              applicationMethod: Minum
+              treatmentNotes: Observasi lanjutan
+              treatmentDate: "2026-06-11"
+              itemId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+              quantityUsed: 20
+      responses:
+        "201":
+          description: Catatan pengobatan berhasil dicatat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/RecordMedicalRecordResult"
+              example:
+                success: true
+                message: Catatan pengobatan berhasil dicatat.
+                data:
+                  recorded: true
+                  lowStock: false
+                  remainingStock: 1980
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/medical-records/{recordId}:
+    patch:
+      tags: [Production]
+      summary: Perbarui catatan pengobatan
+      description: |
+        Edit indikasi, populasi sakit/mati, obat, dosis, metode, dan catatan.
+        Staff harus ditugaskan ke kandang terkait. Item obat/vitamin yang
+        ditautkan tidak dapat diubah — hanya jumlah pemakaian (`quantityUsed`),
+        bila catatan aslinya terkait item. Selisih jumlah direkonsiliasi ke
+        `InventoryStock`.
+      operationId: updateMedicalRecord
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMedicalRecordInput"
+      responses:
+        "200":
+          description: Catatan pengobatan diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: boolean
+                            const: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/items:
+    get:
+      tags: [Catalog]
+      summary: Daftar item inventori (dengan stok tersedia)
+      description: |
+        Daftar item tenant untuk picker operasional staff, beserta stok tersedia
+        di lokasi kandang. Dipakai untuk Konsumsi pakan (`type=Feed`) dan
+        Pengobatan (`type=Medicine,Vitamin`). `Vaccine` tidak boleh diminta di
+        sini (menu Vaksinasi terpisah, Modul 13). Permission: `manage_production`.
+      operationId: listItems
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            Satu atau beberapa tipe dipisah koma. Diperbolehkan: Feed, Medicine, Vitamin.
+          example: Medicine,Vitamin
+        - name: cageId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Kandang untuk menentukan lokasi stok tersedia.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ItemOption"
+              example:
+                success: true
+                message: Daftar item berhasil diambil.
+                data:
+                  - id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                    name: Amoksisilin
+                    unit: gram
+                    availableQuantity: 2000
+                    minStockAlert: 500
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/feed-items:
+    get:
+      tags: [Catalog]
+      summary: Daftar item pakan (legacy; gunakan /items?type=Feed)
+      description: |
+        Mendapatkan daftar item pakan aktif untuk dropdown pilihan pakan.
+      operationId: listFeedItems
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/FeedItemOption"
+              example:
+                success: true
+                message: Daftar pakan berhasil diambil.
+                data:
+                  - id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                    name: Konsentrat Layer PAR-L
+                    unit: kg
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: |
+        Session cookie Better Auth. Nama cookie dapat berbeda per konfigurasi —
+        periksa header `Set-Cookie` setelah login. Kirim dengan `credentials: 'include'`.
+
+  parameters:
+    CageId:
+      name: cageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID kandang (`Cage.id`)
+
+  responses:
+    Unauthorized:
+      description: Session tidak ada atau kedaluwarsa
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            error: Unauthorized
+    Forbidden:
+      description: Tidak punya permission atau tenant aktif belum dipilih
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            error: Forbidden
+    NotFound:
+      description: Resource tidak ditemukan di tenant
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            error: Kandang tidak ditemukan di tenant ini.
+    BadRequest:
+      description: Validasi gagal atau aturan bisnis ditolak
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+          example:
+            success: false
+            error: Isi jumlah telur layak atau telur pecah minimal 1 butir.
+
+  schemas:
+    ApiSuccess:
+      type: object
+      required: [success, message, data]
+      properties:
+        success:
+          type: boolean
+          const: true
+        message:
+          type: string
+          description: Pesan sukses (Bahasa Indonesia)
+        data:
+          description: Payload spesifik endpoint
+
+    ApiError:
+      type: object
+      required: [success, error]
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: string
+          description: Detail error (Bahasa Indonesia)
+
+    SignInUsernameRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+
+    SignInEmailRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+
+    BetterAuthSessionResponse:
+      type: object
+      description: |
+        Bentuk respons Better Auth — dapat berubah mengikuti versi library.
+        Lihat dokumentasi Better Auth untuk field lengkap.
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+        session:
+          type: object
+          properties:
+            id:
+              type: string
+            expiresAt:
+              type: string
+              format: date-time
+
+    FieldCageListItem:
+      type: object
+      required:
+        - id
+        - name
+        - locationName
+        - strainName
+        - capacity
+        - status
+        - recordedToday
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        locationName:
+          type: string
+        strainName:
+          type: string
+        cageType:
+          type: string
+          nullable: true
+          description: Preset tipe kandang, mis. `Closed House (Battery)`
+        capacity:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          enum: [Active, Inactive]
+        activeCyclePopulation:
+          type: integer
+          nullable: true
+          description: Populasi awal siklus aktif
+        recordedToday:
+          type: boolean
+          description: Sudah ada entri produksi hari ini untuk kandang ini
+
+    FieldCageStats:
+      type: object
+      required: [cages, totalActive, recordedTodayCount]
+      properties:
+        cages:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldCageListItem"
+        totalActive:
+          type: integer
+          minimum: 0
+        recordedTodayCount:
+          type: integer
+          minimum: 0
+
+    CageForProduction:
+      type: object
+      required:
+        - id
+        - name
+        - locationName
+        - strainName
+        - status
+        - hasActiveCycle
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        locationName:
+          type: string
+        strainName:
+          type: string
+        status:
+          type: string
+        hasActiveCycle:
+          type: boolean
+        activeCyclePopulation:
+          type: integer
+          nullable: true
+
+    EggGradeOption:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    DailyProductionInput:
+      type: object
+      required: [cageId, recordDate]
+      properties:
+        cageId:
+          type: string
+          format: uuid
+        recordDate:
+          type: string
+          format: date
+          description: Tanggal panen (ISO 8601 date)
+        tb:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 0
+          description: Telur bagus (butir)
+        tr:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 0
+          description: Telur retak (butir)
+        tp:
+          type: integer
+          minimum: 0
+          maximum: 10000
+          default: 0
+          description: Telur pecah (butir)
+        weight:
+          type: number
+          format: float
+          minimum: 0
+          description: Total berat telur (kg), opsional
+        clientMutationId:
+          type: string
+          format: uuid
+          description: Idempotency key dari client (wajib untuk antrean offline).
+        fromSync:
+          type: boolean
+          default: false
+          description: true bila record dibuat dari flush antrean offline.
+
+    IdempotentPostFields:
+      type: object
+      properties:
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
+
+    RecordProductionResult:
+      type: object
+      required: [recorded, idempotent, recordId]
+      properties:
+        recorded:
+          type: boolean
+          const: true
+        idempotent:
+          type: boolean
+          description: true bila clientMutationId sudah pernah diproses.
+        recordId:
+          type: string
+          format: uuid
+
+    UpdateDailyProductionInput:
+      type: object
+      properties:
+        tb:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        tr:
+          type: integer
+          minimum: 0
+          maximum: 10000
+        tp:
+          type: integer
+          minimum: 0
+          maximum: 10000
+
+    UpdateFeedConsumptionInput:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah pakan terkoreksi (kg). Item pakan tidak dapat diubah.
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdatePopulationMutationInput:
+      type: object
+      required: [mutationType, quantity]
+      properties:
+        mutationType:
+          type: string
+          enum: [Mati, Afkir, Masuk, Pindah]
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdateMedicalRecordInput:
+      type: object
+      required:
+        - indication
+        - medicineName
+        - dosageAndDuration
+        - applicationMethod
+      properties:
+        indication:
+          type: string
+          minLength: 3
+          maxLength: 500
+        sickPopulation:
+          type: integer
+          minimum: 0
+        mortalityCount:
+          type: integer
+          minimum: 0
+        medicineName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        dosageAndDuration:
+          type: string
+          minLength: 1
+          maxLength: 300
+        applicationMethod:
+          type: string
+          enum: [Minum, Suntik, Semprot, Tetes, Campur Pakan]
+        treatmentNotes:
+          type: string
+          maxLength: 1000
+        quantityUsed:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: |
+            Jumlah pemakaian terkoreksi. Hanya berlaku bila catatan aslinya
+            tertaut ke item inventori (`itemId` tidak dapat diubah lewat endpoint ini).
+
+    CageProductionHistoryItem:
+      type: object
+      required: [id, tb, tr, tp, total, recordedBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tb:
+          type: integer
+        tr:
+          type: integer
+        tp:
+          type: integer
+        total:
+          type: integer
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CageFeedHistoryItem:
+      type: object
+      required: [id, itemName, itemUnit, quantity, notes, recordedBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        itemUnit:
+          type: string
+        quantity:
+          type: number
+          format: float
+        notes:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CagePopulationHistoryItem:
+      type: object
+      required: [id, mutationType, quantity, notes, recordedBy, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        mutationType:
+          type: string
+          enum: [Mati, Afkir, Masuk, Pindah]
+        quantity:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CageMedicalHistoryItem:
+      type: object
+      required:
+        - id
+        - indication
+        - sickPopulation
+        - mortalityCount
+        - medicineName
+        - itemName
+        - itemUnit
+        - quantityUsed
+        - dosageAndDuration
+        - applicationMethod
+        - treatmentNotes
+        - recordedBy
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        indication:
+          type: string
+        sickPopulation:
+          type: integer
+        mortalityCount:
+          type: integer
+        medicineName:
+          type: string
+        itemName:
+          type: string
+          nullable: true
+          description: Nama item Medicine/Vitamin bila ditautkan ke inventori.
+        itemUnit:
+          type: string
+          nullable: true
+        quantityUsed:
+          type: number
+          format: float
+          nullable: true
+        dosageAndDuration:
+          type: string
+        applicationMethod:
+          type: string
+          enum: [Minum, Suntik, Semprot, Tetes, Campur Pakan]
+        treatmentNotes:
+          type: string
+          nullable: true
+        recordedBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CageDailyHistory:
+      type: object
+      required:
+        - recordDate
+        - cageId
+        - cageName
+        - locationName
+        - productions
+        - feed
+        - population
+        - medical
+      properties:
+        recordDate:
+          type: string
+          format: date
+        cageId:
+          type: string
+          format: uuid
+        cageName:
+          type: string
+        locationName:
+          type: string
+        productions:
+          type: array
+          items:
+            $ref: "#/components/schemas/CageProductionHistoryItem"
+        feed:
+          type: array
+          items:
+            $ref: "#/components/schemas/CageFeedHistoryItem"
+        population:
+          type: array
+          items:
+            $ref: "#/components/schemas/CagePopulationHistoryItem"
+        medical:
+          type: array
+          items:
+            $ref: "#/components/schemas/CageMedicalHistoryItem"
+
+    FeedConsumptionInput:
+      type: object
+      required: [cageId, itemId, recordDate, quantity]
+      properties:
+        cageId:
+          type: string
+          format: uuid
+        itemId:
+          type: string
+          format: uuid
+          description: Item pakan (`Item.id`)
+        recordDate:
+          type: string
+          format: date
+        quantity:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah pakan (kg)
+        notes:
+          type: string
+          maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
+
+    RecordFeedConsumptionResult:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+          const: true
+        idempotent:
+          type: boolean
+        recordId:
+          type: string
+          format: uuid
+        lowStock:
+          type: boolean
+          description: true bila sisa stok pakan <= min_stock_alert setelah pemotongan.
+        remainingStock:
+          type: number
+          format: float
+          description: Sisa stok pakan di lokasi kandang setelah pemotongan.
+
+    PopulationMutationInput:
+      type: object
+      required: [cageId, mutationType, quantity, recordDate]
+      properties:
+        cageId:
+          type: string
+          format: uuid
+        mutationType:
+          type: string
+          enum: [Mati, Afkir, Masuk, Pindah]
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 100000
+        recordDate:
+          type: string
+          format: date
+        notes:
+          type: string
+          maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
+
+    RecordPopulationMutationResult:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+          const: true
+        idempotent:
+          type: boolean
+        recordId:
+          type: string
+          format: uuid
+
+    MedicalRecordInput:
+      type: object
+      required: [cageId, indication, sickPopulation, mortalityCount, medicineName, dosageAndDuration, applicationMethod, treatmentDate]
+      properties:
+        cageId:
+          type: string
+          format: uuid
+        indication:
+          type: string
+          minLength: 3
+          maxLength: 500
+        sickPopulation:
+          type: integer
+          minimum: 0
+        mortalityCount:
+          type: integer
+          minimum: 0
+        medicineName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        dosageAndDuration:
+          type: string
+          minLength: 1
+          maxLength: 300
+        applicationMethod:
+          type: string
+          enum: [Minum, Suntik, Semprot, Tetes, Campur Pakan]
+        treatmentNotes:
+          type: string
+          maxLength: 1000
+        treatmentDate:
+          type: string
+          format: date
+        itemId:
+          type: string
+          format: uuid
+          description: |
+            Opsional. Item Medicine/Vitamin dari inventori yang dipakai; stoknya
+            dipotong (OUT_MEDICAL). Bila kosong, catatan tetap tersimpan sebagai
+            teks bebas (`medicineName`).
+        quantityUsed:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah item dipakai (dalam unit item). Wajib bila `itemId` diisi.
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
+
+    RecordMedicalRecordResult:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+          const: true
+        idempotent:
+          type: boolean
+        recordId:
+          type: string
+          format: uuid
+        lowStock:
+          type: boolean
+          description: true bila sisa stok obat/vitamin <= min_stock_alert (bila item ditautkan).
+        remainingStock:
+          type: number
+          format: float
+          nullable: true
+          description: Sisa stok item setelah pemotongan; null bila tanpa item.
+
+    FeedItemOption:
+      type: object
+      required: [id, name, unit]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string
+
+    ItemOption:
+      type: object
+      required: [id, name, unit, availableQuantity]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        unit:
+          type: string
+        availableQuantity:
+          type: number
+          format: float
+          description: Stok tersedia di lokasi kandang (atau total tenant bila tanpa cageId).
+        minStockAlert:
+          type: number
+          format: float
+          nullable: true
+          description: Ambang batas stok rendah (null bila tidak diatur).

@@ -1,0 +1,537 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// ENUMS & CONSTANTS
+// ==========================================
+enum ItemType {
+  Feed
+  Medicine
+  Vitamin
+  Vaccine
+  Egg
+  Other
+}
+
+// ==========================================
+// DOMAIN 1: AUTH & TENANT (MODUL 1)
+// ==========================================
+
+model Tenant {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  slug       String   @unique
+  is_active  Boolean  @default(true)
+  logo_url   String?
+  brand_name String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  users                 User[]
+  locations             Location[]
+  vendors               Vendor[]
+  items                 Item[]
+  daily_productions     DailyProduction[]
+  feed_consumptions     FeedConsumption[]
+  sync_queues           SyncQueue[]
+  customers             Customer[]
+  sales_orders          SalesOrder[]
+  opex_categories       OpexCategory[]
+  cashflow_transactions CashflowTransaction[]
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  // Relations
+  users            User[]
+  role_permissions RolePermission[]
+}
+
+model Permission {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  // Relations
+  role_permissions RolePermission[]
+}
+
+model RolePermission {
+  role_id       Int
+  permission_id Int
+
+  role       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+
+  @@id([role_id, permission_id])
+}
+
+model User {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenant_id        String?  @db.Uuid
+  role_id          Int
+  full_name        String
+  username         String   @unique
+  display_username String?  @map("display_username")
+  email            String?  @unique
+  email_verified   Boolean  @default(false) @map("email_verified")
+  image            String?
+  password_hash    String
+  is_active        Boolean  @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relations
+  tenant                 Tenant?                @relation(fields: [tenant_id], references: [id], onDelete: SetNull)
+  role                   Role                   @relation(fields: [role_id], references: [id], onDelete: Restrict)
+  daily_productions      DailyProduction[]
+  feed_consumptions      FeedConsumption[]
+  population_mutations   PopulationMutation[]
+  medical_records        MedicalRecord[]
+  sessions               Session[]
+  accounts               Account[]
+  cage_staff_assignments CageStaffAssignment[]
+}
+
+model Session {
+  id                  String   @id
+  expires_at          DateTime
+  token               String   @unique
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  ip_address          String?
+  user_agent          String?
+  user_id             String   @db.Uuid
+  active_tenant_id    String?  @map("active_tenant_id") @db.Uuid
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("session")
+}
+
+model Account {
+  id                       String    @id
+  account_id               String    @map("account_id")
+  provider_id              String    @map("provider_id")
+  user_id                  String    @map("user_id") @db.Uuid
+  access_token             String?   @map("access_token")
+  refresh_token            String?   @map("refresh_token")
+  id_token                 String?   @map("id_token")
+  access_token_expires_at  DateTime? @map("access_token_expires_at")
+  refresh_token_expires_at DateTime? @map("refresh_token_expires_at")
+  scope                    String?
+  password                 String?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expires_at DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("verification")
+}
+
+// ==========================================
+// DOMAIN 2: MASTER DATA & INFRASTRUKTUR (MODUL 2, 3, 7)
+// ==========================================
+
+model Location {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  name         String
+  created_at   DateTime @default(now())
+
+  // Relations
+  tenant           Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cages            Cage[]
+  inventory_stocks InventoryStock[]
+}
+
+model Cage {
+  id          String   @id @default(uuid()) @db.Uuid
+  location_id String   @db.Uuid
+  strain_id   Int
+  name        String
+  cage_type   String?
+  capacity    Int
+  status      String   @default("Active")
+  /** Unique token encoded in QR (`aapmmobile://kandang/{qr_code}/produksi`). */
+  qr_code     String   @unique
+  created_at  DateTime @default(now())
+
+  // Relations
+  location             Location               @relation(fields: [location_id], references: [id], onDelete: Cascade)
+  strain               Strain                 @relation(fields: [strain_id], references: [id], onDelete: Restrict)
+  cycle_settings       CycleSetting[]
+  daily_productions    DailyProduction[]
+  feed_consumptions    FeedConsumption[]
+  population_mutations PopulationMutation[]
+  vaccine_schedules    VaccineSchedule[]
+  medical_records      MedicalRecord[]
+  staff_assignments    CageStaffAssignment[]
+
+  @@unique([location_id, name])
+}
+
+model CageStaffAssignment {
+  cage_id     String   @db.Uuid
+  user_id     String   @db.Uuid
+  assigned_at DateTime @default(now())
+
+  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([cage_id, user_id])
+  @@index([user_id])
+  @@map("cage_staff_assignment")
+}
+
+model CycleSetting {
+  id                 String    @id @default(uuid()) @db.Uuid
+  cage_id            String    @db.Uuid
+  start_date         DateTime  @db.Date
+  end_date           DateTime? @db.Date
+  initial_population Int
+  status             String    @default("Active")
+  created_at         DateTime  @default(now())
+
+  // Relations
+  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+}
+
+model Strain {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  // Relations
+  cages              Cage[]
+  production_targets ProductionTarget[]
+}
+
+model ProductionTarget {
+  id           Int   @id @default(autoincrement())
+  strain_id    Int
+  age_in_weeks Int
+  target_hdp   Float
+  target_fcr   Float
+
+  // Relations
+  strain Strain @relation(fields: [strain_id], references: [id], onDelete: Cascade)
+}
+
+model EggGrade {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  // Relations — penjualan (Modul 11); bukan input lapangan TB/TR/TP
+  sales_order_items SalesOrderItem[]
+}
+
+model Vendor {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  name         String
+  category     String
+  address      String?
+  created_at   DateTime @default(now())
+
+  // Relations
+  tenant            Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  supplier_contacts SupplierContact[]
+  purchase_orders   PurchaseOrder[]
+}
+
+model SupplierContact {
+  id        String @id @default(uuid()) @db.Uuid
+  vendor_id String @db.Uuid
+  pic_name  String
+  phone     String
+
+  // Relations
+  vendor Vendor @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+}
+
+model PurchaseOrder {
+  id           String   @id @default(uuid()) @db.Uuid
+  vendor_id    String   @db.Uuid
+  order_date   DateTime @db.Date
+  status       String   @default("Pending")
+  total_amount Decimal  @db.Decimal(15, 2)
+  created_at   DateTime @default(now())
+
+  // Relations
+  vendor               Vendor              @relation(fields: [vendor_id], references: [id], onDelete: Restrict)
+  purchase_order_items PurchaseOrderItem[]
+}
+
+// ==========================================
+// DOMAIN 3: OPERASIONAL KANDANG & INVENTORY (MODUL 4, 5, 6, 8, 13)
+// ==========================================
+
+model Item {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenant_id       String   @db.Uuid
+  name            String
+  type            ItemType
+  unit            String
+  min_stock_alert Float?
+  created_at      DateTime @default(now())
+
+  // Relations
+  tenant               Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  inventory_stocks     InventoryStock[]
+  stock_mutations      StockMutation[]
+  purchase_order_items PurchaseOrderItem[]
+  feed_consumptions    FeedConsumption[]
+  vaccine_schedules    VaccineSchedule[]
+  medical_records      MedicalRecord[]
+}
+
+model InventoryStock {
+  id           String   @id @default(uuid()) @db.Uuid
+  item_id      String   @db.Uuid
+  location_id  String   @db.Uuid
+  quantity     Float    @default(0)
+  last_updated DateTime @default(now()) @updatedAt
+
+  // Relations
+  item     Item     @relation(fields: [item_id], references: [id], onDelete: Cascade)
+  location Location @relation(fields: [location_id], references: [id], onDelete: Cascade)
+
+  @@unique([item_id, location_id])
+}
+
+model StockMutation {
+  id            String   @id @default(uuid()) @db.Uuid
+  item_id       String   @db.Uuid
+  mutation_type String
+  quantity      Float
+  reference_id  String?  @db.Uuid
+  mutation_date DateTime @default(now())
+
+  // Relations
+  item Item @relation(fields: [item_id], references: [id], onDelete: Cascade)
+}
+
+model PurchaseOrderItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  po_id      String  @db.Uuid
+  item_id    String  @db.Uuid
+  quantity   Float
+  unit_price Decimal @db.Decimal(15, 2)
+
+  // Relations
+  purchase_order PurchaseOrder @relation(fields: [po_id], references: [id], onDelete: Cascade)
+  item           Item          @relation(fields: [item_id], references: [id], onDelete: Restrict)
+}
+
+model DailyProduction {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  cage_id      String   @db.Uuid
+  user_id      String   @db.Uuid
+  record_date  DateTime @db.Date
+  /** Telur bagus (TB) */
+  tb           Int      @default(0)
+  /** Telur retak (TR) */
+  tr           Int      @default(0)
+  /** Telur pecah (TP) */
+  tp           Int      @default(0)
+  weight       Float?
+  is_synced    Boolean  @default(true)
+  client_mutation_id String? @unique @db.Uuid
+  created_at   DateTime @default(now())
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cage   Cage   @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Restrict)
+}
+
+model FeedConsumption {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenant_id   String   @db.Uuid
+  cage_id     String   @db.Uuid
+  item_id     String   @db.Uuid
+  user_id     String   @db.Uuid
+  record_date DateTime @db.Date
+  quantity    Float
+  notes       String?
+  is_synced   Boolean  @default(true)
+  client_mutation_id String? @unique @db.Uuid
+  created_at  DateTime @default(now())
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cage   Cage   @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  item   Item   @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Restrict)
+}
+
+model PopulationMutation {
+  id            String   @id @default(uuid()) @db.Uuid
+  cage_id       String   @db.Uuid
+  user_id       String   @db.Uuid
+  mutation_type String
+  quantity      Int
+  notes         String?
+  record_date   DateTime @db.Date
+  is_synced     Boolean  @default(true)
+  client_mutation_id String? @unique @db.Uuid
+  created_at    DateTime @default(now())
+
+  // Relations
+  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Restrict)
+  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+}
+
+model VaccineSchedule {
+  id             String   @id @default(uuid()) @db.Uuid
+  cage_id        String   @db.Uuid
+  item_id        String   @db.Uuid
+  scheduled_date DateTime @db.Date
+  status         String   @default("Pending")
+  notes          String?
+  created_at     DateTime @default(now())
+
+  // Relations
+  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [item_id], references: [id], onDelete: Restrict)
+}
+
+model MedicalRecord {
+  id                   String   @id @default(uuid()) @db.Uuid
+  cage_id              String   @db.Uuid
+  user_id              String   @db.Uuid
+  /** Gejala / indikasi penyakit */
+  indication           String
+  sick_population      Int      @default(0)
+  mortality_count      Int      @default(0)
+  /** Free-text nama obat (fallback bila item tidak ada di inventori). */
+  medicine_name        String
+  /** Opsional: item obat/vitamin dari inventori yang dipakai. */
+  item_id              String?  @db.Uuid
+  /** Jumlah item inventori yang dipakai (dalam unit item). */
+  quantity_used        Float?
+  dosage_and_duration  String
+  application_method   String
+  treatment_notes      String?
+  treatment_date       DateTime @db.Date
+  is_synced            Boolean  @default(true)
+  client_mutation_id   String?  @unique @db.Uuid
+  created_at           DateTime @default(now())
+
+  // Relations
+  cage Cage  @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  user User  @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  item Item? @relation(fields: [item_id], references: [id], onDelete: SetNull)
+}
+
+model SyncQueue {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  payload      String   @db.Text
+  status       String   @default("Pending")
+  created_at   DateTime @default(now())
+
+  // Relations
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// DOMAIN 4: FINANSIAL & REPORT (MODUL 11 & 12)
+// ==========================================
+
+model Customer {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  name         String
+  phone        String?
+  address      String?
+  created_at   DateTime @default(now())
+
+  // Relations
+  tenant       Tenant       @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  sales_orders SalesOrder[]
+}
+
+model SalesOrder {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  customer_id  String   @db.Uuid
+  sale_date    DateTime @db.Date
+  status       String   @default("Paid")
+  total_amount Decimal  @db.Decimal(15, 2)
+  created_at   DateTime @default(now())
+
+  // Relations
+  tenant            Tenant           @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  customer          Customer         @relation(fields: [customer_id], references: [id], onDelete: Restrict)
+  sales_order_items SalesOrderItem[]
+}
+
+model SalesOrderItem {
+  id           String  @id @default(uuid()) @db.Uuid
+  sale_id      String  @db.Uuid
+  egg_grade_id Int
+  quantity     Int
+  weight       Float
+  unit_price   Decimal @db.Decimal(15, 2)
+
+  // Relations
+  sales_order SalesOrder @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+  egg_grade   EggGrade   @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+}
+
+model OpexCategory {
+  id           Int    @id @default(autoincrement())
+  tenant_id    String @db.Uuid
+  name         String
+
+  // Relations
+  tenant                Tenant                @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cashflow_transactions CashflowTransaction[]
+}
+
+model CashflowTransaction {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenant_id        String   @db.Uuid
+  transaction_date DateTime @db.Date
+  type             String
+  category_id      Int?
+  reference_id     String?  @db.Uuid
+  amount           Decimal  @db.Decimal(15, 2)
+  description      String?
+  created_at       DateTime @default(now())
+
+  // Relations
+  tenant        Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  opex_category OpexCategory? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+}
