@@ -28,6 +28,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 |------|-----|
 | **[ecosystem.md](./ecosystem.md)** | **Arsitektur dua repo** — backend (ini) + [`aapm-mobile`](../mobile-apps/aapm-mobile) |
 | **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; progress implementasi |
+| **[staging.md](./staging.md)** | Staging: Vercel + Neon + Cloudflare R2 — env & bootstrap |
 | **[implementation_plan.md](./implementation_plan.md)** | **Rencana eksekusi** fase 1–5 + infra WIB — checklist agent-ready (Fase 1–4 ✅) |
 | **[apicontract/](./apicontract/)** | Kontrak **OpenAPI 3.1** untuk mobile (`openapi.yaml`) |
 
