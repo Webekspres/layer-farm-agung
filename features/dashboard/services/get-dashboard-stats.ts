@@ -55,7 +55,7 @@ export async function getDashboardStats(
     activeCages.map((cage) => resolveActiveCyclePopulation(cage.id, recordDate)),
   );
 
-  const activePopulationTotal = populations.reduce(
+  const activePopulationTotal = populations.reduce<number>(
     (sum, value) => sum + (value ?? 0),
     0,
   );

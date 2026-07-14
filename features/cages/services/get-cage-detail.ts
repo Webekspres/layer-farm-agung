@@ -53,6 +53,8 @@ export async function getCageDetail(
 
   if (!cage) return null;
 
+  const cycleSettings = cage.cycle_settings;
+
   const [qrCode, assignedStaffIds, raw] = await Promise.all([
     getCageQrCode(cage.id),
     getAssignedStaffIds(cage.id),
@@ -61,7 +63,7 @@ export async function getCageDetail(
 
   const asOfDate = startOfTodayBusiness();
   const summaryMap = await buildSummariesForCycles(
-    cage.cycle_settings,
+    cycleSettings,
     cage.strain.id,
     cage.capacity,
     raw,
@@ -69,8 +71,8 @@ export async function getCageDetail(
   );
 
   const activeCycleRow =
-    cage.cycle_settings.find((cycle) => cycle.status === "Active") ?? null;
-  const historyRows = cage.cycle_settings
+    cycleSettings.find((cycle) => cycle.status === "Active") ?? null;
+  const historyRows = cycleSettings
     .filter((cycle) => cycle.status !== "Active")
     .sort((a, b) => {
       const aEnd = a.end_date?.getTime() ?? 0;
@@ -80,7 +82,7 @@ export async function getCageDetail(
     });
 
   function toCycleDetail(
-    row: (typeof cage.cycle_settings)[number],
+    row: (typeof cycleSettings)[number],
   ): CageCycleDetail {
     const summary = summaryMap.get(row.id);
     if (!summary) {
