@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "bun test",
@@ -15,6 +15,7 @@
     "docker:db": "docker compose up db -d",
     "db:generate": "bun ./node_modules/prisma/build/index.js generate",
     "db:migrate": "bun ./node_modules/prisma/build/index.js migrate dev",
+    "db:migrate:deploy": "bun ./node_modules/prisma/build/index.js migrate deploy",
     "db:reset": "bun ./node_modules/prisma/build/index.js migrate reset",
     "db:studio": "bun ./node_modules/prisma/build/index.js studio",
     "db:push": "bun ./node_modules/prisma/build/index.js db push",

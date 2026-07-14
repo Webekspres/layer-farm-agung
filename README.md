@@ -153,8 +153,9 @@ Open [http://localhost:3000](http://localhost:3000) in the browser.
 
 ### Deployment notes
 
-- Deploy the Next.js app to your chosen host (e.g. **Vercel**, container platform, or VM) with `DATABASE_URL` and production auth settings.
-- Run `prisma migrate deploy` against the production database as part of your release process.
+- Staging (Vercel + Neon + R2): see **[`docs/staging.md`](./docs/staging.md)**.
+- Deploy the Next.js app with `DATABASE_URL`, Better Auth URLs/secret, and `STORAGE_*` for object storage.
+- Run `bun run db:migrate:deploy` against the hosted database as part of your release process.
 
 ---
 
