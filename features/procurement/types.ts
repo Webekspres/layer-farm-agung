@@ -1,4 +1,8 @@
-export type PurchaseOrderStatus = "Pending" | "Received";
+export type PurchaseOrderStatus =
+  | "Pending"
+  | "PartiallyReceived"
+  | "Received"
+  | "Cancelled";
 
 export type PurchaseOrderListItem = {
   id: string;
@@ -16,6 +20,7 @@ export type PurchaseOrderLineItem = {
   itemName: string;
   itemUnit: string;
   quantity: number;
+  quantityReceived: number;
   unitPrice: number;
   lineTotal: number;
 };

@@ -36,6 +36,10 @@ import {
   type PurchaseOrderFormState,
 } from "@/features/procurement/actions/create-purchase-order";
 import { ReceivePurchaseOrderDialog } from "@/features/procurement/components/receive-purchase-order-dialog";
+import {
+  purchaseOrderStatusBadgeVariant,
+  purchaseOrderStatusLabel,
+} from "@/features/procurement/lib/status-labels";
 import type {
   PurchaseOrderFormOptions,
   PurchaseOrderListItem,
@@ -80,10 +84,11 @@ function formatDate(iso: string) {
 }
 
 function statusBadge(status: PurchaseOrderListItem["status"]) {
-  if (status === "Received") {
-    return <Badge variant="secondary">Diterima</Badge>;
-  }
-  return <Badge variant="outline">Menunggu</Badge>;
+  return (
+    <Badge variant={purchaseOrderStatusBadgeVariant(status)}>
+      {purchaseOrderStatusLabel(status)}
+    </Badge>
+  );
 }
 
 export function PurchaseOrdersManagement({
@@ -216,7 +221,8 @@ export function PurchaseOrdersManagement({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-wrap justify-end gap-1">
-                      {order.status === "Pending" ? (
+                      {order.status === "Pending" ||
+                      order.status === "PartiallyReceived" ? (
                         <Button
                           type="button"
                           variant="outline"

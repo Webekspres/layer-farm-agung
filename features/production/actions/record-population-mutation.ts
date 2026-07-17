@@ -30,6 +30,7 @@ export async function recordPopulationMutationAction(
     quantity: formData.get("quantity"),
     notes: formData.get("notes"),
     recordDate: formData.get("recordDate"),
+    targetCageId: formData.get("targetCageId"),
   });
 
   if (!parsed.success) {

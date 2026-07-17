@@ -34,7 +34,7 @@ export async function recordPopulationMutation(
       id: input.cageId,
       location: { tenant_id: tenantId },
     },
-    select: { id: true, status: true },
+    select: { id: true, name: true, status: true },
   });
 
   if (!cage) {
@@ -57,6 +57,23 @@ export async function recordPopulationMutation(
 
   const recordDate = dateCheck.date;
   const isSynced = !input.fromSync;
+  const isPindah = input.mutationType === "Pindah";
+
+  let targetCage: { id: string; name: string } | null = null;
+
+  if (isPindah) {
+    const targetValidation = await validateTransferTargetCage(
+      tenantId,
+      input.cageId,
+      input.targetCageId,
+    );
+
+    if (!targetValidation.ok) {
+      return { ok: false, error: targetValidation.error };
+    }
+
+    targetCage = targetValidation.targetCage;
+  }
 
   if (isPopulationDecreaseType(input.mutationType)) {
     const current = await resolveActiveCyclePopulation(
@@ -77,18 +94,37 @@ export async function recordPopulationMutation(
   }
 
   try {
-    const record = await prisma.populationMutation.create({
-      data: {
-        cage_id: input.cageId,
-        user_id: userId,
-        mutation_type: input.mutationType,
-        quantity: input.quantity,
-        notes: input.notes ?? null,
-        record_date: recordDate,
-        is_synced: isSynced,
-        client_mutation_id: input.clientMutationId ?? null,
-      },
-      select: { id: true },
+    const record = await prisma.$transaction(async (tx) => {
+      const created = await tx.populationMutation.create({
+        data: {
+          cage_id: input.cageId,
+          user_id: userId,
+          mutation_type: input.mutationType,
+          quantity: input.quantity,
+          notes: input.notes ?? null,
+          record_date: recordDate,
+          is_synced: isSynced,
+          client_mutation_id: input.clientMutationId ?? null,
+          target_cage_id: isPindah ? targetCage!.id : null,
+        },
+        select: { id: true },
+      });
+
+      if (isPindah && targetCage) {
+        await tx.populationMutation.create({
+          data: {
+            cage_id: targetCage.id,
+            user_id: userId,
+            mutation_type: "Masuk",
+            quantity: input.quantity,
+            notes: `Transfer dari kandang ${cage.name}.`,
+            record_date: recordDate,
+            is_synced: isSynced,
+          },
+        });
+      }
+
+      return created;
     });
 
     return { ok: true, idempotent: false, recordId: record.id };
@@ -106,6 +142,92 @@ export async function recordPopulationMutation(
 
     return { ok: false, error: "Gagal menyimpan mutasi populasi." };
   }
+}
+
+export type ValidateTransferTargetCageResult =
+  | { ok: true; targetCage: { id: string; name: string } }
+  | { ok: false; error: string };
+
+/**
+ * Pure rules for the destination cage of a "Pindah" (cross-cage transfer)
+ * mutation: must be selected, differ from source, exist in tenant, be
+ * active, and have an active cycle to receive the incoming birds. Takes
+ * already-fetched data so it can be unit-tested without a database.
+ */
+export function evaluateTransferTargetCage(
+  sourceCageId: string,
+  targetCageId: string | undefined,
+  targetCage: { id: string; name: string; status: string } | null,
+  targetHasActiveCycle: boolean,
+): ValidateTransferTargetCageResult {
+  if (!targetCageId) {
+    return {
+      ok: false,
+      error: "Kandang tujuan wajib diisi untuk mutasi Pindah.",
+    };
+  }
+
+  if (targetCageId === sourceCageId) {
+    return {
+      ok: false,
+      error: "Kandang tujuan harus berbeda dari kandang asal.",
+    };
+  }
+
+  if (!targetCage) {
+    return { ok: false, error: "Kandang tujuan tidak ditemukan di tenant ini." };
+  }
+
+  if (targetCage.status !== "Active") {
+    return { ok: false, error: "Kandang tujuan tidak aktif." };
+  }
+
+  if (!targetHasActiveCycle) {
+    return {
+      ok: false,
+      error: "Kandang tujuan belum memiliki siklus aktif.",
+    };
+  }
+
+  return { ok: true, targetCage: { id: targetCage.id, name: targetCage.name } };
+}
+
+/**
+ * Validates the destination cage for a "Pindah" mutation against the
+ * database, delegating the actual rules to `evaluateTransferTargetCage`.
+ */
+export async function validateTransferTargetCage(
+  tenantId: string,
+  sourceCageId: string,
+  targetCageId: string | undefined,
+): Promise<ValidateTransferTargetCageResult> {
+  if (!targetCageId || targetCageId === sourceCageId) {
+    return evaluateTransferTargetCage(sourceCageId, targetCageId, null, false);
+  }
+
+  const targetCage = await prisma.cage.findFirst({
+    where: {
+      id: targetCageId,
+      location: { tenant_id: tenantId },
+    },
+    select: { id: true, name: true, status: true },
+  });
+
+  const targetHasActiveCycle = targetCage
+    ? Boolean(
+        await prisma.cycleSetting.findFirst({
+          where: { cage_id: targetCage.id, status: "Active" },
+          select: { id: true },
+        }),
+      )
+    : false;
+
+  return evaluateTransferTargetCage(
+    sourceCageId,
+    targetCageId,
+    targetCage,
+    targetHasActiveCycle,
+  );
 }
 
 /**

@@ -6,6 +6,7 @@ import {
   getInventoryTenantScope,
   requireManageInventorySession,
 } from "@/features/inventory/lib/access";
+import { EGG_LEDGER_MANAGED_MESSAGE } from "@/features/inventory/lib/saprodi-item-types";
 import { stockAdjustmentSchema } from "@/features/inventory/schemas/item";
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
@@ -48,7 +49,7 @@ export async function adjustStockAction(
   const [item, location] = await Promise.all([
     prisma.item.findFirst({
       where: { id: itemId, tenant_id: tenantId },
-      select: { id: true },
+      select: { id: true, type: true },
     }),
     prisma.location.findFirst({
       where: { id: locationId, tenant_id: tenantId },
@@ -57,6 +58,9 @@ export async function adjustStockAction(
   ]);
 
   if (!item) return { error: "Item tidak ditemukan." };
+  if (item.type === "Egg") {
+    return { error: EGG_LEDGER_MANAGED_MESSAGE };
+  }
   if (!location) return { error: "Lokasi tidak ditemukan di tenant ini." };
 
   try {

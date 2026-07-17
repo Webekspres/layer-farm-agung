@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowRightLeft,
   Building2,
   ClipboardList,
   Egg,
@@ -8,6 +9,7 @@ import {
   MapPin,
   Package,
   Shield,
+  Syringe,
   Truck,
   Users,
   Wallet,
@@ -23,7 +25,13 @@ export type NavItem = {
   globalOnly?: boolean;
 };
 
-export const mainNavItems: NavItem[] = [
+export type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+/** Ringkas — kerja lapangan / rekap harian. */
+export const operationsNavItems: NavItem[] = [
   {
     title: "Dashboard",
     href: "/dashboard",
@@ -37,9 +45,25 @@ export const mainNavItems: NavItem[] = [
     permission: "manage_production",
   },
   {
+    title: "Vaksinasi",
+    href: "/dashboard/health/vaccines",
+    icon: Syringe,
+    permission: "manage_production",
+  },
+];
+
+/** Inventori Saprodi (pakan, obat, vaksin, vitamin); PO & ledger mutasi. */
+export const stockNavItems: NavItem[] = [
+  {
     title: "Inventori",
     href: "/dashboard/inventory",
     icon: Package,
+    permission: "manage_inventory",
+  },
+  {
+    title: "Mutasi stok",
+    href: "/dashboard/inventory/mutations",
+    icon: ArrowRightLeft,
     permission: "manage_inventory",
   },
   {
@@ -48,13 +72,22 @@ export const mainNavItems: NavItem[] = [
     icon: ClipboardList,
     permission: "manage_inventory",
   },
+];
+
+export const financeNavItems: NavItem[] = [
   {
     title: "Keuangan",
     href: "/dashboard/finance",
     icon: Wallet,
     permission: "view_cashflow",
-    badge: "Soon",
   },
+];
+
+/** @deprecated Prefer `primaryNavGroups` — flat list for breadcrumbs/legacy. */
+export const mainNavItems: NavItem[] = [
+  ...operationsNavItems,
+  ...stockNavItems,
+  ...financeNavItems,
 ];
 
 export const masterDataNavItems: NavItem[] = [
@@ -114,6 +147,12 @@ export const adminNavItems: NavItem[] = [
   },
 ];
 
+export const primaryNavGroups: NavGroup[] = [
+  { label: "Operasional", items: operationsNavItems },
+  { label: "Stok & pembelian", items: stockNavItems },
+  { label: "Keuangan", items: financeNavItems },
+];
+
 export function filterNavByPermissions(
   items: NavItem[],
   permissions: string[] | undefined,
@@ -123,4 +162,39 @@ export function filterNavByPermissions(
     if (item.globalOnly && !isGlobalAdmin) return false;
     return !item.permission || permissions?.includes(item.permission);
   });
+}
+
+function normalizePathname(pathname: string) {
+  return pathname.endsWith("/") && pathname.length > 1
+    ? pathname.slice(0, -1)
+    : pathname;
+}
+
+/**
+ * Active state for flat sidebar links. Prefers the longest matching sibling
+ * href so `/dashboard/inventory/mutations` does not also light up Inventori.
+ */
+export function isNavItemActive(
+  pathname: string,
+  href: string,
+  siblingHrefs: string[],
+): boolean {
+  const current = normalizePathname(pathname);
+
+  if (href === "/dashboard") {
+    return current === "/dashboard";
+  }
+
+  const matches = current === href || current.startsWith(`${href}/`);
+  if (!matches) return false;
+
+  const hasMoreSpecificSibling = siblingHrefs.some(
+    (other) =>
+      other !== href &&
+      other.length > href.length &&
+      other.startsWith(`${href}/`) &&
+      (current === other || current.startsWith(`${other}/`)),
+  );
+
+  return !hasMoreSpecificSibling;
 }

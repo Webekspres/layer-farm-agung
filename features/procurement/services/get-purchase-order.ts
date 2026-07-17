@@ -51,6 +51,7 @@ export async function getPurchaseOrder(
         itemName: line.item.name,
         itemUnit: line.item.unit,
         quantity: line.quantity,
+        quantityReceived: line.quantity_received,
         unitPrice,
         lineTotal: line.quantity * unitPrice,
       };

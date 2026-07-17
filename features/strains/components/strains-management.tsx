@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil, TrendingUp, Plus, Trash2 } from "lucide-react";
@@ -64,7 +64,9 @@ export function StrainsManagement({
   const [viewTargetOpen, setViewTargetOpen] = useState(false);
   const [editing, setEditing] = useState<StrainListItem | null>(null);
   const [targetingStrain, setTargetingStrain] = useState<StrainListItem | null>(null);
-  const [targets, setTargets] = useState<any[]>([]);
+  const [targets, setTargets] = useState<
+    Awaited<ReturnType<typeof getProductionTargetsAction>>
+  >([]);
   const [loadingTargets, setLoadingTargets] = useState(false);
 
   const [createState, createAction, createPending] = useActionState(
@@ -95,12 +97,6 @@ export function StrainsManagement({
       setLoadingTargets(false);
     }
   };
-
-  useEffect(() => {
-    if ((targetOpen || viewTargetOpen) && targetingStrain) {
-      fetchTargets(targetingStrain.id);
-    }
-  }, [targetOpen, viewTargetOpen, targetingStrain]);
 
   useActionFeedback(createState, {
     successMessage: "Strain berhasil ditambahkan.",
@@ -166,6 +162,7 @@ export function StrainsManagement({
                       onClick={() => {
                         setTargetingStrain(strain);
                         setViewTargetOpen(true);
+                        void fetchTargets(strain.id);
                       }}
                       title="Lihat target performa"
                       className="cursor-pointer"
@@ -188,6 +185,7 @@ export function StrainsManagement({
                         onClick={() => {
                           setTargetingStrain(strain);
                           setTargetOpen(true);
+                          void fetchTargets(strain.id);
                         }}
                         title="Target Performa"
                       >

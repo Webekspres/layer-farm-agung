@@ -1,10 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowLeft, PackageCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useActionState, useState } from "react";
+import { ArrowLeft, Loader2, PackageCheck, X } from "lucide-react";
+import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field";
 import {
   Table,
   TableBody,
@@ -13,11 +23,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  cancelPurchaseOrderAction,
+  type CancelPurchaseOrderFormState,
+} from "@/features/procurement/actions/cancel-purchase-order";
 import { ReceivePurchaseOrderDialog } from "@/features/procurement/components/receive-purchase-order-dialog";
+import {
+  purchaseOrderStatusBadgeVariant,
+  purchaseOrderStatusLabel,
+} from "@/features/procurement/lib/status-labels";
 import type {
   PurchaseOrderDetail,
   PurchaseOrderFormOptions,
 } from "@/features/procurement/types";
+
+const cancelInitial: CancelPurchaseOrderFormState = {};
 
 type PurchaseOrderDetailViewProps = {
   order: PurchaseOrderDetail;
@@ -45,8 +65,36 @@ export function PurchaseOrderDetailView({
   order,
   formOptions,
 }: PurchaseOrderDetailViewProps) {
+  const router = useRouter();
   const [receiveOpen, setReceiveOpen] = useState(false);
-  const isPending = order.status === "Pending";
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  const canReceive =
+    order.status === "Pending" || order.status === "PartiallyReceived";
+  const canCancel = order.status === "Pending";
+
+  const [cancelState, cancelAction, cancelPending] = useActionState(
+    cancelPurchaseOrderAction,
+    cancelInitial,
+  );
+
+  useActionFeedback(cancelState, {
+    successMessage: "Pesanan pembelian dibatalkan.",
+    onSuccess: () => {
+      setCancelOpen(false);
+      router.refresh();
+    },
+    when: cancelOpen,
+  });
+
+  const receivableLines = order.items
+    .map((line) => ({
+      itemId: line.itemId,
+      itemName: line.itemName,
+      itemUnit: line.itemUnit,
+      remaining: line.quantity - line.quantityReceived,
+    }))
+    .filter((line) => line.remaining > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,14 +105,18 @@ export function PurchaseOrderDetailView({
             Kembali
           </Link>
         </Button>
-        {isPending ? (
+        {canReceive ? (
           <Button onClick={() => setReceiveOpen(true)}>
             <PackageCheck className="size-4" />
             Terima barang
           </Button>
-        ) : (
-          <Badge variant="secondary">Sudah diterima</Badge>
-        )}
+        ) : null}
+        {canCancel ? (
+          <Button variant="ghost" onClick={() => setCancelOpen(true)}>
+            <X className="size-4" />
+            Batalkan PO
+          </Button>
+        ) : null}
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
@@ -81,8 +133,8 @@ export function PurchaseOrderDetailView({
               </span>
             </p>
           </div>
-          <Badge variant={isPending ? "outline" : "secondary"}>
-            {isPending ? "Menunggu penerimaan" : "Diterima"}
+          <Badge variant={purchaseOrderStatusBadgeVariant(order.status)}>
+            {purchaseOrderStatusLabel(order.status)}
           </Badge>
         </div>
       </div>
@@ -96,7 +148,9 @@ export function PurchaseOrderDetailView({
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead>Item</TableHead>
-                <TableHead className="text-right">Jumlah</TableHead>
+                <TableHead className="text-right">Dipesan</TableHead>
+                <TableHead className="text-right">Diterima</TableHead>
+                <TableHead className="text-right">Sisa</TableHead>
                 <TableHead className="text-right">Harga satuan</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
               </TableRow>
@@ -112,6 +166,14 @@ export function PurchaseOrderDetailView({
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {line.quantity.toLocaleString("id-ID")}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {line.quantityReceived.toLocaleString("id-ID")}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {(line.quantity - line.quantityReceived).toLocaleString(
+                      "id-ID",
+                    )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatCurrency(line.unitPrice)}
@@ -132,7 +194,38 @@ export function PurchaseOrderDetailView({
         poId={order.id}
         vendorName={order.vendorName}
         locations={formOptions.locations}
+        lines={receivableLines}
       />
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Batalkan pesanan pembelian</DialogTitle>
+          </DialogHeader>
+          <form action={cancelAction}>
+            <input type="hidden" name="poId" value={order.id} />
+            <p className="text-sm text-muted-foreground">
+              Pesanan pembelian dari {order.vendorName} akan dibatalkan.
+              Tindakan ini tidak dapat diurungkan.
+            </p>
+            {cancelState.error ? (
+              <FieldError className="mt-2">{cancelState.error}</FieldError>
+            ) : null}
+            <DialogFooter className="mt-4">
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={cancelPending}
+              >
+                {cancelPending ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : null}
+                Batalkan PO
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

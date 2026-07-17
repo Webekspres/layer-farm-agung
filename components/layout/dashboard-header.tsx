@@ -2,10 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  adminNavItems,
-  mainNavItems,
-} from "@/features/dashboard/config/navigation";
 import { Building2, LogOut, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

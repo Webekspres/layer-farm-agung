@@ -21,8 +21,10 @@ import {
 import {
   adminNavItems,
   filterNavByPermissions,
-  mainNavItems,
+  isNavItemActive,
   masterDataNavItems,
+  primaryNavGroups,
+  type NavItem,
 } from "@/features/dashboard/config/navigation";
 import type { ServerSession } from "@/features/auth/lib/session";
 
@@ -37,23 +39,75 @@ type AppSidebarProps = {
   tenantBranding?: TenantBranding | null;
 };
 
+function NavGroupSection({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: NavItem[];
+  pathname: string;
+}) {
+  if (items.length === 0) return null;
+
+  const siblingHrefs = items.map((item) => item.href);
+
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel className="mb-1">{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-1.5">
+          {items.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                asChild
+                isActive={isNavItemActive(pathname, item.href, siblingHrefs)}
+                tooltip={item.title}
+              >
+                <Link href={item.href}>
+                  <item.icon />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+              {item.badge ? (
+                <SidebarMenuBadge className="bg-sidebar-accent text-sidebar-accent-foreground">
+                  {item.badge}
+                </SidebarMenuBadge>
+              ) : null}
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 export function AppSidebar({ session, tenantBranding = null }: AppSidebarProps) {
   const pathname = usePathname();
   const permissions = session.user.permissions;
   const isGlobalAdmin = session.user.tenantId === null;
 
-  const mainItems = filterNavByPermissions(mainNavItems, permissions, isGlobalAdmin);
+  const groups = primaryNavGroups
+    .map((group) => ({
+      ...group,
+      items: filterNavByPermissions(group.items, permissions, isGlobalAdmin),
+    }))
+    .filter((group) => group.items.length > 0);
+
   const masterItems = filterNavByPermissions(
     masterDataNavItems,
     permissions,
     isGlobalAdmin,
   );
-  const adminItems = filterNavByPermissions(adminNavItems, permissions, isGlobalAdmin);
+  const adminItems = filterNavByPermissions(
+    adminNavItems,
+    permissions,
+    isGlobalAdmin,
+  );
 
   const activeTenant =
     session.session.activeTenantId ?? session.user.tenantId;
 
-  // Resolve white-labeled branding parameters safely
   const brandLogo = tenantBranding?.logo_url || "/assets/logos/aapm-default.png";
   const brandTitle = tenantBranding?.brand_name || tenantBranding?.name || "AAPM";
   const brandSubtitle = tenantBranding ? "Layer Farm Partner" : "Management System";
@@ -69,7 +123,7 @@ export function AppSidebar({ session, tenantBranding = null }: AppSidebarProps) 
               asChild
             >
               <Link href="/dashboard">
-                <div className="flex aspect-square mr-2 size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
+                <div className="mr-2 flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
                   <Image
                     src={brandLogo}
                     alt={brandTitle}
@@ -79,7 +133,7 @@ export function AppSidebar({ session, tenantBranding = null }: AppSidebarProps) 
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold font-heading max-w-[150px]">
+                  <span className="max-w-[150px] truncate font-heading font-semibold">
                     {brandTitle}
                   </span>
                   <span className="truncate text-xs text-sidebar-foreground/70">
@@ -93,93 +147,36 @@ export function AppSidebar({ session, tenantBranding = null }: AppSidebarProps) 
       </SidebarHeader>
 
       <SidebarContent className="gap-3">
-        <SidebarGroup>
-          <SidebarGroupLabel className="mb-1">Menu utama</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-1.5">
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={
-                      pathname === item.href ||
-                      (item.href !== "/dashboard" &&
-                        pathname.startsWith(item.href))
-                    }
-                    tooltip={item.title}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                  {item.badge ? (
-                    <SidebarMenuBadge className="bg-sidebar-accent text-sidebar-accent-foreground">
-                      {item.badge}
-                    </SidebarMenuBadge>
-                  ) : null}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {groups.map((group, index) => (
+          <div key={group.label}>
+            {index > 0 ? <SidebarSeparator className="mb-3" /> : null}
+            <NavGroupSection
+              label={group.label}
+              items={group.items}
+              pathname={pathname}
+            />
+          </div>
+        ))}
 
         {masterItems.length > 0 ? (
           <>
             <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel className="mb-1">Data master</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
-                  {masterItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={item.title}
-                      >
-                        <Link href={item.href}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <NavGroupSection
+              label="Data master"
+              items={masterItems}
+              pathname={pathname}
+            />
           </>
         ) : null}
 
         {adminItems.length > 0 ? (
           <>
             <SidebarSeparator />
-            <SidebarGroup>
-              <SidebarGroupLabel className="mb-1">Administrasi</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-1.5">
-                  {adminItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={item.title}
-                      >
-                        <Link href={item.href}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                      {item.badge ? (
-                        <SidebarMenuBadge className="bg-sidebar-accent text-sidebar-accent-foreground">
-                          {item.badge}
-                        </SidebarMenuBadge>
-                      ) : null}
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <NavGroupSection
+              label="Administrasi"
+              items={adminItems}
+              pathname={pathname}
+            />
           </>
         ) : null}
       </SidebarContent>

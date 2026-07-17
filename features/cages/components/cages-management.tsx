@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil } from "lucide-react";
@@ -239,13 +239,12 @@ export function CagesManagement({
     formInitial,
   );
 
-  useEffect(() => {
-    if (createOpen) {
-      setCreateLocationId(formOptions.locations[0]?.id ?? "");
-      setCreateStrainId(String(formOptions.strains[0]?.id ?? ""));
-      setCreateStatus("Active");
-    }
-  }, [createOpen, formOptions.locations, formOptions.strains]);
+  function openCreateDialog() {
+    setCreateLocationId(formOptions.locations[0]?.id ?? "");
+    setCreateStrainId(String(formOptions.strains[0]?.id ?? ""));
+    setCreateStatus("Active");
+    setCreateOpen(true);
+  }
 
   useActionFeedback(createState, {
     successMessage: "Kandang berhasil ditambahkan.",
@@ -267,7 +266,7 @@ export function CagesManagement({
       <CagesToolbar
         locations={formOptions.locations}
         strains={formOptions.strains}
-        onCreateClick={() => setCreateOpen(true)}
+        onCreateClick={openCreateDialog}
       />
 
       {!canCreate ? (

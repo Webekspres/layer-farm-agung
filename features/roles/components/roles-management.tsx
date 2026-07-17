@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,14 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
   const [resetFeedbackRoleId, setResetFeedbackRoleId] = useState<number | null>(
     null,
   );
+  const [prevRoles, setPrevRoles] = useState(roles);
+  if (roles !== prevRoles) {
+    setPrevRoles(roles);
+    const role = roles.find((r) => r.id === selectedRoleId);
+    if (role) {
+      setChecked(toPermissionSet(role));
+    }
+  }
 
   const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null;
   const isSuperadminRole = selectedRole?.name === SUPERADMIN_ROLE_NAME;
@@ -77,38 +85,6 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
     selectedRole != null &&
     !isSuperadminRole &&
     getDefaultPermissionNamesForRole(selectedRole.name) != null;
-
-  useEffect(() => {
-    const role = roles.find((r) => r.id === selectedRoleId);
-    if (role) {
-      setChecked(toPermissionSet(role));
-    }
-  }, [selectedRoleId, roles]);
-
-  useEffect(() => {
-    setSaveFeedbackRoleId(null);
-    setResetFeedbackRoleId(null);
-  }, [selectedRoleId]);
-
-  useEffect(() => {
-    if ((state.success || state.error) && selectedRoleId != null) {
-      setSaveFeedbackRoleId(selectedRoleId);
-    }
-  }, [state.success, state.error, selectedRoleId]);
-
-  useEffect(() => {
-    if ((resetState.success || resetState.error) && selectedRoleId != null) {
-      setResetFeedbackRoleId(selectedRoleId);
-    }
-  }, [resetState.success, resetState.error, selectedRoleId]);
-
-  useEffect(() => {
-    if (!resetState.success || !selectedRole) return;
-    const defaults = defaultPermissionIdsForRole(selectedRole.name, permissions);
-    if (defaults) {
-      setChecked(new Set(defaults));
-    }
-  }, [resetState.success, selectedRole, permissions]);
 
   useActionFeedback(state, {
     successMessage: "Permission peran berhasil disimpan.",
@@ -118,10 +94,20 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
   useActionFeedback(resetState, {
     successMessage: "Permission dikembalikan ke default.",
     when: resetFeedbackRoleId === selectedRoleId,
+    onSuccess: () => {
+      if (!selectedRole) return;
+      const defaults = defaultPermissionIdsForRole(selectedRole.name, permissions);
+      if (defaults) {
+        setChecked(new Set(defaults));
+      }
+    },
   });
 
   function selectRole(role: RoleWithPermissions) {
     setSelectedRoleId(role.id);
+    setChecked(toPermissionSet(role));
+    setSaveFeedbackRoleId(null);
+    setResetFeedbackRoleId(null);
   }
 
   function togglePermission(id: number, enabled: boolean) {
@@ -190,6 +176,11 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
                 id="role-permissions-form"
                 action={formAction}
                 className="flex flex-col gap-4"
+                onSubmit={() => {
+                  if (selectedRoleId != null) {
+                    setSaveFeedbackRoleId(selectedRoleId);
+                  }
+                }}
               >
                 <input type="hidden" name="roleId" value={selectedRole.id} />
                 <input
@@ -243,7 +234,15 @@ export function RolesManagement({ roles, permissions }: RolesManagementProps) {
                   )}
                 </Button>
                 {canResetToDefault ? (
-                  <form action={resetAction} className="w-full sm:w-auto">
+                  <form
+                    action={resetAction}
+                    className="w-full sm:w-auto"
+                    onSubmit={() => {
+                      if (selectedRoleId != null) {
+                        setResetFeedbackRoleId(selectedRoleId);
+                      }
+                    }}
+                  >
                     <input type="hidden" name="roleId" value={selectedRole.id} />
                     <Button
                       type="submit"

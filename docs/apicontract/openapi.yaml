@@ -41,6 +41,10 @@ tags:
     description: Pencatatan produksi telur harian
   - name: Feed
     description: Konsumsi pakan — **belum diimplementasi** (501)
+  - name: Vaccination
+    description: |
+      Jadwal vaksinasi per kandang (Modul 13) dan penyelesaiannya oleh staff.
+      Menyelesaikan jadwal memotong stok vaksin (`OUT_VACCINE`).
 
 security:
   - cookieAuth: []
@@ -262,6 +266,57 @@ paths:
                     properties:
                       data:
                         $ref: "#/components/schemas/CageDailyHistory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cages/{cageId}/vaccine-schedules:
+    get:
+      tags: [Vaccination]
+      summary: Jadwal vaksinasi kandang (Modul 13)
+      description: |
+        Daftar jadwal vaksinasi untuk satu kandang, default hanya status
+        `Pending`. Staff harus ditugaskan ke kandang terkait.
+      operationId: listCageVaccineSchedules
+      parameters:
+        - $ref: "#/components/parameters/CageId"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Pending, Completed, Cancelled]
+          description: Default `Pending` bila tidak diisi.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PendingVaccineScheduleItem"
+              example:
+                success: true
+                message: Daftar jadwal vaksinasi berhasil dimuat.
+                data:
+                  - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    itemId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                    itemName: ND-IB Killed
+                    itemUnit: ml
+                    scheduledDate: "2026-06-20"
+                    status: Pending
+                    notes: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -494,6 +549,10 @@ paths:
       summary: Catat mutasi populasi
       description: |
         Catat mutasi/perubahan populasi ayam (Mati, Afkir, Masuk, Pindah).
+        Untuk mutationType "Pindah", sertakan targetCageId (kandang tujuan
+        di tenant yang sama, aktif, dan memiliki siklus aktif) — backend
+        otomatis membuat catatan "Masuk" berpasangan di kandang tujuan
+        dalam satu transaksi.
       operationId: recordPopulationMutation
       requestBody:
         required: true
@@ -676,6 +735,53 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /api/v1/vaccinations:
+    post:
+      tags: [Vaccination]
+      summary: Selesaikan jadwal vaksinasi (Modul 13)
+      description: |
+        Menandai satu jadwal vaksinasi `Pending` menjadi `Completed` dan
+        memotong stok vaksin (`OUT_VACCINE`) sejumlah `quantityUsed` di lokasi
+        kandang. Staff harus ditugaskan ke kandang terkait; item pada jadwal
+        harus bertipe `Vaccine`.
+      operationId: completeVaccination
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteVaccinationInput"
+            example:
+              scheduleId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+              quantityUsed: 15
+              notes: Diberikan via air minum pagi
+      responses:
+        "201":
+          description: Vaksinasi berhasil diselesaikan
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CompleteVaccinationResult"
+              example:
+                success: true
+                message: Vaksinasi berhasil diselesaikan.
+                data:
+                  recorded: true
+                  scheduleId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                  lowStock: false
+                  remainingStock: 485
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /api/v1/items:
     get:
@@ -1363,6 +1469,12 @@ components:
         notes:
           type: string
           maxLength: 500
+        targetCageId:
+          type: string
+          format: uuid
+          description: >-
+            Wajib diisi saat mutationType = "Pindah" (mutasi lintas kandang).
+            Harus berbeda dari cageId dan berada di tenant yang sama.
         clientMutationId:
           type: string
           format: uuid
@@ -1455,6 +1567,75 @@ components:
           format: float
           nullable: true
           description: Sisa stok item setelah pemotongan; null bila tanpa item.
+
+    PendingVaccineScheduleItem:
+      type: object
+      required: [id, itemId, itemName, itemUnit, scheduledDate, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        itemId:
+          type: string
+          format: uuid
+        itemName:
+          type: string
+        itemUnit:
+          type: string
+        scheduledDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [Pending, Completed, Cancelled]
+        notes:
+          type: string
+          nullable: true
+
+    CompleteVaccinationInput:
+      type: object
+      required: [scheduleId, quantityUsed]
+      properties:
+        scheduleId:
+          type: string
+          format: uuid
+          description: "`VaccineSchedule.id` — harus berstatus `Pending`."
+        quantityUsed:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 100000
+          description: Jumlah vaksin dipakai (dalam unit item); memotong stok (OUT_VACCINE).
+        notes:
+          type: string
+          maxLength: 500
+          description: Catatan pelaksanaan; digabung dengan catatan jadwal asli.
+        clientMutationId:
+          type: string
+          format: uuid
+        fromSync:
+          type: boolean
+          default: false
+
+    CompleteVaccinationResult:
+      type: object
+      properties:
+        recorded:
+          type: boolean
+          const: true
+        idempotent:
+          type: boolean
+        scheduleId:
+          type: string
+          format: uuid
+        lowStock:
+          type: boolean
+          description: true bila sisa stok vaksin <= min_stock_alert setelah pemotongan.
+        remainingStock:
+          type: number
+          format: float
+          nullable: true
+          description: Sisa stok vaksin di lokasi kandang setelah pemotongan.
 
     FeedItemOption:
       type: object

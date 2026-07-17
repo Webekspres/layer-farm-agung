@@ -2,8 +2,13 @@ import { NextRequest } from "next/server";
 import { s3Client, BUCKET_NAME } from "@/lib/storage";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 
+type StorageError = {
+  name?: string;
+  $metadata?: { httpStatusCode?: number };
+};
+
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const resolvedParams = await params;
@@ -27,16 +32,20 @@ export async function GET(
       return new Response("File not found", { status: 404 });
     }
 
-    // Next.js Response constructor natively accepts the Node.js/Web Readable stream returned by the S3 client
-    return new Response(response.Body as any, {
+    const body =
+      typeof response.Body.transformToWebStream === "function"
+        ? response.Body.transformToWebStream()
+        : (response.Body as ReadableStream);
+
+    return new Response(body, {
       headers: {
         "Content-Type": response.ContentType || "application/octet-stream",
-        // Cache logos/media for 1 year with immutable tag to optimize performance since names are unique/versioned
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
-  } catch (error: any) {
-    if (error.name === "NoSuchKey" || error.$metadata?.httpStatusCode === 404) {
+  } catch (error: unknown) {
+    const err = error as StorageError;
+    if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
       return new Response("File not found", { status: 404 });
     }
     console.error(`[Storage Proxy] Error fetching key "${key}" from storage:`, error);
