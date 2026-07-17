@@ -19,7 +19,14 @@ type PoLineRow = {
   quantity: number;
   quantity_received: number;
 };
-type PoRow = { id: string; status: string; purchase_order_items: PoLineRow[] };
+type PoRow = {
+  id: string;
+  status: string;
+  order_date: Date;
+  total_amount: number;
+  vendor: { name: string };
+  purchase_order_items: PoLineRow[];
+};
 
 type StockMutationResult =
   | { ok: true; newQuantity: number; lowStock: boolean; minStockAlert: number | null }
@@ -34,6 +41,8 @@ const itemFindMany = mock(() =>
   Promise.resolve([] as { quantity: number; quantity_received: number }[]),
 );
 const poUpdateMany = mock(() => Promise.resolve({ count: 1 }));
+const cashflowFindFirst = mock(() => Promise.resolve(null as { id: string } | null));
+const cashflowCreate = mock(() => Promise.resolve({}));
 
 const applyStockMutation = mock(
   (): Promise<StockMutationResult> =>
@@ -47,6 +56,10 @@ const fakePrisma = {
     fn({
       purchaseOrderItem: { update: itemUpdate, findMany: itemFindMany },
       purchaseOrder: { updateMany: poUpdateMany },
+      cashflowTransaction: {
+        findFirst: cashflowFindFirst,
+        create: cashflowCreate,
+      },
     }),
 };
 
@@ -58,6 +71,9 @@ const deps = {
 const BASE_PO: PoRow = {
   id: "po-1",
   status: "Pending",
+  order_date: new Date("2026-07-17T00:00:00.000Z"),
+  total_amount: 150000,
+  vendor: { name: "Vendor Pakan" },
   purchase_order_items: [
     { id: "line-1", item_id: "item-1", quantity: 100, quantity_received: 0 },
     { id: "line-2", item_id: "item-2", quantity: 50, quantity_received: 0 },
@@ -85,6 +101,10 @@ describe("receivePurchaseOrder", () => {
     ]);
     poUpdateMany.mockReset();
     poUpdateMany.mockResolvedValue({ count: 1 });
+    cashflowFindFirst.mockReset();
+    cashflowFindFirst.mockResolvedValue(null);
+    cashflowCreate.mockReset();
+    cashflowCreate.mockResolvedValue({});
     applyStockMutation.mockReset();
     applyStockMutation.mockResolvedValue({
       ok: true,
@@ -158,6 +178,10 @@ describe("receivePurchaseOrder", () => {
     expect(poUpdateMany).toHaveBeenCalledTimes(1);
     const [poUpdateArgs] = poUpdateMany.mock.calls[0];
     expect(poUpdateArgs.data.status).toBe("Received");
+    expect(cashflowCreate).toHaveBeenCalledTimes(1);
+    const [cashflowArgs] = cashflowCreate.mock.calls[0];
+    expect(cashflowArgs.data.type).toBe("Expense");
+    expect(cashflowArgs.data.reference_id).toBe("po-1");
   });
 
   test("partial receive only applies stock mutation for the specified line and keeps PartiallyReceived", async () => {
@@ -185,12 +209,16 @@ describe("receivePurchaseOrder", () => {
     const [updateArgs] = itemUpdate.mock.calls[0];
     expect(updateArgs.where.id).toBe("line-1");
     expect(updateArgs.data.quantity_received.increment).toBe(40);
+    expect(cashflowCreate).not.toHaveBeenCalled();
   });
 
   test("a second partial receive that completes every line marks the PO Received", async () => {
     findFirstPo.mockResolvedValue({
       id: "po-1",
       status: "PartiallyReceived",
+      order_date: new Date("2026-07-17T00:00:00.000Z"),
+      total_amount: 150000,
+      vendor: { name: "Vendor Pakan" },
       purchase_order_items: [
         { id: "line-1", item_id: "item-1", quantity: 100, quantity_received: 40 },
         { id: "line-2", item_id: "item-2", quantity: 50, quantity_received: 50 },
@@ -213,6 +241,17 @@ describe("receivePurchaseOrder", () => {
     expect(applyStockMutation).toHaveBeenCalledTimes(1);
     const [, params] = applyStockMutation.mock.calls[0];
     expect(params.quantity).toBe(60);
+    expect(cashflowCreate).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not create duplicate expense cashflow when PO cashflow exists", async () => {
+    cashflowFindFirst.mockResolvedValue({ id: "cash-1" });
+
+    const result = await receivePurchaseOrder("tenant-1", baseInput(), { deps });
+
+    expect(result.ok).toBe(true);
+    expect(cashflowFindFirst).toHaveBeenCalledTimes(1);
+    expect(cashflowCreate).not.toHaveBeenCalled();
   });
 
   test("rejects a requested quantity greater than the remaining amount", async () => {

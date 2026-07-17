@@ -47,10 +47,12 @@ DATABASE_URL="..." bun run db:seed
 ```
 
 4. Deploy / push ke branch yang terhubung Vercel.
-5. Login admin di URL staging; uji upload logo tenant (admin cabang).
+5. Cek `GET /api/health` di URL staging; harus `200` dengan `status: "ok"`.
+6. Login admin di URL staging; uji upload logo tenant (admin cabang).
 
 ## Catatan
 
 - Logo tetap dilayani lewat proxy `/api/storage/...` — tidak perlu public R2 URL.
 - `output: "standalone"` di-skip otomatis saat `VERCEL=1` (Docker tetap pakai standalone).
 - `bun run build` menjalankan `prisma generate` dulu (generated client di-gitignore).
+- Setelah pull migrasi baru (mis. sales `location_id`): jalankan ulang `db:migrate:deploy` ke Neon. Smoke jual telur: [`smoke-egg-sales.md`](./smoke-egg-sales.md).

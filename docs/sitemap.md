@@ -5,8 +5,8 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-07-09 |
-| **Progress proyek** | **~65%** keseluruhan (13 modul) · D3 ~95% — lihat [implementation_plan.md](./implementation_plan.md) |
+| **Terakhir diperbarui** | 2026-07-17 |
+| **Progress proyek** | **~90%** keseluruhan (13 modul internal) · D3 ~98% · D4 ~80% — lihat [implementation_plan.md](./implementation_plan.md) |
 | **Repo ini** | Next.js 16 — **admin dashboard + API provider** |
 | **Mobile lapangan** | [`aapm-mobile`](../aapm-mobile) — React Native + Expo SDK 54 |
 | **Ekosistem** | [`docs/ecosystem.md`](./ecosystem.md) |
@@ -22,6 +22,8 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 |----------|-------|---------|
 | **AAPM Admin** (repo ini) | Next.js 16, shadcn, Prisma | CRUD master data, user/RBAC, rekap operasional, keuangan |
 | **AAPM Mobile** ([`../aapm-mobile`](../aapm-mobile)) | React Native + Expo SDK 54 | Input harian kandang: produksi TB/TR/TP, pakan, populasi, pengobatan, QR |
+
+**Scope hasil meeting:** produk ini adalah SaaS multi-tenant untuk manajemen peternakan ayam petelur. Role aplikasi tetap `superadmin` (operator platform), `admin` (tenant/peternak), dan `staff` (ABK kandang). Istilah “portal klien” pada proposal dipetakan ke dashboard tenant/admin, **bukan** portal buyer penjualan.
 
 **Repo ini tidak lagi memakai Serwist / PWA.** Tidak ada service worker, manifest, atau rute `/kandang` / `/input-harian`.
 
@@ -54,14 +56,14 @@ Backend di repo ini menyediakan:
 | 🔲 **Planned** | Belum diimplementasi |
 | 📱 **Mobile** | Dikerjakan di app React Native + Expo |
 
-**Progress domain (perkiraan, 2026-07-09):**
+**Progress domain (perkiraan, 2026-07-17):**
 
 | Domain | Fokus | Progress |
 |--------|--------|----------|
 | **D1** Identity & tenant | Auth, RBAC, users, tenants | ~95% |
-| **D2** Master data | Lokasi, kandang, strain, grade, vendor, PO | ~85% |
-| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~95% |
-| **D4** Finansial | Penjualan, cashflow, dashboard KPI penuh | ~5% |
+| **D2** Master data | Lokasi, kandang, strain, grade, vendor, PO | ~90% |
+| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~98% |
+| **D4** Finansial | Penjualan + `OUT_SALES`, cashflow, KPI dashboard lite | ~80% |
 
 ---
 
@@ -99,7 +101,7 @@ Backend di repo ini menyediakan:
 
 | Path | Menu | Status | Model / catatan |
 |------|------|--------|-----------------|
-| `/dashboard` | Dashboard | 🟡 | KPI dasar ✅ (produksi, populasi, stok kritis); FCR/early warning 🔲 |
+| `/dashboard` | Dashboard | 🟡 | KPI dasar ✅; HDP warning ✅; FCR 7 hari + mortalitas + kas minggu (Fase 6b) ✅; portal buyer 🔲 |
 | `/dashboard/production` | **Input harian** | 🟡 | Grid status kandang ✅; 4 tab rekap data nyata ✅; kolom HDP % ✅; date toolbar WIB ✅ |
 | `/dashboard/inventory` | Inventori | ✅ | Saprodi only (Egg Ledger terpisah — [`egg-ledger-architecture.md`](./egg-ledger-architecture.md)) |
 | `/dashboard/inventory/mutations` | Mutasi stok | ✅ | Ledger global `StockMutation` + filter |
@@ -213,17 +215,17 @@ Backend di repo ini menyediakan:
 | # | Modul | Progress | Admin | Mobile |
 |---|--------|----------|-------|--------|
 | 1 | User management | ~95% | ✅ | ✅ login |
-| 2 | Master data peternakan | ~80% | ✅/🟡 | read-only |
-| 3 | Strain & standardisasi | ~65% | 🟡 target HDP/FCR | — |
-| 4 | Front office input | ~85% | rekap 4 tab + HDP | ✅ unified form |
-| 5 | Offline sync | ~90% | schema + idempotency ✅ | antrean + flush + warm ✅ |
-| 6 | Mutasi populasi | ~70% | rekap tab | ✅ API + ledger |
-| 7 | Vendor & procurement | ~75% | vendor ✅ + PO minimal | — |
-| 8 | Inventory | ~85% | CRUD + stok + kartu + mutasi global + PO | ✅ picker item |
-| 9 | Early warning | ~40% | 🔲 | 🔲 |
-| 10 | Executive dashboard | ~40% | KPI dasar ✅ | — |
-| 11 | Sales | ~50% | 🔲 | — |
-| 12 | Cashflow | ~55% | 🔲 | — |
+| 2 | Master data peternakan | ~90% | ✅/🟡 | read-only |
+| 3 | Strain & standardisasi | ~75% | 🟡 target HDP/FCR | — |
+| 4 | Front office input | ~95% | rekap 4 tab + HDP | ✅ unified form |
+| 5 | Offline sync | ~90% | idempotency ✅ | antrean + flush + warm ✅ |
+| 6 | Mutasi populasi | ~90% | rekap tab + ledger | ✅ API + ledger |
+| 7 | Vendor & procurement | ~85% | vendor ✅ + PO partial/cancel | — |
+| 8 | Inventory | ~90% | CRUD + stok + kartu + mutasi global + PO | ✅ picker item |
+| 9 | Early warning | ~65% | 🟡 dashboard lite; alert log planned | — |
+| 10 | Executive dashboard | ~75% | 🟡 KPI/FCR/mortalitas/kas lite | — |
+| 11 | Sales | ~85% | 🟡 sales order + `OUT_SALES` + delivery log | — |
+| 12 | Cashflow | ~80% | 🟡 ledger + summary; P&L period planned | — |
 | 13 | Health / vaccination | ~85% | rekap pengobatan + vaksin ✅ | pengobatan + vaksin ✅ |
 
 **Vaksinasi ≠ pengobatan:** `VaccineSchedule` (jadwal preventif + reminder) vs `MedicalRecord` (laporan saat flock sakit).
@@ -248,9 +250,12 @@ Backend di repo ini menyediakan:
 - [x] Dashboard KPI dasar (`get-dashboard-stats`)
 - [x] Infra tanggal operasional WIB (`lib/business-date.ts`)
 - [x] Halaman mutasi stok global (`/dashboard/inventory/mutations`)
-- [ ] Siklus kandang penuh (`CycleSetting` di detail kandang)
+- [x] Metrik siklus kandang (`CycleSetting` di detail kandang)
 - [x] Modul 13: vaksinasi (jadwal + complete; reminder ringan via status Pending)
-- [ ] D4: penjualan + cashflow
+- [x] D4 dasar: penjualan + cashflow
+- [x] D4 lanjutan: delivery/surat jalan otomatis dari sales
+- [x] Alert log in-app untuk early warning persistent
+- [ ] D4 lanjutan: harga jual harian formal
 
 ## 9. Backlog mobile (Expo)
 
@@ -265,7 +270,8 @@ Lihat [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md).
 - [x] Riwayat kandang + edit multi-record + navigasi tanggal WIB
 - [x] Flush antrean offline (`pending-input-queue`) saat online
 - [x] Layar vaksinasi (hub kandang)
-- [ ] OpenAPI types codegen
+- [x] OpenAPI types codegen
+- [ ] PATCH offline penuh + badge antrean tab bar
 
 ---
 
@@ -275,11 +281,11 @@ Lihat [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md).
 /                    → redirect
 /login
 
-/dashboard                 🟡  (KPI dasar ✅)
+/dashboard                 🟡  (KPI/FCR/mortalitas/kas lite ✅)
 /dashboard/production      🟡  (Input harian — rekap + HDP ✅)
 /dashboard/inventory       ✅
 /dashboard/purchase-orders   ✅
-/dashboard/finance         🟡  (placeholder)
+/dashboard/finance         🟡  (sales + cashflow ✅; P&L period planned)
 /dashboard/profile         ✅
 /dashboard/locations       ✅
 /dashboard/cages           ✅

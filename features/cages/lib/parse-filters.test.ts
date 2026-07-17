@@ -15,6 +15,7 @@ describe("parseCageListFilters", () => {
       locationId: "loc-1",
       strainId: 3,
       status: "Active",
+      cycleStatus: "all",
     });
   });
 
@@ -29,6 +30,7 @@ describe("parseCageListFilters", () => {
       locationId: undefined,
       strainId: undefined,
       status: "Active",
+      cycleStatus: "all",
     });
   });
 
@@ -43,7 +45,22 @@ describe("parseCageListFilters", () => {
       search: undefined,
       locationId: undefined,
       strainId: undefined,
-      status: undefined,
+      status: "all",
+      cycleStatus: "all",
+    });
+  });
+
+  test("parses cycle status", () => {
+    expect(
+      parseCageListFilters({
+        cycleStatus: "Inactive",
+      }),
+    ).toEqual({
+      search: undefined,
+      locationId: undefined,
+      strainId: undefined,
+      status: "Active",
+      cycleStatus: "Inactive",
     });
   });
 });
