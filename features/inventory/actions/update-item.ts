@@ -6,6 +6,7 @@ import {
   getInventoryTenantScope,
   requireManageInventorySession,
 } from "@/features/inventory/lib/access";
+import { EGG_LEDGER_MANAGED_MESSAGE } from "@/features/inventory/lib/saprodi-item-types";
 import { updateItemSchema } from "@/features/inventory/schemas/item";
 import type { ItemFormState } from "@/features/inventory/actions/create-item";
 
@@ -34,11 +35,15 @@ export async function updateItemAction(
 
   const existing = await prisma.item.findFirst({
     where: { id: parsed.data.id, tenant_id: tenantId },
-    select: { id: true },
+    select: { id: true, type: true },
   });
 
   if (!existing) {
     return { error: "Item tidak ditemukan." };
+  }
+
+  if (existing.type === "Egg") {
+    return { error: EGG_LEDGER_MANAGED_MESSAGE };
   }
 
   try {

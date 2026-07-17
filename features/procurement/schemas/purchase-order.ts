@@ -21,9 +21,24 @@ export const createPurchaseOrderSchema = z.object({
 
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 
+const receiveLineItemSchema = z.object({
+  itemId: z.string().uuid("Item tidak valid."),
+  quantity: z.coerce
+    .number({ message: "Jumlah harus berupa angka." })
+    .nonnegative("Jumlah tidak boleh negatif."),
+});
+
 export const receivePurchaseOrderSchema = z.object({
   poId: z.string().uuid("Pesanan tidak valid."),
   locationId: z.string().uuid("Lokasi tidak valid."),
+  /** Omit to receive all remaining quantity on every line. */
+  items: z.array(receiveLineItemSchema).optional(),
 });
 
 export type ReceivePurchaseOrderInput = z.infer<typeof receivePurchaseOrderSchema>;
+
+export const cancelPurchaseOrderSchema = z.object({
+  poId: z.string().uuid("Pesanan tidak valid."),
+});
+
+export type CancelPurchaseOrderInput = z.infer<typeof cancelPurchaseOrderSchema>;

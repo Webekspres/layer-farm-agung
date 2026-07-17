@@ -24,9 +24,20 @@ export async function receivePurchaseOrderAction(
     return { error: "Pilih tenant aktif terlebih dahulu." };
   }
 
+  let items: unknown;
+  const itemsJson = formData.get("itemsJson");
+  if (itemsJson) {
+    try {
+      items = JSON.parse(String(itemsJson));
+    } catch {
+      return { error: "Data barang yang diterima tidak valid." };
+    }
+  }
+
   const parsed = receivePurchaseOrderSchema.safeParse({
     poId: formData.get("poId"),
     locationId: formData.get("locationId"),
+    items,
   });
 
   if (!parsed.success) {

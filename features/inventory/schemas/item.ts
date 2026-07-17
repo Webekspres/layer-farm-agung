@@ -1,11 +1,16 @@
 import { z } from "zod";
-import { ItemType } from "@/generated/prisma/enums";
+import { SAPRODI_ITEM_TYPES } from "@/features/inventory/lib/saprodi-item-types";
 
-const itemTypeValues = Object.values(ItemType) as [ItemType, ...ItemType[]];
+const saprodiItemTypeValues = [...SAPRODI_ITEM_TYPES] as [
+  (typeof SAPRODI_ITEM_TYPES)[number],
+  ...(typeof SAPRODI_ITEM_TYPES)[number][],
+];
 
 const baseItemFields = {
   name: z.string().trim().min(2, "Nama item minimal 2 karakter.").max(200),
-  type: z.enum(itemTypeValues, { message: "Pilih tipe item." }),
+  type: z.enum(saprodiItemTypeValues, {
+    message: "Pilih tipe saprodi (bukan telur).",
+  }),
   unit: z.string().trim().min(1, "Satuan wajib diisi.").max(30),
   minStockAlert: z.preprocess(
     (v) => (v === "" || v === null || v === undefined ? undefined : v),

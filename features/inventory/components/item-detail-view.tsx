@@ -34,9 +34,11 @@ import {
 } from "@/features/inventory/actions/adjust-stock";
 import type { ItemFormState } from "@/features/inventory/actions/create-item";
 import { ITEM_TYPE_LABELS } from "@/features/inventory/lib/item-type-labels";
+import { isEggLedgerItemType } from "@/features/inventory/lib/saprodi-item-types";
 import { mutationTypeLabel } from "@/features/inventory/lib/mutation-type-labels";
 import type { ItemDetail } from "@/features/inventory/types";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const formInitial: ItemFormState = {};
 
@@ -54,6 +56,7 @@ function formatDate(iso: string) {
 }
 
 export function ItemDetailView({ item, locations }: ItemDetailViewProps) {
+  const isEggLedger = isEggLedgerItemType(item.type);
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [locationId, setLocationId] = useState(
     item.stockByLocation[0]?.locationId ?? locations[0]?.id ?? "",
@@ -73,6 +76,27 @@ export function ItemDetailView({ item, locations }: ItemDetailViewProps) {
 
   return (
     <div className="flex flex-col gap-6">
+      {isEggLedger ? (
+        <p className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Ini adalah saldo{" "}
+          <span className="font-medium text-foreground">Egg Ledger</span>{" "}
+          (telur bagus dari panen TB), bukan saprodi. Perubahan stok lewat{" "}
+          <Link
+            href="/dashboard/production"
+            className="underline underline-offset-2"
+          >
+            Input harian
+          </Link>{" "}
+          dan{" "}
+          <Link
+            href="/dashboard/finance"
+            className="underline underline-offset-2"
+          >
+            Keuangan
+          </Link>
+          .
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -97,10 +121,12 @@ export function ItemDetailView({ item, locations }: ItemDetailViewProps) {
               : " · Tanpa ambang batas"}
           </span>
         </div>
-        <Button onClick={() => setAdjustOpen(true)}>
-          <Plus className="size-4" />
-          Penyesuaian stok
-        </Button>
+        {!isEggLedger ? (
+          <Button onClick={() => setAdjustOpen(true)}>
+            <Plus className="size-4" />
+            Penyesuaian stok
+          </Button>
+        ) : null}
       </div>
 
       <section className="flex flex-col gap-2">
@@ -110,7 +136,9 @@ export function ItemDetailView({ item, locations }: ItemDetailViewProps) {
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           {item.stockByLocation.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              Belum ada stok tercatat. Gunakan Penyesuaian stok untuk stok awal.
+              {isEggLedger
+                ? "Belum ada stok telur. Stok masuk dari panen TB di Input harian."
+                : "Belum ada stok tercatat. Gunakan Penyesuaian stok untuk stok awal."}
             </div>
           ) : (
             <Table>

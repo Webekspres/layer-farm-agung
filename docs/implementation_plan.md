@@ -4,10 +4,10 @@
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-07-09 |
-| **Status plan** | **Fase 5 P1 partial** (write antrean ✅) · **P1b hardening** → [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) · **P2 mutasi stok = berikutnya** |
-| **Progress domain (saat ini)** | D1 ~95% · D2 ~88% · D3 ~95% · D4 ~5% |
-| **Overall (13 modul proposal)** | **~65%** |
+| **Terakhir diperbarui** | 2026-07-14 |
+| **Status plan** | **Fase 5 P1–P6 ✅** · Staging Vercel+Neon+R2 ✅ |
+| **Progress domain (saat ini)** | D1 ~95% · D2 ~90% · D3 ~98% · D4 ~55% |
+| **Overall (13 modul proposal)** | **~80%** |
 | **Repo backend** | `layered-farm-agung` |
 | **Repo mobile** | `aapm-mobile` |
 
@@ -26,8 +26,9 @@
 | Fase 4 — Mobile riwayat | ✅ | Navigasi tanggal di riwayat kandang |
 | Infra WIB (tanggal operasional) | ✅ | `lib/business-date.ts` — single source of truth |
 | Fase 4b — Metrik siklus kandang | ✅ | Detail kandang: HDP, FCR, mutasi, riwayat enriched |
-| **Fase 5 P1 — Offline sync** | 🟡 | Write antrean ✅ · read cache + UX + reliabilitas → [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
-| Fase 5 P2–P6 | 🔲 | Lihat § Fase 5 |
+| **Fase 5 P1 — Offline sync** | ✅ | Write antrean + flush + warm cache + idempotency — [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
+| Fase 5 P2 — Mutasi stok global | ✅ | `/dashboard/inventory/mutations` |
+| Fase 5 P3–P6 | ✅ | Vaksinasi, mutasi pindah, PO partial/cancel, finance + early warning |
 
 ---
 
@@ -152,205 +153,70 @@ Detail lengkap tetap di Git history; ringkasan untuk konteks agent:
 
 ---
 
-## Fase 5 P1 — Offline sync + idempotency 🟡
+## Fase 5 P1 — Offline sync + idempotency ✅
 
-**Partial 2026-07-09** — write antrean + idempotency backend selesai; reliabilitas flush, bootstrap cache, UX picker belum. Detail: **[aapm-mobile/docs/offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md)**.
+**Selesai 2026-07-14** — backend `client_mutation_id` + mobile outbox/flush/warm cache/picker. Detail: **[aapm-mobile/docs/offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md)**. Edit/PATCH offline & admin `SyncQueue` monitor tetap out of scope.
 
-**Tujuan:** Staff kandang bisa menyimpan input harian saat **offline**; antrean lokal di-flush otomatis/manual saat online. Server **idempotent** — submit ulang tidak duplikasi data.
+### DoD — tercapai
 
-**Konteks saat ini:**
-
-| Lapisan | Sudah ada | Belum |
-|---------|-----------|-------|
-| Mobile | `features/daily-input/lib/pending-input-queue.ts` (enqueue + list) | flush, remove, UI sync, fallback saat gagal jaringan |
-| Mobile | `submit-daily-input.ts` — POST langsung | enqueue on network error |
-| Mobile | Placeholder profil “sync belum aktif” | badge antrean + retry manual |
-| Backend | `is_synced` di model operasional | `clientMutationId` + dedup |
-| Backend | Model `SyncQueue` di Prisma | API + service (opsional fase ini) |
-| Kontrak | OpenAPI v1 core | field idempotency |
-
-### Arsitektur yang disepakati
-
-```mermaid
-sequenceDiagram
-  participant Staff
-  participant Mobile
-  participant Queue as AsyncStorage_queue
-  participant API as POST_api_v1
-
-  Staff->>Mobile: Simpan input harian
-  alt Online + sukses
-    Mobile->>API: POST + clientMutationId
-    API-->>Mobile: 201 data
-  else Offline atau network error
-    Mobile->>Queue: enqueue entry + clientMutationId
-    Mobile-->>Staff: Tersimpan lokal, akan disinkronkan
-  end
-  Note over Mobile,API: Saat online / buka app / tap Sync
-  Mobile->>Queue: baca pending FIFO
-  Mobile->>API: POST + clientMutationId yang sama
-  alt Idempotent hit
-    API-->>Mobile: 200 existing record
-  else Baru
-    API-->>Mobile: 201 created
-  end
-  Mobile->>Queue: hapus item sukses
-```
-
-**Keputusan desain (agent wajib ikuti):**
-
-1. **`clientMutationId`** — UUID v4, dikirim di body setiap POST operasional; disimpan unik per tabel (atau lookup composite `tenant + cage + clientMutationId`).
-2. **Idempotency** — jika `clientMutationId` sudah ada → return record existing (HTTP 200), jangan buat duplikat stok/populasi.
-3. **Antrean mobile** — satu entry = satu operasi atomik (bukan satu form gabungan); pecah form unified menjadi beberapa queue item saat offline.
-4. **`is_synced`** — set `false` saat record dibuat dari sync flush; `true` untuk POST langsung online (backward compat).
-5. **`SyncQueue` server** — **opsional P1**; prioritaskan idempotent POST dulu. Admin monitoring antrean server → P2 atau sub-task P1b.
-
-### 5.1 Backend — idempotency
-
-#### Checklist schema & migrasi
-
-- [ ] Tambah kolom `client_mutation_id String? @unique` (atau `@@unique([tenant_id, client_mutation_id])`) ke:
-  - `DailyProduction`
-  - `FeedConsumption`
-  - `PopulationMutation`
-  - `MedicalRecord`
-- [ ] `bun run db:migrate` — migrasi terpisah, nama deskriptif
-
-#### Checklist services (Category A — wajib test)
-
-- [ ] Helper `findExistingByClientMutationId(table, tenantId, id)` di `features/production/lib/` atau `lib/api/`
-- [ ] Update `record-daily-production.ts` — terima `clientMutationId?`; short-circuit jika sudah ada
-- [ ] Update `record-feed-consumption.ts` — sama + stok tidak double-deduct
-- [ ] Update `record-population-mutation.ts` — sama
-- [ ] Update `record-medical-record.ts` — sama
-- [ ] Set `is_synced: false` bila datang dari client dengan `clientMutationId` (atau flag eksplisit `fromSync`)
-- [ ] Colocated tests: duplicate `clientMutationId` → satu record, stok sekali
-
-#### Checklist API routes
-
-- [ ] Extend Zod schema POST di `features/production/schemas/` (+ feed, population, medical)
-- [ ] Wire `app/api/v1/production/route.ts` (+ feed-consumption, population-mutation, medical-records)
-- [ ] Response idempotent: `{ success: true, data: { ...existing }, message: "..." }` — HTTP 200 vs 201 konsisten
-- [ ] Update `docs/apicontract/openapi.yaml`
-- [ ] Regenerate types mobile: `npx openapi-typescript ... -o aapm-mobile/types/aapm-api.ts`
-
-### 5.2 Mobile — antrean & flush
-
-#### Checklist queue engine
-
-- [ ] Extend `pending-input-queue.ts`:
-  - [ ] `removePendingDailyInput(id)`
-  - [ ] `updatePendingStatus(id, status: pending | failed | syncing)`
-  - [ ] Type per operasi: `production | feed | population | medical` (satu item = satu POST)
-  - [ ] Field `clientMutationId` (UUID) per entry
-- [ ] `features/sync/lib/flush-pending-queue.ts` — iterasi FIFO, panggil API, hapus jika sukses
-- [ ] Deteksi koneksi: `@react-native-community/netinfo` (atau Expo equivalent)
-- [ ] Trigger flush: app foreground, NetInfo `isConnected`, setelah login sukses
-
-#### Checklist submit flow
-
-- [ ] Refactor `submit-daily-input.ts`:
-  - [ ] Coba POST online dengan `clientMutationId`
-  - [ ] Pada `ApiRequestError` network / 5xx / timeout → enqueue, jangan hilangkan data user
-  - [ ] Pesan UI: “Tersimpan lokal” vs “Tersimpan ke server”
-- [ ] Edit forms (`edit-*-form.tsx`) — **out of scope P1** kecuali user minta; fokus create dulu
-
-#### Checklist UI
-
-- [ ] `app/(tabs)/profile.tsx` — daftar antrean, jumlah pending, tombol “Sinkronkan sekarang”
-- [ ] Badge/indikator di tab Profil atau header jika `pendingCount > 0`
-- [ ] Toast Bahasa Indonesia untuk hasil flush (sukses N, gagal M)
-
-#### Checklist mobile docs
-
-- [ ] Update `aapm-mobile/docs/progress.md`
-- [ ] Update `aapm-mobile/docs/roadmap-domain3.md` — tandai Fase 4 partial
-
-### DoD — Fase 5 P1
-
-- [ ] Mode pesawat: submit produksi + pakan → masuk antrean lokal, form kosong, pesan jelas
-- [ ] Online kembali: flush otomatis atau manual → data muncul di admin rekap & riwayat mobile
-- [ ] Submit ulang item yang sama (`clientMutationId` identik) → tidak duplikat TB/stok/populasi
-- [ ] Profil menampilkan jumlah antrean + retry
-- [ ] OpenAPI + test idempotency lulus
-- [ ] Update `docs/sitemap.md`
-
-### Out of scope P1
-
-- Edit/update record offline (PATCH antrean)
-- Conflict resolution UI (server wins; tampilkan error jika validasi gagal permanen)
-- Admin halaman monitoring `SyncQueue` server
-- Background sync saat app killed (cukup foreground + manual retry)
-
-### Risiko & mitigasi
-
-| Risiko | Mitigasi |
-|--------|----------|
-| Form unified → banyak queue item, sebagian gagal | Flush per item; laporkan partial success di UI |
-| Stok habis saat flush terlambat | Server tolak dengan error jelas; item tetap `failed` di antrean |
-| `clientMutationId` collision | UUID v4; unique constraint DB |
-| Populasi berubah antara enqueue & flush | Validasi server tetap jalan; staff lihat error + retry/edit |
+- [x] Mode pesawat: submit → antrean lokal
+- [x] Online: flush otomatis/manual → data di admin & riwayat
+- [x] Idempotent `clientMutationId`
+- [x] Profil antrean + badge tab
+- [x] OpenAPI field idempotency
 
 ---
 
-## Fase 5 P2 — Mutasi stok global 🔲
+## Staging infra ✅
 
-**Tujuan:** Admin lihat semua mutasi stok lintas item/lokasi tanpa buka detail item satu per satu.
+- Vercel (Hobby) + Neon Postgres + Cloudflare R2 — lihat [staging.md](./staging.md)
+- Lokal tetap Docker Postgres + MinIO via `.env`
+
+---
+
+## Fase 5 P2 — Mutasi stok global ✅
+
+**Selesai 2026-07-14.** `/dashboard/inventory/mutations`
+
+- [x] `list-stock-mutations.ts` + toolbar + table
+- [x] Nav `manage_inventory` + filter URL + pagination
+
+---
+
+## Fase 5 P3 — Vaksinasi (Modul 13) ✅
+
+**Tujuan:** Jadwal vaksin per kandang + item `Vaccine`; selesaikan di lapangan; potong stok `OUT_VACCINE`.
 
 ### Checklist
 
-- [ ] `features/inventory/services/list-stock-mutations.ts` — filter tanggal, lokasi, item, tipe
-- [ ] `features/inventory/components/stock-mutations-table.tsx` + toolbar (search, filter)
-- [ ] `app/(dashboard)/dashboard/inventory/mutations/page.tsx`
-- [ ] Nav item di `navigation.ts` — permission `manage_inventory`
-- [ ] Update `docs/sitemap.md`
-
-### DoD
-
-- [ ] Tabel menampilkan: tanggal, item, lokasi, tipe (`IN_PURCHASE`, `OUT_FEED`, dll.), qty, referensi
-- [ ] Pagination + filter URL (`?q=`, `?type=`, `?from=&to=`)
+- [x] CRUD `VaccineSchedule` admin (`/dashboard/health/vaccines`)
+- [x] API: GET jadwal cage + POST complete
+- [x] Service `complete-vaccination.ts` → `OUT_VACCINE`
+- [x] Form vaksin di mobile
+- [x] OpenAPI + sitemap
 
 ---
 
-## Fase 5 P3 — Vaksinasi (Modul 13) 🔲
+## Fase 5 P4 — Mutasi Pindah lintas kandang ✅
 
-**Tujuan:** Jadwal vaksin per strain/umur; input lapangan; potong stok `OUT_VACCINE`.
-
-### Checklist (high level)
-
-- [ ] CRUD `VaccineSchedule` admin (`/dashboard/health/vaccines` atau di strain)
-- [ ] API mobile: GET jadwal + POST pencatatan vaksin
-- [ ] Service `record-vaccination.ts` → `applyStockMutation` `OUT_VACCINE`
-- [ ] Form vaksin di mobile (section baru atau tab terpisah)
-- [ ] Integrasi panel kesehatan di detail kandang (opsional)
-- [ ] OpenAPI + `docs/sitemap.md`
+- [x] Migrasi `target_cage_id` di `PopulationMutation`
+- [x] Service transfer atomik + API + test Category A
 
 ---
 
-## Fase 5 P4 — Mutasi Pindah lintas kandang (Fase 2b) 🔲
+## Fase 5 P5 — PO penuh ✅
 
-**Butuh migrasi:** `target_cage_id` di `PopulationMutation`.
-
-- [ ] Prisma migrate + validasi tenant scope
-- [ ] Service: kurangi sumber, tambah target (satu transaksi)
-- [ ] API mobile + admin rekap
-- [ ] Test Category A — populasi kedua kandang
+- [x] Partial receive per line
+- [x] Cancel PO Pending
+- [ ] Hook Paid PO → cashflow (opsional, belum)
 
 ---
 
-## Fase 5 P5 — PO penuh 🔲
+## Fase 5 P6 — D4 Sales & Cashflow ✅
 
-- [ ] Partial receive per line item
-- [ ] Edit PO draft / cancel
-- [ ] (Opsional) hook ke cashflow D4
-
----
-
-## Fase 5 P6 — D4 Sales & Cashflow 🔲
-
-- [ ] `Customer`, `SalesOrder`, `CashflowTransaction` — CRUD admin
-- [ ] `/dashboard/finance` dari placeholder → fungsional
-- [ ] Mobile: **tidak** — Domain 4 admin only
+- [x] Customer + SalesOrder CRUD admin
+- [x] Cashflow / Opex di `/dashboard/finance`
+- [x] Early warning sederhana vs ProductionTarget (dashboard)
 
 ---
 
@@ -358,64 +224,15 @@ sequenceDiagram
 
 1. Ikuti pola `features/vendors/` untuk CRUD admin baru
 2. Stok selalu lewat `apply-stock-mutation.ts` dalam `$transaction`
-3. Tanggal operasional selalu lewat `@/lib/business-date` (WIB)
+3. Tanggal operasional lewat `@/lib/business-date` (WIB)
 4. Pesan error Bahasa Indonesia
-5. Test Category A untuk stock math, populasi ledger, idempotency, & business date (Bun, colocated `.test.ts`)
-6. Perubahan API mobile → update `openapi.yaml` + types di `aapm-mobile` dalam task yang sama
-7. Update `sitemap.md` per fase/sub-fase
+5. Test Category A untuk stock/populasi/idempotency (Bun, colocated)
+6. Perubahan API → update `openapi.yaml`
+7. Update `sitemap.md` per fase
 8. Jangan commit kecuali user minta
 
 ---
 
-## Perkiraan dampak progress
+## Sesi agent — quick start
 
-| Milestone | D2 | D3 | D4 | Overall (13 modul) |
-|-----------|----|----|-----|---------------------|
-| Fase 4 + WIB (9 Jul) | ~85% | ~90% | ~5% | ~56% |
-| **+ Fase 4b metrik siklus** | **~88%** | **~92%** | **~5%** | **~58%** |
-| Target + P1 offline sync | ~88% | ~95% | ~5% | ~65% |
-| Target + P2 mutasi global | ~90% | ~95% | ~5% | ~67% |
-| Target + P3 vaksinasi | ~90% | ~98% | ~5% | ~72% |
-
-### Modul proposal (perkiraan 2026-07-09)
-
-| # | Modul | % | Catatan |
-|---|--------|---|---------|
-| 1 | User management | ~95% | |
-| 2 | Master data peternakan | ~88% | + metrik siklus detail kandang |
-| 3 | Strain & standardisasi | ~65% | |
-| 4 | Front office input | ~85% | mobile form lengkap |
-| 5 | Offline sync | ~15% | **P1 aktif** — antrean ada, flush belum |
-| 6 | Mutasi populasi | ~75% | ledger + validasi; pindah lintas kandang 🔲 |
-| 7 | Vendor & procurement | ~75% | PO minimal ✅ |
-| 8 | Inventory | ~78% | mutasi global 🔲 |
-| 9 | Early warning | ~0% | setelah KPI/FCR stabil |
-| 10 | Executive dashboard | ~45% | KPI dasar + HDP; FCR per kandang ✅ |
-| 11 | Sales | ~0% | D4 |
-| 12 | Cashflow | ~0% | D4 |
-| 13 | Health / vaccination | ~25% | pengobatan ✅; vaksin 🔲 |
-
----
-
-## Sesi agent berikutnya — quick start
-
-```bash
-# 1. Backend: migrasi client_mutation_id
-cd layered-farm-agung
-bun run db:migrate
-
-# 2. Implement idempotent record services + tests
-bun test features/production/services/
-
-# 3. Mobile: extend queue + flush
-cd ../aapm-mobile
-npm install @react-native-community/netinfo  # jika belum ada
-
-# 4. Verifikasi manual: mode pesawat → submit → online → flush
-```
-
-**Mulai dari:** § Fase 5 P1 — Backend idempotency, lalu mobile flush.
-
----
-
-*Perbarui dokumen ini setelah menyelesaikan sub-fase Fase 5 atau milestone besar.*
+**Selesai Fase 5.** Backlog opsional: PATCH offline, SyncQueue monitor, PO→cashflow auto, OpenAPI mobile codegen.

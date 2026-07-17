@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,15 @@ export function CreateUserDialog({
   const [roleId, setRoleId] = useState("");
   const [tenantId, setTenantId] = useState(defaultBranchId);
   const [isActive, setIsActive] = useState(true);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setRoleId("");
+      setTenantId(defaultBranchId);
+      setIsActive(true);
+    }
+  }
 
   const superadminSelected =
     Boolean(roleId) && isSuperadminRole(roleId, formOptions.roles);
@@ -90,13 +99,6 @@ export function CreateUserDialog({
       setIsActive(true);
     },
   });
-
-  useEffect(() => {
-    if (open) {
-      setRoleId("");
-      setTenantId(defaultBranchId);
-    }
-  }, [open, defaultBranchId]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

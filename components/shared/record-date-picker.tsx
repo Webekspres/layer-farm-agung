@@ -20,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type RecordDatePickerProps = {
-  value: Date;
+  value: Date | undefined;
   onChange: (date: Date) => void;
   id?: string;
   className?: string;
@@ -37,7 +37,7 @@ export function RecordDatePicker({
   placeholder = "Pilih tanggal",
   disableFuture = true,
 }: RecordDatePickerProps) {
-  const calendarDate = businessDateToCalendarPick(value);
+  const calendarDate = value ? businessDateToCalendarPick(value) : undefined;
 
   return (
     <Popover>

@@ -42,3 +42,23 @@ export type ItemDetail = {
   stockByLocation: StockByLocation[];
   mutations: StockMutationEntry[];
 };
+
+export type StockMutationListFilters = {
+  search?: string;
+  type?: string;
+  locationId?: string;
+  from?: Date;
+  to?: Date;
+};
+
+export type StockMutationListItem = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  mutationType: string;
+  direction: "IN" | "OUT";
+  quantity: number;
+  referenceId: string | null;
+  mutationDate: string;
+};

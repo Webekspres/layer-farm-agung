@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,10 +28,11 @@ export function DeleteUserDialog({
 }: DeleteUserDialogProps) {
   const [error, setError] = useState<string | undefined>();
   const [isPending, startTransition] = useTransition();
-
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) setError(undefined);
-  }, [open]);
+  }
 
   if (!user) return null;
 
