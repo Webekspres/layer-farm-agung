@@ -51,6 +51,7 @@ export async function receivePurchaseOrder(
       vendor: { tenant_id: tenantId },
     },
     include: {
+      vendor: { select: { name: true } },
       purchase_order_items: {
         select: {
           id: true,
@@ -159,6 +160,30 @@ export async function receivePurchaseOrder(
 
       if (updated.count === 0) {
         throw new ConcurrencyError();
+      }
+
+      if (nextStatus === "Received") {
+        const existingCashflow = await tx.cashflowTransaction.findFirst({
+          where: {
+            tenant_id: tenantId,
+            type: "Expense",
+            reference_id: po.id,
+          },
+          select: { id: true },
+        });
+
+        if (!existingCashflow) {
+          await tx.cashflowTransaction.create({
+            data: {
+              tenant_id: tenantId,
+              transaction_date: po.order_date,
+              type: "Expense",
+              reference_id: po.id,
+              amount: po.total_amount,
+              description: `Pembelian saprodi - ${po.vendor.name}`,
+            },
+          });
+        }
       }
 
       return nextStatus;

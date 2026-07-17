@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://user:pass@127.0.0.1:5432/aapm?schema=public
+      BETTER_AUTH_SECRET: ci-only-secret
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_BETTER_AUTH_URL: http://localhost:3000
+      STORAGE_ENDPOINT: http://127.0.0.1:9000
+      STORAGE_ACCESS_KEY: ci
+      STORAGE_SECRET_KEY: ci
+      STORAGE_BUCKET: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun test
+      - run: bun run build

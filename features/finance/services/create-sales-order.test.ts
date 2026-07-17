@@ -42,6 +42,7 @@ const findFirstEggItem = mock(() =>
 const salesOrderCreate = mock(() =>
   Promise.resolve({ id: SALE_ID }),
 );
+const deliveryCreate = mock(() => Promise.resolve({}));
 const cashflowCreate = mock(() => Promise.resolve({}));
 
 const applyStockMutation = mock(
@@ -62,6 +63,7 @@ const fakePrisma = {
   $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
     fn({
       salesOrder: { create: salesOrderCreate },
+      deliveryLog: { create: deliveryCreate },
       cashflowTransaction: { create: cashflowCreate },
     }),
 };
@@ -95,6 +97,8 @@ describe("createSalesOrder", () => {
     findFirstEggItem.mockResolvedValue({ id: EGG_ITEM });
     salesOrderCreate.mockReset();
     salesOrderCreate.mockResolvedValue({ id: SALE_ID });
+    deliveryCreate.mockReset();
+    deliveryCreate.mockResolvedValue({});
     cashflowCreate.mockReset();
     cashflowCreate.mockResolvedValue({});
     applyStockMutation.mockReset();
@@ -106,7 +110,7 @@ describe("createSalesOrder", () => {
     });
   });
 
-  test("succeeds with OUT_SALES for total line quantity and creates cashflow", async () => {
+  test("succeeds with OUT_SALES for total line quantity and creates delivery/cashflow", async () => {
     const result = await createSalesOrder(
       TENANT,
       baseInput({
@@ -127,6 +131,15 @@ describe("createSalesOrder", () => {
       mutationType: StockMutationType.OUT_SALES,
       quantity: 100,
       referenceId: SALE_ID,
+    });
+    expect(deliveryCreate).toHaveBeenCalledTimes(1);
+    const [deliveryArgs] = deliveryCreate.mock.calls[0];
+    expect(deliveryArgs.data).toMatchObject({
+      tenant_id: TENANT,
+      sale_id: SALE_ID,
+      status: "Delivered",
+      quantity: 100,
+      weight: 3.5,
     });
     expect(cashflowCreate).toHaveBeenCalledTimes(1);
   });

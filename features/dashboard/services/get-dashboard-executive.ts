@@ -30,6 +30,7 @@ import {
 } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 import { lookupTargetHdp } from "@/features/dashboard/services/get-dashboard-stats";
+import { syncDashboardAlerts } from "@/features/dashboard/services/sync-dashboard-alerts";
 
 const HDP_WARNING_THRESHOLD_RATIO = 0.9;
 const MAX_EARLY_WARNINGS = 5;
@@ -397,6 +398,39 @@ export async function getDashboardExecutive(
     })),
     MORTALITY_WEEK_WARNING_THRESHOLD,
   ).slice(0, MAX_MORTALITY_WARNINGS);
+  const lowStockAlerts = lowStockAll.slice(0, 6).map((item) => ({
+    id: item.id,
+    name: item.name,
+    totalQuantity: item.totalQuantity,
+    unit: item.unit,
+    minStockAlert: item.minStockAlert,
+  }));
+
+  await syncDashboardAlerts({
+    tenantId,
+    recordDate,
+    hdpWarnings: earlyWarnings,
+    mortalityWarnings,
+    lowStockAlerts,
+  });
+
+  const persistentAlerts = await prisma.alertLog.findMany({
+    where: { tenant_id: tenantId },
+    orderBy: [{ is_read: "asc" }, { created_at: "desc" }],
+    take: 8,
+    select: {
+      id: true,
+      type: true,
+      severity: true,
+      title: true,
+      message: true,
+      source: true,
+      source_id: true,
+      is_read: true,
+      created_at: true,
+      resolved_at: true,
+    },
+  });
 
   const todayTb = prodToday._sum.tb ?? 0;
   const yesterdayTb = prodYesterday._sum.tb ?? 0;
@@ -696,15 +730,21 @@ export async function getDashboardExecutive(
     weeklyProfit,
     weekSalesTotal,
     inventory,
-    lowStockAlerts: lowStockAll.slice(0, 6).map((item) => ({
-      id: item.id,
-      name: item.name,
-      totalQuantity: item.totalQuantity,
-      unit: item.unit,
-      minStockAlert: item.minStockAlert,
-    })),
+    lowStockAlerts,
     timeline,
     earlyWarnings: earlyWarnings.slice(0, MAX_EARLY_WARNINGS),
     mortalityWarnings,
+    persistentAlerts: persistentAlerts.map((alert) => ({
+      id: alert.id,
+      type: alert.type,
+      severity: alert.severity,
+      title: alert.title,
+      message: alert.message,
+      source: alert.source,
+      sourceId: alert.source_id,
+      isRead: alert.is_read,
+      createdAt: alert.created_at.toISOString(),
+      resolvedAt: alert.resolved_at?.toISOString() ?? null,
+    })),
   };
 }

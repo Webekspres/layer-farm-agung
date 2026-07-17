@@ -104,6 +104,19 @@ export type DashboardMortalityWarning = {
   deaths: number;
 };
 
+export type DashboardPersistentAlert = {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  message: string;
+  source: string | null;
+  sourceId: string | null;
+  isRead: boolean;
+  createdAt: string;
+  resolvedAt: string | null;
+};
+
 export type DashboardExecutive = {
   recordDate: string;
   kpis: DashboardKpi[];
@@ -121,4 +134,5 @@ export type DashboardExecutive = {
   timeline: TimelineItem[];
   earlyWarnings: DashboardEarlyWarning[];
   mortalityWarnings: DashboardMortalityWarning[];
+  persistentAlerts: DashboardPersistentAlert[];
 };

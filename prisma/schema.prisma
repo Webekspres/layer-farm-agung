@@ -48,8 +48,10 @@ model Tenant {
   sync_queues           SyncQueue[]
   customers             Customer[]
   sales_orders          SalesOrder[]
+  delivery_logs         DeliveryLog[]
   opex_categories       OpexCategory[]
   cashflow_transactions CashflowTransaction[]
+  alert_logs            AlertLog[]
 }
 
 model Role {
@@ -513,6 +515,7 @@ model SalesOrder {
   customer          Customer         @relation(fields: [customer_id], references: [id], onDelete: Restrict)
   location          Location?        @relation(fields: [location_id], references: [id], onDelete: Restrict)
   sales_order_items SalesOrderItem[]
+  delivery_logs     DeliveryLog[]
 }
 
 model SalesOrderItem {
@@ -528,6 +531,25 @@ model SalesOrderItem {
   // Relations
   sales_order SalesOrder @relation(fields: [sale_id], references: [id], onDelete: Cascade)
   egg_grade   EggGrade?  @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+}
+
+model DeliveryLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenant_id     String   @db.Uuid
+  sale_id       String   @db.Uuid
+  delivery_date DateTime @db.Date
+  status        String   @default("Delivered")
+  quantity      Int
+  weight        Float?
+  notes         String?
+  created_at    DateTime @default(now())
+
+  // Relations
+  tenant      Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  sales_order SalesOrder @relation(fields: [sale_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, delivery_date])
+  @@index([sale_id])
 }
 
 model OpexCategory {
@@ -554,4 +576,31 @@ model CashflowTransaction {
   // Relations
   tenant        Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   opex_category OpexCategory? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+}
+
+// ==========================================
+// DOMAIN 5: ALERT & EXECUTIVE INSIGHT (MODUL 9 & 10)
+// ==========================================
+
+model AlertLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenant_id    String    @db.Uuid
+  alert_key    String
+  type         String
+  severity     String    @default("Warning")
+  title        String
+  message      String
+  source       String?
+  source_id    String?   @db.Uuid
+  record_date  DateTime? @db.Date
+  is_read      Boolean   @default(false)
+  created_at   DateTime  @default(now())
+  resolved_at  DateTime?
+
+  // Relations
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, alert_key])
+  @@index([tenant_id, is_read, created_at])
+  @@index([tenant_id, type, record_date])
 }

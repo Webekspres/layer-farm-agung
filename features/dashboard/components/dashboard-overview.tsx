@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { markDashboardAlertsReadAction } from "@/features/dashboard/actions/mark-alerts-read";
 import type { ServerSession } from "@/features/auth/lib/session";
 import { DashboardCharts } from "@/features/dashboard/components/dashboard-charts";
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
@@ -44,6 +46,13 @@ const inventoryIcon = {
   Medicine: Pill,
   Vaccine: Syringe,
 } as const;
+
+function alertHref(source: string | null, sourceId: string | null) {
+  if (!sourceId) return "/dashboard";
+  if (source === "Cage") return `/dashboard/cages/${sourceId}`;
+  if (source === "Item") return `/dashboard/inventory/${sourceId}`;
+  return "/dashboard";
+}
 
 export function DashboardOverview({ session, data }: DashboardOverviewProps) {
   const displayName = session.user.fullName ?? session.user.name ?? "Pengguna";
@@ -128,6 +137,62 @@ export function DashboardOverview({ session, data }: DashboardOverviewProps) {
           ) : null}
         </section>
       )}
+
+      <Card className="border-border/70 bg-card/80 shadow-sm">
+        <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 font-heading text-base">
+              <AlertTriangle className="size-4 text-primary" />
+              Pusat peringatan
+            </CardTitle>
+            <CardDescription>
+              Riwayat alert otomatis dari HDP, mortalitas, dan stok minimum.
+            </CardDescription>
+          </div>
+          {data.persistentAlerts.some((alert) => !alert.isRead) ? (
+            <form action={markDashboardAlertsReadAction}>
+              <Button type="submit" variant="outline" size="sm">
+                Tandai sudah dibaca
+              </Button>
+            </form>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {data.persistentAlerts.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border/80 px-3 py-6 text-center text-sm text-muted-foreground">
+              Belum ada alert otomatis.
+            </p>
+          ) : (
+            <div className="grid gap-2 lg:grid-cols-2">
+              {data.persistentAlerts.map((alert) => (
+                <Link
+                  key={alert.id}
+                  href={alertHref(alert.source, alert.sourceId)}
+                  className={cn(
+                    "rounded-lg border border-border/80 px-3 py-2 text-sm transition-colors hover:bg-muted/40",
+                    !alert.isRead && "border-primary/40 bg-primary/5",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{alert.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {alert.message}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={alert.severity === "Critical" ? "destructive" : "outline"}
+                      className="shrink-0"
+                    >
+                      {alert.isRead ? "Dibaca" : "Baru"}
+                    </Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <DashboardCharts data={data} />
 

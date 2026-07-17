@@ -47,7 +47,8 @@ DATABASE_URL="..." bun run db:seed
 ```
 
 4. Deploy / push ke branch yang terhubung Vercel.
-5. Login admin di URL staging; uji upload logo tenant (admin cabang).
+5. Cek `GET /api/health` di URL staging; harus `200` dengan `status: "ok"`.
+6. Login admin di URL staging; uji upload logo tenant (admin cabang).
 
 ## Catatan
 

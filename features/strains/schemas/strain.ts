@@ -28,6 +28,10 @@ export const productionTargetSchema = z.object({
     .positive("Target FCR harus bernilai positif."),
 });
 
+export const updateProductionTargetSchema = productionTargetSchema.extend({
+  id: z.coerce.number().int().positive("Target tidak valid."),
+});
+
 export const deleteProductionTargetSchema = z.object({
   id: z.coerce.number().int().positive(),
   strainId: z.coerce.number().int().positive(),

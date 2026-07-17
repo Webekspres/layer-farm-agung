@@ -40,7 +40,7 @@ tags:
   - name: Production
     description: Pencatatan produksi telur harian
   - name: Feed
-    description: Konsumsi pakan — **belum diimplementasi** (501)
+    description: Konsumsi pakan dan rekonsiliasi stok pakan (`OUT_FEED`)
   - name: Vaccination
     description: |
       Jadwal vaksinasi per kandang (Modul 13) dan penyelesaiannya oleh staff.
@@ -50,6 +50,56 @@ security:
   - cookieAuth: []
 
 paths:
+  /api/v1/mobile/auth/sign-in:
+    post:
+      tags: [Auth]
+      summary: Login staff mobile
+      description: |
+        Wrapper Better Auth khusus aplikasi mobile. Endpoint ini menerima username
+        dan password, meneruskan `Set-Cookie`, lalu mengembalikan envelope v1.
+        Hanya akun staff operasional yang boleh memakai aplikasi mobile.
+      operationId: mobileStaffSignIn
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInUsernameRequest"
+            example:
+              username: staff.kandang
+              password: password123
+      responses:
+        "200":
+          description: Login berhasil — session cookie diset
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/BetterAuthSessionResponse"
+              example:
+                success: true
+                message: Berhasil masuk.
+                data:
+                  user:
+                    id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    name: Staff Kandang
+                    email: staff@example.com
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /api/auth/sign-in/username:
     post:
       tags: [Auth]
@@ -125,6 +175,19 @@ paths:
                 $ref: "#/components/schemas/BetterAuthSessionResponse"
         "401":
           description: Tidak ada session
+
+  /api/auth/sign-out:
+    post:
+      tags: [Auth]
+      summary: Logout session aktif
+      operationId: signOut
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Logout berhasil
+        "401":
+          description: Tidak ada session aktif
 
   /api/v1/cages:
     get:
@@ -954,6 +1017,13 @@ components:
         error:
           type: string
           description: Detail error (Bahasa Indonesia)
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Error per field, dipakai terutama oleh login mobile.
 
     SignInUsernameRequest:
       type: object

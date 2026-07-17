@@ -143,13 +143,16 @@ export function CashflowManagement({
         <Card className="border-border/80 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saldo
+              Laba/Rugi periode
             </CardTitle>
             <Wallet className="size-4 text-primary" />
           </CardHeader>
           <CardContent>
             <p className="text-xl font-bold text-foreground">
               {formatCurrency(summary.balance)}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Pemasukan dikurangi pengeluaran pada filter aktif.
             </p>
           </CardContent>
         </Card>
