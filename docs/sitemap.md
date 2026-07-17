@@ -5,8 +5,8 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-07-09 |
-| **Progress proyek** | **~65%** keseluruhan (13 modul) · D3 ~95% — lihat [implementation_plan.md](./implementation_plan.md) |
+| **Terakhir diperbarui** | 2026-07-17 |
+| **Progress proyek** | **~82%** keseluruhan (13 modul) · D3 ~98% · D4 ~65% — lihat [implementation_plan.md](./implementation_plan.md) |
 | **Repo ini** | Next.js 16 — **admin dashboard + API provider** |
 | **Mobile lapangan** | [`aapm-mobile`](../aapm-mobile) — React Native + Expo SDK 54 |
 | **Ekosistem** | [`docs/ecosystem.md`](./ecosystem.md) |
@@ -54,14 +54,14 @@ Backend di repo ini menyediakan:
 | 🔲 **Planned** | Belum diimplementasi |
 | 📱 **Mobile** | Dikerjakan di app React Native + Expo |
 
-**Progress domain (perkiraan, 2026-07-09):**
+**Progress domain (perkiraan, 2026-07-17):**
 
 | Domain | Fokus | Progress |
 |--------|--------|----------|
 | **D1** Identity & tenant | Auth, RBAC, users, tenants | ~95% |
-| **D2** Master data | Lokasi, kandang, strain, grade, vendor, PO | ~85% |
-| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~95% |
-| **D4** Finansial | Penjualan, cashflow, dashboard KPI penuh | ~5% |
+| **D2** Master data | Lokasi, kandang, strain, grade, vendor, PO | ~90% |
+| **D3** Operasional | Produksi, inventori, populasi ledger, sync, kesehatan | ~98% |
+| **D4** Finansial | Penjualan + `OUT_SALES`, cashflow, KPI dashboard lite | ~65% |
 
 ---
 
@@ -99,7 +99,7 @@ Backend di repo ini menyediakan:
 
 | Path | Menu | Status | Model / catatan |
 |------|------|--------|-----------------|
-| `/dashboard` | Dashboard | 🟡 | KPI dasar ✅ (produksi, populasi, stok kritis); FCR/early warning 🔲 |
+| `/dashboard` | Dashboard | 🟡 | KPI dasar ✅; HDP warning ✅; FCR 7 hari + mortalitas + kas minggu (Fase 6b) ✅; portal buyer 🔲 |
 | `/dashboard/production` | **Input harian** | 🟡 | Grid status kandang ✅; 4 tab rekap data nyata ✅; kolom HDP % ✅; date toolbar WIB ✅ |
 | `/dashboard/inventory` | Inventori | ✅ | Saprodi only (Egg Ledger terpisah — [`egg-ledger-architecture.md`](./egg-ledger-architecture.md)) |
 | `/dashboard/inventory/mutations` | Mutasi stok | ✅ | Ledger global `StockMutation` + filter |

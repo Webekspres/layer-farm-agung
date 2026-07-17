@@ -32,6 +32,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 | **[vaccination-architecture.md](./vaccination-architecture.md)** | Keputusan arsitektur Modul 13 (operational schedule) |
 | **[egg-sales-stock.md](./egg-sales-stock.md)** | Penjualan telur vs TB/TR/TP, `OUT_SALES`, EggGrade opsional |
 | **[egg-ledger-architecture.md](./egg-ledger-architecture.md)** | Egg Ledger vs Inventori Saprodi (Option A: shared engine) |
+| **[smoke-egg-sales.md](./smoke-egg-sales.md)** | Checklist smoke jual telur + stok |
 | **[implementation_plan.md](./implementation_plan.md)** | **Rencana eksekusi** fase 1–5 + infra WIB — checklist agent-ready (Fase 1–4 ✅) |
 | **[apicontract/](./apicontract/)** | Kontrak **OpenAPI 3.1** untuk mobile (`openapi.yaml`) |
 

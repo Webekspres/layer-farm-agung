@@ -54,3 +54,4 @@ DATABASE_URL="..." bun run db:seed
 - Logo tetap dilayani lewat proxy `/api/storage/...` — tidak perlu public R2 URL.
 - `output: "standalone"` di-skip otomatis saat `VERCEL=1` (Docker tetap pakai standalone).
 - `bun run build` menjalankan `prisma generate` dulu (generated client di-gitignore).
+- Setelah pull migrasi baru (mis. sales `location_id`): jalankan ulang `db:migrate:deploy` ke Neon. Smoke jual telur: [`smoke-egg-sales.md`](./smoke-egg-sales.md).
