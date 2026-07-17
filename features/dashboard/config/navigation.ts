@@ -50,6 +50,12 @@ export const operationsNavItems: NavItem[] = [
     icon: Syringe,
     permission: "manage_production",
   },
+  {
+    title: "Program vaksin",
+    href: "/dashboard/health/vaccine-programs",
+    icon: ClipboardList,
+    permission: "manage_production",
+  },
 ];
 
 /** Inventori Saprodi (pakan, obat, vaksin, vitamin); PO & ledger mutasi. */

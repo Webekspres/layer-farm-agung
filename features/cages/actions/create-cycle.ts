@@ -7,10 +7,13 @@ import {
   requireManageMasterDataSession,
 } from "@/features/master-data/lib/access";
 import { createCycleSchema } from "@/features/cages/schemas/cycle";
+import { generateVaccineSchedulesForCycle } from "@/features/health/services/generate-vaccine-schedules-for-cycle";
 
 export type ActionState = {
   error?: string;
   success?: boolean;
+  /** Info tambahan (mis. hasil generate jadwal vaksin). */
+  message?: string;
 };
 
 export async function createCycleAction(
@@ -86,7 +89,29 @@ export async function createCycleAction(
     return { error: "Gagal memulai siklus baru." };
   }
 
+  let vaccineMessage: string | undefined;
+  try {
+    const generated = await generateVaccineSchedulesForCycle(
+      tenantId,
+      cageId,
+      startDate,
+    );
+    if (!generated.ok) {
+      vaccineMessage = `Siklus dibuat, tetapi generate jadwal vaksin gagal: ${generated.error}`;
+    } else if (generated.info) {
+      vaccineMessage = generated.info;
+    } else if (generated.created > 0) {
+      vaccineMessage = `${generated.created} jadwal vaksin digenerate dari program${
+        generated.programName ? ` “${generated.programName}”` : ""
+      }.`;
+    }
+  } catch {
+    vaccineMessage =
+      "Siklus dibuat, tetapi generate jadwal vaksin mengalami kesalahan tak terduga.";
+  }
+
   revalidatePath(`/dashboard/cages/${cageId}`);
   revalidatePath("/dashboard/cages");
-  return { success: true };
+  revalidatePath("/dashboard/health/vaccines");
+  return { success: true, message: vaccineMessage };
 }

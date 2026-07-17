@@ -52,6 +52,7 @@ model Tenant {
   opex_categories       OpexCategory[]
   cashflow_transactions CashflowTransaction[]
   alert_logs            AlertLog[]
+  vaccine_programs      VaccineProgram[]
 }
 
 model Role {
@@ -236,6 +237,7 @@ model Strain {
   // Relations
   cages              Cage[]
   production_targets ProductionTarget[]
+  vaccine_programs   VaccineProgram[]
 }
 
 model ProductionTarget {
@@ -310,13 +312,14 @@ model Item {
   created_at      DateTime @default(now())
 
   // Relations
-  tenant               Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  inventory_stocks     InventoryStock[]
-  stock_mutations      StockMutation[]
-  purchase_order_items PurchaseOrderItem[]
-  feed_consumptions    FeedConsumption[]
-  vaccine_schedules    VaccineSchedule[]
-  medical_records      MedicalRecord[]
+  tenant                 Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  inventory_stocks       InventoryStock[]
+  stock_mutations        StockMutation[]
+  purchase_order_items   PurchaseOrderItem[]
+  feed_consumptions      FeedConsumption[]
+  vaccine_schedules      VaccineSchedule[]
+  medical_records        MedicalRecord[]
+  vaccine_program_steps  VaccineProgramStep[]
 }
 
 model InventoryStock {
@@ -421,6 +424,41 @@ model PopulationMutation {
   target_cage Cage? @relation("PopulationTransferTarget", fields: [target_cage_id], references: [id], onDelete: Restrict)
 }
 
+model VaccineProgram {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenant_id  String   @db.Uuid
+  name       String
+  /** null = program default tenant (fallback bila strain kandang tidak punya program khusus). */
+  strain_id  Int?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  tenant Tenant               @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  strain Strain?              @relation(fields: [strain_id], references: [id], onDelete: SetNull)
+  steps  VaccineProgramStep[]
+
+  @@index([tenant_id, is_active])
+  @@index([tenant_id, strain_id])
+}
+
+model VaccineProgramStep {
+  id               String  @id @default(uuid()) @db.Uuid
+  program_id       String  @db.Uuid
+  /** Umur ayam (hari) sejak start siklus — sesuai pola Excel Vaccine Regime. */
+  age_days         Int
+  item_id          String  @db.Uuid
+  pathogen_label   String?
+  formulation_type String?
+  notes            String?
+  sort_order       Int     @default(0)
+
+  program   VaccineProgram    @relation(fields: [program_id], references: [id], onDelete: Cascade)
+  item      Item              @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  schedules VaccineSchedule[]
+
+  @@index([program_id, age_days])
+}
+
 model VaccineSchedule {
   id             String   @id @default(uuid()) @db.Uuid
   cage_id        String   @db.Uuid
@@ -438,9 +476,16 @@ model VaccineSchedule {
   is_synced             Boolean   @default(true)
   client_mutation_id    String?   @unique @db.Uuid
 
+  /** Manual = dibuat admin; Program = digenerate dari VaccineProgramStep. */
+  source           String  @default("Manual")
+  program_step_id  String? @db.Uuid
+
   // Relations
-  cage Cage @relation(fields: [cage_id], references: [id], onDelete: Cascade)
-  item Item @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  cage         Cage                @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  item         Item                @relation(fields: [item_id], references: [id], onDelete: Restrict)
+  program_step VaccineProgramStep? @relation(fields: [program_step_id], references: [id], onDelete: SetNull)
+
+  @@index([cage_id, program_step_id, status])
 }
 
 model MedicalRecord {

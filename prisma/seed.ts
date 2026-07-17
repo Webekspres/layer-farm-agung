@@ -300,6 +300,38 @@ async function main() {
       min_stock_alert: 50,
       initialStock: 200,
     },
+    {
+      id: "00000000-0000-4000-8000-000000000301",
+      name: "ND Hitchner B1",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 100,
+      initialStock: 500,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000302",
+      name: "IB H120",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 100,
+      initialStock: 500,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000303",
+      name: "Gumboro Intermediate",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 80,
+      initialStock: 400,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000304",
+      name: "ND Lasota",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 100,
+      initialStock: 500,
+    },
   ] as const;
 
   for (const item of sampleItems) {
@@ -355,6 +387,90 @@ async function main() {
         item_id: feed.id,
         location_id: mainLocation.id,
         quantity: 1000,
+      },
+    });
+  }
+
+  // Program vaksin default (pola umur dari Excel Vaccine Regime — subset).
+  const defaultVaccineProgramId = "00000000-0000-4000-8000-000000000401";
+  await prisma.vaccineProgram.upsert({
+    where: { id: defaultVaccineProgramId },
+    update: {
+      name: "Program default (demo)",
+      strain_id: null,
+      is_active: true,
+    },
+    create: {
+      id: defaultVaccineProgramId,
+      tenant_id: defaultTenant.id,
+      name: "Program default (demo)",
+      strain_id: null,
+      is_active: true,
+    },
+  });
+
+  const demoProgramSteps = [
+    {
+      id: "00000000-0000-4000-8000-000000000411",
+      age_days: 1,
+      item_id: "00000000-0000-4000-8000-000000000301",
+      pathogen_label: "ND",
+      formulation_type: "Live",
+      sort_order: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000412",
+      age_days: 1,
+      item_id: "00000000-0000-4000-8000-000000000302",
+      pathogen_label: "IB",
+      formulation_type: "Live",
+      sort_order: 1,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000413",
+      age_days: 6,
+      item_id: "00000000-0000-4000-8000-000000000202",
+      pathogen_label: null,
+      formulation_type: "Suspensi",
+      sort_order: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000414",
+      age_days: 12,
+      item_id: "00000000-0000-4000-8000-000000000303",
+      pathogen_label: "IBD",
+      formulation_type: "Live",
+      sort_order: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000415",
+      age_days: 21,
+      item_id: "00000000-0000-4000-8000-000000000304",
+      pathogen_label: "ND",
+      formulation_type: "Live",
+      sort_order: 0,
+    },
+  ] as const;
+
+  for (const step of demoProgramSteps) {
+    await prisma.vaccineProgramStep.upsert({
+      where: { id: step.id },
+      update: {
+        age_days: step.age_days,
+        item_id: step.item_id,
+        pathogen_label: step.pathogen_label,
+        formulation_type: step.formulation_type,
+        sort_order: step.sort_order,
+        program_id: defaultVaccineProgramId,
+      },
+      create: {
+        id: step.id,
+        program_id: defaultVaccineProgramId,
+        age_days: step.age_days,
+        item_id: step.item_id,
+        pathogen_label: step.pathogen_label,
+        formulation_type: step.formulation_type,
+        sort_order: step.sort_order,
       },
     });
   }
