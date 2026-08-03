@@ -104,15 +104,36 @@ const numbering = {
   config: [
     {
       reference: "workflow-admin",
-      levels: [{ level: 0, format: "decimal", text: "%1.", alignment: AlignmentType.START }],
+      levels: [
+        {
+          level: 0,
+          format: "decimal" as const,
+          text: "%1.",
+          alignment: AlignmentType.START,
+        },
+      ],
     },
     {
       reference: "workflow-mobile",
-      levels: [{ level: 0, format: "decimal", text: "%1.", alignment: AlignmentType.START }],
+      levels: [
+        {
+          level: 0,
+          format: "decimal" as const,
+          text: "%1.",
+          alignment: AlignmentType.START,
+        },
+      ],
     },
     {
       reference: "setup-superadmin",
-      levels: [{ level: 0, format: "decimal", text: "%1.", alignment: AlignmentType.START }],
+      levels: [
+        {
+          level: 0,
+          format: "decimal" as const,
+          text: "%1.",
+          alignment: AlignmentType.START,
+        },
+      ],
     },
   ],
 };
