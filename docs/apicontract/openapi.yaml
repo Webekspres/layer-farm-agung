@@ -35,6 +35,8 @@ tags:
       Mobile client harus menyimpan dan mengirim session cookie pada setiap panggilan `/api/v1/*`.
   - name: Cages
     description: Daftar dan detail kandang untuk layar home & QR scan
+  - name: Field
+    description: Ringkasan operasional staff (kandang yang ditugaskan)
   - name: Catalog
     description: Data referensi global (grade telur, dll.)
   - name: Production
@@ -188,6 +190,58 @@ paths:
           description: Logout berhasil
         "401":
           description: Tidak ada session aktif
+
+  /api/v1/field/overview:
+    get:
+      tags: [Field]
+      summary: Ringkasan dasbor lapangan staff
+      description: |
+        Agregat KPI + tren 7 hari untuk **kandang yang ditugaskan** ke user session.
+        Tidak mencakup penjualan, cashflow, atau inventori tenant-wide.
+      operationId: getFieldOverview
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/FieldOverview"
+              example:
+                success: true
+                message: Ringkasan lapangan berhasil dimuat.
+                data:
+                  recordDate: "2026-08-03"
+                  populationTotal: 4800
+                  cagesActive: 2
+                  recordedTodayCount: 1
+                  todayTb: 1800
+                  todayTr: 10
+                  todayTp: 5
+                  todayHdp: 37.5
+                  targetHdpAvg: 90
+                  pendingVaccineCount: 3
+                  overdueVaccineCount: 1
+                  production7d:
+                    - date: "2026-08-03"
+                      label: "3 Agu"
+                      eggs: 1800
+                  hdp7d:
+                    - date: "2026-08-03"
+                      label: "3 Agu"
+                      hdp: 37.5
+                      target: 90
+                  incompleteCages:
+                    - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                      name: Kandang B2
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /api/v1/cages:
     get:
@@ -1123,6 +1177,108 @@ components:
         recordedTodayCount:
           type: integer
           minimum: 0
+
+    FieldOverviewPoint:
+      type: object
+      required: [date, label, eggs]
+      properties:
+        date:
+          type: string
+          format: date
+        label:
+          type: string
+        eggs:
+          type: number
+
+    FieldOverviewHdpPoint:
+      type: object
+      required: [date, label, hdp, target]
+      properties:
+        date:
+          type: string
+          format: date
+        label:
+          type: string
+        hdp:
+          type: number
+          nullable: true
+        target:
+          type: number
+          nullable: true
+
+    FieldOverviewIncompleteCage:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    FieldOverview:
+      type: object
+      required:
+        - recordDate
+        - populationTotal
+        - cagesActive
+        - recordedTodayCount
+        - todayTb
+        - todayTr
+        - todayTp
+        - todayHdp
+        - targetHdpAvg
+        - pendingVaccineCount
+        - overdueVaccineCount
+        - production7d
+        - hdp7d
+        - incompleteCages
+      properties:
+        recordDate:
+          type: string
+          format: date
+        populationTotal:
+          type: integer
+          minimum: 0
+        cagesActive:
+          type: integer
+          minimum: 0
+        recordedTodayCount:
+          type: integer
+          minimum: 0
+        todayTb:
+          type: integer
+          minimum: 0
+        todayTr:
+          type: integer
+          minimum: 0
+        todayTp:
+          type: integer
+          minimum: 0
+        todayHdp:
+          type: number
+          nullable: true
+        targetHdpAvg:
+          type: number
+          nullable: true
+        pendingVaccineCount:
+          type: integer
+          minimum: 0
+        overdueVaccineCount:
+          type: integer
+          minimum: 0
+        production7d:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOverviewPoint"
+        hdp7d:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOverviewHdpPoint"
+        incompleteCages:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOverviewIncompleteCage"
 
     CageForProduction:
       type: object

@@ -41,7 +41,7 @@ Backend di repo ini menyediakan:
 | Dokumen | Implikasi |
 |---------|-----------|
 | **Guidance strain Lohmann** | `Strain`, `ProductionTarget`, analytics HDP/FCR, program vaksin |
-| **Program vaksinasi** | `VaccineSchedule`, `Item` — UI mobile + rekap admin (belum) |
+| **Program vaksinasi** | `VaccineProgram` → generate `VaccineSchedule`; UI admin ✅; mobile baca Pending |
 | **Proposal Penawaran AAPM** | 13 modul; lihat [`Proposal Penawaran AAPM.md`](./Proposal%20Penawaran%20AAPM.md) |
 | **Contoh laporan harian kelompok Ternak** | Format TB/TR/TP — diterapkan di mobile & rekap admin |
 
@@ -112,7 +112,7 @@ Backend di repo ini menyediakan:
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
 | `/dashboard/cages` | Kandang | ✅ | `Cage`, QR, siklus on-create |
-| `/dashboard/cages/[id]` | Detail kandang | 🟡 | Staff assignment ✅; metrik siklus (populasi, HDP, FCR, mutasi, kesehatan) ✅; riwayat siklus enriched ✅; vaksin/drill-down 🔲 |
+| `/dashboard/cages/[id]` | Detail kandang | 🟡 | Staff assignment ✅; metrik siklus ✅; generate jadwal vaksin dari program ✅; riwayat siklus enriched ✅ |
 | `/dashboard/strains` | Strain | ✅ | `Strain` + `ProductionTarget` (HDP/FCR per umur) |
 | `/dashboard/egg-grades` | Grade telur | ✅ | `EggGrade` katalog opsional (label harga); stok jual = TB → Item Egg — [`egg-sales-stock.md`](./egg-sales-stock.md) |
 | `/dashboard/vendors` | Vendor | ✅ | `Vendor` |
@@ -126,6 +126,7 @@ Backend di repo ini menyediakan:
 |---------------|-------|
 | `/dashboard/population` | `PopulationMutation` |
 | `/dashboard/health/vaccines` | `VaccineSchedule` ✅ |
+| `/dashboard/health/vaccine-programs` | `VaccineProgram` + steps (`age_days`) ✅ |
 | `/dashboard/sales` | `SalesOrder` — P6 |
 | `/dashboard/cashflow` | `CashflowTransaction` — P6 (via `/dashboard/finance`) |
 
@@ -226,7 +227,7 @@ Backend di repo ini menyediakan:
 | 10 | Executive dashboard | ~75% | 🟡 KPI/FCR/mortalitas/kas lite | — |
 | 11 | Sales | ~85% | 🟡 sales order + `OUT_SALES` + delivery log | — |
 | 12 | Cashflow | ~80% | 🟡 ledger + summary; P&L period planned | — |
-| 13 | Health / vaccination | ~85% | rekap pengobatan + vaksin ✅ | pengobatan + vaksin ✅ |
+| 13 | Health / vaccination | ~95% | rekap pengobatan + vaksin + program umur ✅ | pengobatan + vaksin ✅ |
 
 **Vaksinasi ≠ pengobatan:** `VaccineSchedule` (jadwal preventif + reminder) vs `MedicalRecord` (laporan saat flock sakit).
 
@@ -251,7 +252,7 @@ Backend di repo ini menyediakan:
 - [x] Infra tanggal operasional WIB (`lib/business-date.ts`)
 - [x] Halaman mutasi stok global (`/dashboard/inventory/mutations`)
 - [x] Metrik siklus kandang (`CycleSetting` di detail kandang)
-- [x] Modul 13: vaksinasi (jadwal + complete; reminder ringan via status Pending)
+- [x] Modul 13: vaksinasi (jadwal + complete; program umur → generate; reminder ringan via status Pending)
 - [x] D4 dasar: penjualan + cashflow
 - [x] D4 lanjutan: delivery/surat jalan otomatis dari sales
 - [x] Alert log in-app untuk early warning persistent
