@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
-import { Loader2, Pencil, TrendingUp, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, TrendingUp, Plus, Save, Trash2 } from "lucide-react";
 import { StrainsToolbar } from "@/features/strains/components/strains-toolbar";
 import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-message";
 import { listFiltersAreActive } from "@/features/master-data/lib/url-list-params";
@@ -40,6 +40,7 @@ import { updateStrainAction } from "@/features/strains/actions/update-strain";
 import { createProductionTargetAction } from "@/features/strains/actions/create-target";
 import { deleteProductionTargetAction } from "@/features/strains/actions/delete-target";
 import { getProductionTargetsAction } from "@/features/strains/actions/get-targets";
+import { updateProductionTargetAction } from "@/features/strains/actions/update-target";
 import type { StrainListItem } from "@/features/strains/types";
 import { TablePagination } from "@/components/shared/table-pagination";
 import type { PaginationMeta } from "@/lib/pagination";
@@ -85,6 +86,10 @@ export function StrainsManagement({
     deleteProductionTargetAction,
     formInitial,
   );
+  const [updateTargetState, updateTargetAction, updateTargetPending] = useActionState(
+    updateProductionTargetAction,
+    formInitial,
+  );
 
   const fetchTargets = async (strainId: number) => {
     setLoadingTargets(true);
@@ -120,6 +125,14 @@ export function StrainsManagement({
 
   useActionFeedback(deleteTargetState, {
     successMessage: "Target performa berhasil dihapus.",
+    onSuccess: () => {
+      if (targetingStrain) fetchTargets(targetingStrain.id);
+    },
+    when: targetOpen,
+  });
+
+  useActionFeedback(updateTargetState, {
+    successMessage: "Target performa berhasil diperbarui.",
     onSuccess: () => {
       if (targetingStrain) fetchTargets(targetingStrain.id);
     },
@@ -318,10 +331,59 @@ export function StrainsManagement({
                     <TableBody>
                       {targets.map((t) => (
                         <TableRow key={t.id}>
-                          <TableCell className="font-semibold">{t.age_in_weeks} Minggu</TableCell>
-                          <TableCell>{t.target_hdp}%</TableCell>
-                          <TableCell>{t.target_fcr}</TableCell>
+                          <TableCell>
+                            <form id={`target-update-${t.id}`} action={updateTargetAction}>
+                              <input type="hidden" name="id" value={t.id} />
+                              <input type="hidden" name="strainId" value={t.strain_id} />
+                              <Input
+                                name="ageInWeeks"
+                                type="number"
+                                min={1}
+                                required
+                                defaultValue={t.age_in_weeks}
+                                className="h-8 w-20"
+                                aria-label="Umur target minggu"
+                              />
+                            </form>
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              form={`target-update-${t.id}`}
+                              name="targetHdp"
+                              type="number"
+                              step="0.01"
+                              min={0}
+                              max={100}
+                              required
+                              defaultValue={t.target_hdp}
+                              className="h-8 w-24"
+                              aria-label="Target HDP"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              form={`target-update-${t.id}`}
+                              name="targetFcr"
+                              type="number"
+                              step="0.01"
+                              min={0.01}
+                              required
+                              defaultValue={t.target_fcr}
+                              className="h-8 w-20"
+                              aria-label="Target FCR"
+                            />
+                          </TableCell>
                           <TableCell className="text-right">
+                            <Button
+                              type="submit"
+                              form={`target-update-${t.id}`}
+                              variant="ghost"
+                              size="icon-sm"
+                              disabled={updateTargetPending}
+                            >
+                              <Save className="size-4" />
+                              <span className="sr-only">Simpan target</span>
+                            </Button>
                             <form action={deleteTargetAction} className="inline">
                               <input type="hidden" name="id" value={t.id} />
                               <input type="hidden" name="strainId" value={t.strain_id} />
@@ -330,7 +392,7 @@ export function StrainsManagement({
                                 variant="ghost"
                                 size="icon-sm"
                                 className="text-destructive hover:text-destructive/80"
-                                disabled={deleteTargetPending}
+                                disabled={deleteTargetPending || updateTargetPending}
                               >
                                 <Trash2 className="size-4" />
                                 <span className="sr-only">Hapus</span>
@@ -395,9 +457,15 @@ export function StrainsManagement({
               {deleteTargetState.error ? (
                 <FieldError className="mt-2">{deleteTargetState.error}</FieldError>
               ) : null}
+              {updateTargetState.error ? (
+                <FieldError className="mt-2">{updateTargetState.error}</FieldError>
+              ) : null}
 
               <div className="mt-4 flex justify-end">
-                <Button type="submit" disabled={addTargetPending || deleteTargetPending}>
+                <Button
+                  type="submit"
+                  disabled={addTargetPending || deleteTargetPending || updateTargetPending}
+                >
                   {addTargetPending ? (
                     <Loader2 className="size-4 animate-spin mr-2" />
                   ) : (

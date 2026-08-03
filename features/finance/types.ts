@@ -28,6 +28,9 @@ export type SalesOrderListItem = {
   status: string;
   totalAmount: number;
   itemCount: number;
+  deliveryStatus: string | null;
+  deliveredQuantity: number | null;
+  deliveredWeight: number | null;
   createdAt: string;
 };
 

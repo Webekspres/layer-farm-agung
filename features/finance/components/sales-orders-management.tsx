@@ -195,6 +195,7 @@ export function SalesOrdersManagement({
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Surat jalan</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Baris</TableHead>
               </TableRow>
@@ -206,6 +207,21 @@ export function SalesOrdersManagement({
                   <TableCell>{order.customerName}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">Lunas</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {order.deliveryStatus ? (
+                      <div className="text-sm">
+                        <Badge variant="outline">{order.deliveryStatus}</Badge>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {order.deliveredQuantity?.toLocaleString("id-ID") ?? 0} butir
+                          {order.deliveredWeight
+                            ? ` · ${order.deliveredWeight.toLocaleString("id-ID")} kg`
+                            : ""}
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {formatCurrency(order.totalAmount)}

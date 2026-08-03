@@ -4,10 +4,10 @@
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-07-14 |
-| **Status plan** | **Fase 5 P1–P6 ✅** · Staging Vercel+Neon+R2 ✅ |
-| **Progress domain (saat ini)** | D1 ~95% · D2 ~90% · D3 ~98% · D4 ~55% |
-| **Overall (13 modul proposal)** | **~80%** |
+| **Terakhir diperbarui** | 2026-07-17 |
+| **Status plan** | **Fase 5 ✅** · **Fase 6a ready ✅** · Fase 6b dashboard lite ✅ · 100% release hardening |
+| **Progress domain (saat ini)** | D1 ~95% · D2 ~90% · D3 ~98% · D4 ~80% |
+| **Overall (13 modul internal)** | **~90%** |
 | **Repo backend** | `layered-farm-agung` |
 | **Repo mobile** | `aapm-mobile` |
 
@@ -29,6 +29,8 @@
 | **Fase 5 P1 — Offline sync** | ✅ | Write antrean + flush + warm cache + idempotency — [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
 | Fase 5 P2 — Mutasi stok global | ✅ | `/dashboard/inventory/mutations` |
 | Fase 5 P3–P6 | ✅ | Vaksinasi, mutasi pindah, PO partial/cancel, finance + early warning |
+| **Fase 6a — Ready** | ✅ | Neon migrate sales stock · smoke egg sales · docs sync · OpenAPI mobile types |
+| **Fase 6b — Dashboard lite** | ✅ | FCR 7 hari · warning mortalitas · ringkas sales/kas minggu |
 
 ---
 
@@ -45,25 +47,28 @@ flowchart LR
     TZ[WIB_business_date]
     CageMet[Cage_cycle_metrics]
   end
-  subgraph phase5 [Fase_5_aktif]
-  Sync[Offline_sync_P1]
-  InvMut[Mutasi_stok_global_P2]
-  Vax[Vaksinasi_P3]
+  subgraph release [100_percent_release]
+  Gates[Quality_gates]
+  Alerts[Alert_logs]
+  Finance[D4_hardening]
+  Vercel[Vercel_ready]
+  Mobile[EAS_preview]
   end
-  subgraph later [Nanti]
-  Pindah[Mutasi_pindah_P4]
-  POPenuh[PO_penuh_P5]
-  D4[D4_Sales_Cashflow_P6]
-  end
-  done --> Sync
-  Sync --> InvMut
-  InvMut --> Vax
-  Vax --> Pindah
-  Pindah --> POPenuh
-  POPenuh --> D4
+  Inv --> Gates
+  PO --> Gates
+  Pop --> Gates
+  KPI --> Gates
+  MobHist --> Gates
+  TZ --> Gates
+  CageMet --> Gates
+  Gates --> Alerts
+  Gates --> Finance
+  Alerts --> Vercel
+  Finance --> Vercel
+  Vercel --> Mobile
 ```
 
-**Urutan eksekusi berikutnya:** Offline sync hardening (P1b) → Mutasi stok global (P2) → Vaksinasi (P3) → Mutasi pindah (P4) → PO penuh (P5) → D4 (P6).
+**Urutan eksekusi berikutnya:** quality gates + kontrak API → alert log in-app → D4 hardening → Vercel production-ready → EAS preview APK.
 
 ---
 
@@ -233,6 +238,20 @@ Detail lengkap tetap di Git history; ringkasan untuk konteks agent:
 
 ---
 
+## Fase 6a — Production readiness ✅
+
+- [x] Neon `db:migrate:deploy` (sales `location_id` / grade opsional)
+- [x] Smoke checklist jual telur — [`smoke-egg-sales.md`](./smoke-egg-sales.md) + unit tests Category A
+- [x] Sync `sitemap.md` / progress domain D4
+- [x] Mobile OpenAPI types: `aapm-mobile/types/aapm-api.ts`
+
+## Fase 6b — Dashboard lite (Modul 9–10) ✅
+
+- [x] FCR ringkas (hari ini + 7 hari) di `get-dashboard-stats`
+- [x] Early warning mortalitas (`Mati` 7 hari)
+- [x] Ringkas penjualan + saldo kas minggu ini
+- [x] Pertahankan HDP warning yang sudah ada
+
 ## Sesi agent — quick start
 
-**Selesai Fase 5.** Backlog opsional: PATCH offline, SyncQueue monitor, PO→cashflow auto, OpenAPI mobile codegen.
+**Selesai Fase 6a/6b.** Backlog opsional: PATCH offline, SyncQueue monitor, PO→cashflow auto, Delivery_Logs, portal buyer.

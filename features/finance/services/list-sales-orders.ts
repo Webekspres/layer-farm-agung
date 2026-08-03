@@ -15,6 +15,11 @@ function mapRow(row: {
   total_amount: { toNumber(): number } | number;
   created_at: Date;
   customer: { name: string };
+  delivery_logs: {
+    status: string;
+    quantity: number;
+    weight: number | null;
+  }[];
   _count: { sales_order_items: number };
 }): SalesOrderListItem {
   const totalAmount =
@@ -30,6 +35,9 @@ function mapRow(row: {
     status: row.status,
     totalAmount,
     itemCount: row._count.sales_order_items,
+    deliveryStatus: row.delivery_logs[0]?.status ?? null,
+    deliveredQuantity: row.delivery_logs[0]?.quantity ?? null,
+    deliveredWeight: row.delivery_logs[0]?.weight ?? null,
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -42,6 +50,11 @@ export async function listSalesOrders(
   const where = { tenant_id: tenantId };
   const include = {
     customer: { select: { name: true } },
+    delivery_logs: {
+      select: { status: true, quantity: true, weight: true },
+      orderBy: { created_at: "desc" },
+      take: 1,
+    },
     _count: { select: { sales_order_items: true } },
   } as const;
 

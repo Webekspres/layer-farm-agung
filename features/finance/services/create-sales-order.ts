@@ -85,6 +85,10 @@ export async function createSalesOrder(
   }
 
   const totalEggs = input.items.reduce((sum, line) => sum + line.quantity, 0);
+  const totalWeight = input.items.reduce(
+    (sum, line) => sum + (line.weight ?? 0),
+    0,
+  );
   const totalAmount = computeSalesOrderTotal(input.items);
   const saleDate = normalizeBusinessDate(input.saleDate);
 
@@ -108,6 +112,18 @@ export async function createSalesOrder(
           },
         },
         select: { id: true },
+      });
+
+      await tx.deliveryLog.create({
+        data: {
+          tenant_id: tenantId,
+          sale_id: order.id,
+          delivery_date: saleDate,
+          status: "Delivered",
+          quantity: totalEggs,
+          weight: totalWeight > 0 ? totalWeight : null,
+          notes: `Surat jalan otomatis - ${customer.name}`,
+        },
       });
 
       const stock = await applyStockMutation(tx, {

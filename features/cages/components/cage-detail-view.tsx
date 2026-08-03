@@ -16,6 +16,7 @@ import {
   Package,
   HeartPulse,
   Activity,
+  Syringe,
 } from "lucide-react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import {
 } from "@/components/ui/table";
 import { createCycleAction } from "@/features/cages/actions/create-cycle";
 import { closeCycleAction } from "@/features/cages/actions/close-cycle";
+import { regenerateVaccineSchedulesForCageAction } from "@/features/health/actions/regenerate-vaccine-schedules-for-cage";
 import {
   formatBusinessDate,
   formatBusinessDateFromDb,
@@ -135,9 +137,15 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
     closeCycleAction,
     {},
   );
+  const [regenState, regenAction, regenPending] = useActionState(
+    regenerateVaccineSchedulesForCageAction,
+    {},
+  );
 
   useActionFeedback(createState, {
-    successMessage: "Siklus baru berhasil dimulai!",
+    successMessage: createState.message
+      ? `Siklus baru berhasil dimulai. ${createState.message}`
+      : "Siklus baru berhasil dimulai!",
     onSuccess: () => setCreateOpen(false),
     when: createOpen,
   });
@@ -146,6 +154,11 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
     successMessage: "Siklus berjalan berhasil ditutup. Kandang sekarang kosong.",
     onSuccess: () => setCloseOpen(false),
     when: closeOpen,
+  });
+
+  useActionFeedback(regenState, {
+    successMessage: regenState.message ?? "Jadwal vaksin berhasil digenerate.",
+    when: true,
   });
 
   const todayString = formatBusinessDate(startOfTodayBusiness());
@@ -303,7 +316,40 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
               />
             </div>
 
-            <div className="flex justify-end">
+            <div className="mt-2 flex flex-col gap-3 rounded-lg border border-border/80 bg-background/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1 text-sm">
+                <p className="font-medium text-foreground flex items-center gap-2">
+                  <Syringe className="size-4 text-emerald-600" />
+                  Jadwal vaksin dari program
+                </p>
+                <p className="text-muted-foreground">
+                  Generate ulang dari program aktif (idempotent — Pending yang
+                  sama tidak digandakan).{" "}
+                  <Link
+                    href="/dashboard/health/vaccines"
+                    className="font-medium text-emerald-700 underline-offset-2 hover:underline dark:text-emerald-400"
+                  >
+                    Lihat daftar vaksinasi
+                  </Link>
+                </p>
+              </div>
+              <form action={regenAction}>
+                <input type="hidden" name="cageId" value={cage.id} />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  disabled={regenPending}
+                >
+                  {regenPending ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    "Generate jadwal vaksin dari program"
+                  )}
+                </Button>
+              </form>
+            </div>
+
+            <div className="mt-4 flex justify-end">
               <Button
                 variant="destructive"
                 onClick={() => setCloseOpen(true)}

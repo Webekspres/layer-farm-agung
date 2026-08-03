@@ -9,6 +9,21 @@ import {
   SUPERADMIN_ROLE_NAME,
   SYSTEM_ROLES,
 } from "@/features/roles/config/system-roles";
+import {
+  shiftBusinessDate,
+  todayBusinessDateValue,
+} from "@/lib/business-date";
+
+/** TB ~85–92% of 4800 pop — slight day-to-day variation for chart demo. */
+const DEMO_PRODUCTION_7D = [
+  { tb: 4120, tr: 12, tp: 4 },
+  { tb: 4200, tr: 10, tp: 5 },
+  { tb: 4280, tr: 8, tp: 3 },
+  { tb: 4350, tr: 9, tp: 6 },
+  { tb: 4180, tr: 14, tp: 7 },
+  { tb: 4300, tr: 11, tp: 4 },
+  { tb: 4224, tr: 10, tp: 5 },
+] as const;
 
 async function main() {
   const roleRecords = await Promise.all(
@@ -221,6 +236,72 @@ async function main() {
     const { upsertCageStaffAssignment } =
       await import("@/features/cages/lib/cage-staff-db");
     await upsertCageStaffAssignment(seedCage.id, staffUser.id);
+
+    // Demo 7-day production so mobile Home charts (produksi / HDP) have signal.
+    const todayBiz = todayBusinessDateValue();
+    for (let offset = 6; offset >= 0; offset -= 1) {
+      const dayIndex = 6 - offset;
+      const sample = DEMO_PRODUCTION_7D[dayIndex]!;
+      const recordDate = shiftBusinessDate(todayBiz, -offset);
+      const existing = await prisma.dailyProduction.findFirst({
+        where: {
+          tenant_id: defaultTenant.id,
+          cage_id: seedCage.id,
+          record_date: recordDate,
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        await prisma.dailyProduction.update({
+          where: { id: existing.id },
+          data: {
+            user_id: staffUser.id,
+            tb: sample.tb,
+            tr: sample.tr,
+            tp: sample.tp,
+            is_synced: true,
+          },
+        });
+      } else {
+        await prisma.dailyProduction.create({
+          data: {
+            tenant_id: defaultTenant.id,
+            cage_id: seedCage.id,
+            user_id: staffUser.id,
+            record_date: recordDate,
+            tb: sample.tb,
+            tr: sample.tr,
+            tp: sample.tp,
+            is_synced: true,
+          },
+        });
+      }
+    }
+  }
+
+  // Target HDP for Lohmann — lookup uses age_in_weeks <= flock age.
+  const existingTarget = await prisma.productionTarget.findFirst({
+    where: {
+      strain_id: strainLohmann.id,
+      age_in_weeks: 20,
+    },
+    select: { id: true },
+  });
+  if (existingTarget) {
+    await prisma.productionTarget.update({
+      where: { id: existingTarget.id },
+      data: { target_hdp: 90, target_fcr: 2.1 },
+    });
+  } else {
+    await prisma.productionTarget.create({
+      data: {
+        strain_id: strainLohmann.id,
+        age_in_weeks: 20,
+        target_hdp: 90,
+        target_fcr: 2.1,
+      },
+    });
   }
 
   await prisma.vendor.upsert({
@@ -300,6 +381,38 @@ async function main() {
       min_stock_alert: 50,
       initialStock: 200,
     },
+    {
+      id: "00000000-0000-4000-8000-000000000301",
+      name: "ND Hitchner B1",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 100,
+      initialStock: 500,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000302",
+      name: "IB H120",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 100,
+      initialStock: 500,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000303",
+      name: "Gumboro Intermediate",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 80,
+      initialStock: 400,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000304",
+      name: "ND Lasota",
+      type: ItemType.Vaccine,
+      unit: "dosis",
+      min_stock_alert: 100,
+      initialStock: 500,
+    },
   ] as const;
 
   for (const item of sampleItems) {
@@ -355,6 +468,90 @@ async function main() {
         item_id: feed.id,
         location_id: mainLocation.id,
         quantity: 1000,
+      },
+    });
+  }
+
+  // Program vaksin default (pola umur dari Excel Vaccine Regime — subset).
+  const defaultVaccineProgramId = "00000000-0000-4000-8000-000000000401";
+  await prisma.vaccineProgram.upsert({
+    where: { id: defaultVaccineProgramId },
+    update: {
+      name: "Program default (demo)",
+      strain_id: null,
+      is_active: true,
+    },
+    create: {
+      id: defaultVaccineProgramId,
+      tenant_id: defaultTenant.id,
+      name: "Program default (demo)",
+      strain_id: null,
+      is_active: true,
+    },
+  });
+
+  const demoProgramSteps = [
+    {
+      id: "00000000-0000-4000-8000-000000000411",
+      age_days: 1,
+      item_id: "00000000-0000-4000-8000-000000000301",
+      pathogen_label: "ND",
+      formulation_type: "Live",
+      sort_order: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000412",
+      age_days: 1,
+      item_id: "00000000-0000-4000-8000-000000000302",
+      pathogen_label: "IB",
+      formulation_type: "Live",
+      sort_order: 1,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000413",
+      age_days: 6,
+      item_id: "00000000-0000-4000-8000-000000000202",
+      pathogen_label: null,
+      formulation_type: "Suspensi",
+      sort_order: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000414",
+      age_days: 12,
+      item_id: "00000000-0000-4000-8000-000000000303",
+      pathogen_label: "IBD",
+      formulation_type: "Live",
+      sort_order: 0,
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000415",
+      age_days: 21,
+      item_id: "00000000-0000-4000-8000-000000000304",
+      pathogen_label: "ND",
+      formulation_type: "Live",
+      sort_order: 0,
+    },
+  ] as const;
+
+  for (const step of demoProgramSteps) {
+    await prisma.vaccineProgramStep.upsert({
+      where: { id: step.id },
+      update: {
+        age_days: step.age_days,
+        item_id: step.item_id,
+        pathogen_label: step.pathogen_label,
+        formulation_type: step.formulation_type,
+        sort_order: step.sort_order,
+        program_id: defaultVaccineProgramId,
+      },
+      create: {
+        id: step.id,
+        program_id: defaultVaccineProgramId,
+        age_days: step.age_days,
+        item_id: step.item_id,
+        pathogen_label: step.pathogen_label,
+        formulation_type: step.formulation_type,
+        sort_order: step.sort_order,
       },
     });
   }

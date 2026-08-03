@@ -1,7 +1,18 @@
 import Link from "next/link";
-import { AlertTriangle, Egg, Package, TrendingUp, Users } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Egg,
+  Package,
+  Pill,
+  ShoppingCart,
+  Skull,
+  Sprout,
+  Syringe,
+} from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,191 +20,351 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { markDashboardAlertsReadAction } from "@/features/dashboard/actions/mark-alerts-read";
 import type { ServerSession } from "@/features/auth/lib/session";
-import type { DashboardStats } from "@/features/dashboard/services/get-dashboard-stats";
+import { DashboardCharts } from "@/features/dashboard/components/dashboard-charts";
+import { KpiCard } from "@/features/dashboard/components/kpi-card";
+import type { DashboardExecutive } from "@/features/dashboard/lib/dashboard-executive-types";
+import { formatCount } from "@/features/dashboard/lib/dashboard-format";
+import { MORTALITY_WEEK_WARNING_THRESHOLD } from "@/features/dashboard/lib/dashboard-lite-metrics";
+import { cn } from "@/lib/utils";
 
 type DashboardOverviewProps = {
   session: ServerSession;
-  stats: DashboardStats | null;
+  data: DashboardExecutive | null;
 };
 
-function formatCount(value: number) {
-  return value.toLocaleString("id-ID");
+const timelineIcon = {
+  production: Egg,
+  vaccination: Syringe,
+  purchase_order: ShoppingCart,
+  stock_adjustment: Package,
+} as const;
+
+const inventoryIcon = {
+  Feed: Sprout,
+  Medicine: Pill,
+  Vaccine: Syringe,
+} as const;
+
+function alertHref(source: string | null, sourceId: string | null) {
+  if (!sourceId) return "/dashboard";
+  if (source === "Cage") return `/dashboard/cages/${sourceId}`;
+  if (source === "Item") return `/dashboard/inventory/${sourceId}`;
+  return "/dashboard";
 }
 
-export function DashboardOverview({ session, stats }: DashboardOverviewProps) {
+export function DashboardOverview({ session, data }: DashboardOverviewProps) {
   const displayName = session.user.fullName ?? session.user.name ?? "Pengguna";
-  const activeTenant =
-    session.session.activeTenantId ?? session.user.tenantId;
 
-  const statCards = [
-    {
-      title: "Produksi hari ini",
-      value: stats ? formatCount(stats.todayEggTotal) : "—",
-      description: "Butir telur bagus (TB) tercatat",
-      icon: Egg,
-    },
-    {
-      title: "Populasi aktif",
-      value: stats ? formatCount(stats.activePopulationTotal) : "—",
-      description: "Ekor di kandang ber-siklus aktif",
-      icon: TrendingUp,
-    },
-    {
-      title: "Stok kritis",
-      value: stats ? formatCount(stats.lowStockItemCount) : "—",
-      description: "Item di bawah ambang batas",
-      icon: Package,
-    },
-    {
-      title: "Pengguna aktif",
-      value: stats ? formatCount(stats.activeUserCount) : "—",
-      description: "Akun tenant aktif",
-      icon: Users,
-    },
-  ] as const;
+  if (!data) {
+    return (
+      <>
+        <PageHeader
+          title={`Selamat datang, ${displayName}`}
+          description="Pilih tenant aktif untuk melihat kesehatan operasional farm."
+        />
+        <Card className="border-border/70 shadow-sm">
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            Belum ada tenant aktif. Gunakan pemilih tenant di header untuk
+            membuka ringkasan eksekutif.
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
 
   return (
-    <>
-      <PageHeader
-        title={`Selamat datang, ${displayName}`}
-        description="Ringkasan operasional peternakan ayam petelur Anda."
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statCards.map((stat) => (
-          <Card key={stat.title} className="border-border/80 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <stat.icon className="size-4" />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+    <div className="space-y-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <PageHeader
+          title={`Selamat datang, ${displayName}`}
+          description="Ringkasan kesehatan operasional farm — produksi, stok, dan keuangan hari ini."
+        />
       </div>
 
-      {stats && stats.earlyWarnings.length > 0 ? (
-        <Card className="border-destructive/40 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-heading text-base">
-              <AlertTriangle className="size-4 text-destructive" />
-              Peringatan dini HDP
-            </CardTitle>
-            <CardDescription>
-              Kandang dengan produksi hari ini di bawah 90% dari target HDP
-              strain.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {stats.earlyWarnings.map((warning) => (
-              <Link
-                key={warning.cageId}
-                href={`/dashboard/cages/${warning.cageId}`}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50"
-              >
-                <span className="font-medium">{warning.cageName}</span>
-                <Badge variant="destructive">
-                  {warning.actualHdp.toFixed(1)}% / target{" "}
-                  {warning.targetHdp.toFixed(1)}%
-                </Badge>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
+      <section className="space-y-3">
+        <h2 className="sr-only">Ringkasan KPI</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+          {data.kpis.map((kpi) => (
+            <KpiCard key={kpi.id} kpi={kpi} />
+          ))}
+        </div>
+      </section>
 
-      {stats && stats.lowStockItems.length > 0 ? (
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-heading text-base">
-              Stok kritis
-            </CardTitle>
-            <CardDescription>
-              Item inventori di atau di bawah ambang batas minimum.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2">
-            {stats.lowStockItems.map((item) => (
-              <Link
-                key={item.id}
-                href={`/dashboard/inventory/${item.id}`}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50"
-              >
-                <span className="font-medium">{item.name}</span>
-                <Badge variant="destructive">
-                  {item.totalQuantity.toLocaleString("id-ID")} {item.unit} / min{" "}
-                  {item.minStockAlert.toLocaleString("id-ID")}
-                </Badge>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-heading">Sesi Anda</CardTitle>
-            <CardDescription>
-              Informasi akun dari Domain 1 (Auth & Tenant).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 text-sm">
-            <InfoRow label="Username" value={session.user.username} />
-            <InfoRow label="Role" value={session.user.roleName} />
-            <InfoRow
-              label="Tenant aktif"
-              value={activeTenant ?? "Global (superadmin)"}
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-border/80 shadow-sm">
-          <CardHeader>
-            <CardTitle className="font-heading">Hak akses</CardTitle>
-            <CardDescription>
-              Permission dari RBAC — menu sidebar difilter otomatis.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {session.user.permissions?.length ? (
-                session.user.permissions.map((permission) => (
-                  <Badge
-                    key={permission}
-                    variant="secondary"
-                    className="bg-primary/10 text-primary hover:bg-primary/15"
-                  >
-                    {permission}
+      {(data.earlyWarnings.length > 0 || data.mortalityWarnings.length > 0) && (
+        <section className="grid gap-4 lg:grid-cols-2">
+          {data.earlyWarnings.length > 0 ? (
+            <AlertCard
+              icon={AlertTriangle}
+              title="Peringatan dini HDP"
+              description="Kandang di bawah 90% target HDP strain hari ini."
+            >
+              {data.earlyWarnings.map((warning) => (
+                <Link
+                  key={warning.cageId}
+                  href={`/dashboard/cages/${warning.cageId}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border/80 px-3 py-2 text-sm transition-colors hover:bg-muted/40"
+                >
+                  <span className="font-medium">{warning.cageName}</span>
+                  <Badge variant="destructive">
+                    {warning.actualHdp.toFixed(1)}% /{" "}
+                    {warning.targetHdp.toFixed(1)}%
                   </Badge>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Tidak ada permission.
+                </Link>
+              ))}
+            </AlertCard>
+          ) : null}
+          {data.mortalityWarnings.length > 0 ? (
+            <AlertCard
+              icon={Skull}
+              title="Peringatan mortalitas"
+              description={`Kematian ≥ ${MORTALITY_WEEK_WARNING_THRESHOLD} ekor dalam 7 hari.`}
+            >
+              {data.mortalityWarnings.map((warning) => (
+                <Link
+                  key={warning.cageId}
+                  href={`/dashboard/cages/${warning.cageId}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border/80 px-3 py-2 text-sm transition-colors hover:bg-muted/40"
+                >
+                  <span className="font-medium">{warning.cageName}</span>
+                  <Badge variant="destructive">
+                    {formatCount(warning.deaths)} ekor
+                  </Badge>
+                </Link>
+              ))}
+            </AlertCard>
+          ) : null}
+        </section>
+      )}
+
+      <Card className="border-border/70 bg-card/80 shadow-sm">
+        <CardHeader className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 font-heading text-base">
+              <AlertTriangle className="size-4 text-primary" />
+              Pusat peringatan
+            </CardTitle>
+            <CardDescription>
+              Riwayat alert otomatis dari HDP, mortalitas, dan stok minimum.
+            </CardDescription>
+          </div>
+          {data.persistentAlerts.some((alert) => !alert.isRead) ? (
+            <form action={markDashboardAlertsReadAction}>
+              <Button type="submit" variant="outline" size="sm">
+                Tandai sudah dibaca
+              </Button>
+            </form>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {data.persistentAlerts.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border/80 px-3 py-6 text-center text-sm text-muted-foreground">
+              Belum ada alert otomatis.
+            </p>
+          ) : (
+            <div className="grid gap-2 lg:grid-cols-2">
+              {data.persistentAlerts.map((alert) => (
+                <Link
+                  key={alert.id}
+                  href={alertHref(alert.source, alert.sourceId)}
+                  className={cn(
+                    "rounded-lg border border-border/80 px-3 py-2 text-sm transition-colors hover:bg-muted/40",
+                    !alert.isRead && "border-primary/40 bg-primary/5",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{alert.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {alert.message}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={alert.severity === "Critical" ? "destructive" : "outline"}
+                      className="shrink-0"
+                    >
+                      {alert.isRead ? "Dibaca" : "Baru"}
+                    </Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <DashboardCharts data={data} />
+
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="border-border/70 bg-card/80 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="font-heading text-base">
+              Inventori saprodi
+            </CardTitle>
+            <CardDescription>
+              Agregat stok pakan, obat, dan vaksin di semua lokasi.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {data.inventory.map((bucket) => {
+                const Icon = inventoryIcon[bucket.type];
+                return (
+                  <div
+                    key={bucket.type}
+                    className="rounded-xl border border-border/70 bg-muted/20 p-3"
+                  >
+                    <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+                      <Icon className="size-4 text-primary" />
+                      <span className="text-xs font-medium tracking-wide uppercase">
+                        {bucket.label}
+                      </span>
+                    </div>
+                    <p className="font-heading text-xl font-semibold tabular-nums">
+                      {formatCount(bucket.quantity)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {bucket.unit} · {formatCount(bucket.itemCount)} item
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">Peringatan stok rendah</p>
+                <Link
+                  href="/dashboard/inventory"
+                  className="text-xs font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Lihat inventori
+                </Link>
+              </div>
+              {data.lowStockAlerts.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border/80 px-3 py-4 text-sm text-muted-foreground">
+                  Tidak ada item di bawah ambang minimum.
                 </p>
+              ) : (
+                <ul className="space-y-2">
+                  {data.lowStockAlerts.map((item) => (
+                    <li key={item.id}>
+                      <Link
+                        href={`/dashboard/inventory/${item.id}`}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border/80 px-3 py-2 text-sm transition-colors hover:bg-muted/40"
+                      >
+                        <span className="truncate font-medium">{item.name}</span>
+                        <Badge variant="destructive" className="shrink-0">
+                          {formatCount(item.totalQuantity)} {item.unit} / min{" "}
+                          {formatCount(item.minStockAlert)}
+                        </Badge>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
           </CardContent>
         </Card>
-      </div>
-    </>
+
+        <Card className="border-border/70 bg-card/80 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-heading text-base">
+              <Activity className="size-4 text-primary" />
+              Timeline operasional
+            </CardTitle>
+            <CardDescription>
+              Aktivitas terbaru: produksi, vaksinasi, PO, dan mutasi stok.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data.timeline.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border/80 px-3 py-8 text-center text-sm text-muted-foreground">
+                Belum ada aktivitas operasional terbaru.
+              </p>
+            ) : (
+              <ol className="relative space-y-0 border-l border-border/80 pl-4">
+                {data.timeline.map((item, index) => {
+                  const Icon = timelineIcon[item.kind];
+                  const content = (
+                    <div
+                      className={cn(
+                        "relative pb-5 last:pb-0",
+                        index === data.timeline.length - 1 && "pb-0",
+                      )}
+                    >
+                      <span className="absolute left-[-1.4rem] flex size-6 items-center justify-center rounded-full border border-border bg-card text-primary">
+                        <Icon className="size-3" />
+                      </span>
+                      <p className="text-sm font-medium text-foreground">
+                        {item.title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {item.description}
+                      </p>
+                      <p className="mt-1 text-[11px] text-muted-foreground/80 tabular-nums">
+                        {formatTimelineAt(item.at)}
+                      </p>
+                    </div>
+                  );
+
+                  return (
+                    <li key={item.id}>
+                      {item.href ? (
+                        <Link
+                          href={item.href}
+                          className="block rounded-md transition-colors hover:bg-muted/30"
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        content
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+    </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function AlertCard({
+  icon: Icon,
+  title,
+  description,
+  children,
+}: {
+  icon: typeof AlertTriangle;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-border/60 pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-foreground">{value}</span>
-    </div>
+    <Card className="border-destructive/35 bg-card/80 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 font-heading text-base">
+          <Icon className="size-4 text-destructive" />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">{children}</CardContent>
+    </Card>
   );
+}
+
+function formatTimelineAt(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString("id-ID", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

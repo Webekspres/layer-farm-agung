@@ -35,12 +35,14 @@ tags:
       Mobile client harus menyimpan dan mengirim session cookie pada setiap panggilan `/api/v1/*`.
   - name: Cages
     description: Daftar dan detail kandang untuk layar home & QR scan
+  - name: Field
+    description: Ringkasan operasional staff (kandang yang ditugaskan)
   - name: Catalog
     description: Data referensi global (grade telur, dll.)
   - name: Production
     description: Pencatatan produksi telur harian
   - name: Feed
-    description: Konsumsi pakan — **belum diimplementasi** (501)
+    description: Konsumsi pakan dan rekonsiliasi stok pakan (`OUT_FEED`)
   - name: Vaccination
     description: |
       Jadwal vaksinasi per kandang (Modul 13) dan penyelesaiannya oleh staff.
@@ -50,6 +52,56 @@ security:
   - cookieAuth: []
 
 paths:
+  /api/v1/mobile/auth/sign-in:
+    post:
+      tags: [Auth]
+      summary: Login staff mobile
+      description: |
+        Wrapper Better Auth khusus aplikasi mobile. Endpoint ini menerima username
+        dan password, meneruskan `Set-Cookie`, lalu mengembalikan envelope v1.
+        Hanya akun staff operasional yang boleh memakai aplikasi mobile.
+      operationId: mobileStaffSignIn
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInUsernameRequest"
+            example:
+              username: staff.kandang
+              password: password123
+      responses:
+        "200":
+          description: Login berhasil — session cookie diset
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/BetterAuthSessionResponse"
+              example:
+                success: true
+                message: Berhasil masuk.
+                data:
+                  user:
+                    id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                    name: Staff Kandang
+                    email: staff@example.com
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /api/auth/sign-in/username:
     post:
       tags: [Auth]
@@ -125,6 +177,71 @@ paths:
                 $ref: "#/components/schemas/BetterAuthSessionResponse"
         "401":
           description: Tidak ada session
+
+  /api/auth/sign-out:
+    post:
+      tags: [Auth]
+      summary: Logout session aktif
+      operationId: signOut
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Logout berhasil
+        "401":
+          description: Tidak ada session aktif
+
+  /api/v1/field/overview:
+    get:
+      tags: [Field]
+      summary: Ringkasan dasbor lapangan staff
+      description: |
+        Agregat KPI + tren 7 hari untuk **kandang yang ditugaskan** ke user session.
+        Tidak mencakup penjualan, cashflow, atau inventori tenant-wide.
+      operationId: getFieldOverview
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/FieldOverview"
+              example:
+                success: true
+                message: Ringkasan lapangan berhasil dimuat.
+                data:
+                  recordDate: "2026-08-03"
+                  populationTotal: 4800
+                  cagesActive: 2
+                  recordedTodayCount: 1
+                  todayTb: 1800
+                  todayTr: 10
+                  todayTp: 5
+                  todayHdp: 37.5
+                  targetHdpAvg: 90
+                  pendingVaccineCount: 3
+                  overdueVaccineCount: 1
+                  production7d:
+                    - date: "2026-08-03"
+                      label: "3 Agu"
+                      eggs: 1800
+                  hdp7d:
+                    - date: "2026-08-03"
+                      label: "3 Agu"
+                      hdp: 37.5
+                      target: 90
+                  incompleteCages:
+                    - id: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+                      name: Kandang B2
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
   /api/v1/cages:
     get:
@@ -954,6 +1071,13 @@ components:
         error:
           type: string
           description: Detail error (Bahasa Indonesia)
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Error per field, dipakai terutama oleh login mobile.
 
     SignInUsernameRequest:
       type: object
@@ -1053,6 +1177,108 @@ components:
         recordedTodayCount:
           type: integer
           minimum: 0
+
+    FieldOverviewPoint:
+      type: object
+      required: [date, label, eggs]
+      properties:
+        date:
+          type: string
+          format: date
+        label:
+          type: string
+        eggs:
+          type: number
+
+    FieldOverviewHdpPoint:
+      type: object
+      required: [date, label, hdp, target]
+      properties:
+        date:
+          type: string
+          format: date
+        label:
+          type: string
+        hdp:
+          type: number
+          nullable: true
+        target:
+          type: number
+          nullable: true
+
+    FieldOverviewIncompleteCage:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    FieldOverview:
+      type: object
+      required:
+        - recordDate
+        - populationTotal
+        - cagesActive
+        - recordedTodayCount
+        - todayTb
+        - todayTr
+        - todayTp
+        - todayHdp
+        - targetHdpAvg
+        - pendingVaccineCount
+        - overdueVaccineCount
+        - production7d
+        - hdp7d
+        - incompleteCages
+      properties:
+        recordDate:
+          type: string
+          format: date
+        populationTotal:
+          type: integer
+          minimum: 0
+        cagesActive:
+          type: integer
+          minimum: 0
+        recordedTodayCount:
+          type: integer
+          minimum: 0
+        todayTb:
+          type: integer
+          minimum: 0
+        todayTr:
+          type: integer
+          minimum: 0
+        todayTp:
+          type: integer
+          minimum: 0
+        todayHdp:
+          type: number
+          nullable: true
+        targetHdpAvg:
+          type: number
+          nullable: true
+        pendingVaccineCount:
+          type: integer
+          minimum: 0
+        overdueVaccineCount:
+          type: integer
+          minimum: 0
+        production7d:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOverviewPoint"
+        hdp7d:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOverviewHdpPoint"
+        incompleteCages:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOverviewIncompleteCage"
 
     CageForProduction:
       type: object
