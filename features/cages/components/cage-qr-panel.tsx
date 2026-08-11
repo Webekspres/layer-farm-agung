@@ -2,6 +2,7 @@
 
 import QRCode from "react-qr-code";
 
+import { CageQrPrintButton } from "@/features/cages/components/cage-qr-print-button";
 import { buildCageQrUrl } from "@/features/cages/lib/build-cage-qr-url";
 
 type CageQrPanelProps = {
@@ -18,23 +19,33 @@ export function CageQrPanel({ cageName, qrCode }: CageQrPanelProps) {
         QR Kandang
       </h2>
       <p className="mb-4 text-sm text-muted-foreground">
-        Tempel di pintu <span className="font-medium text-foreground">{cageName}</span>.
-        Staff scan untuk input produksi harian.
+        Tempel di pintu{" "}
+        <span className="font-medium text-foreground">{cageName}</span>. Staff
+        dapat scan sebagai pintasan opsional; daftar kandang tetap tersedia.
       </p>
 
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-        <div className="rounded-xl border border-border bg-white p-4">
-          <QRCode value={qrUrl} size={160} />
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-white p-4 text-center text-foreground">
+          <h1 className="text-xl font-bold tracking-tight">{cageName}</h1>
+          <div className="rounded-lg bg-white p-1">
+            <QRCode value={qrUrl} size={160} />
+          </div>
+          <p className="font-mono text-sm font-semibold">{qrCode}</p>
+          <p className="max-w-xs text-xs text-muted-foreground">
+            Scan dengan AAPM Mobile (opsional). Pastikan staff ditugaskan ke
+            kandang ini.
+          </p>
         </div>
-        <div className="space-y-2 text-sm">
+        <div className="space-y-3 text-sm">
           <div>
             <span className="text-muted-foreground">Kode:</span>{" "}
             <span className="font-mono font-semibold text-foreground">{qrCode}</span>
           </div>
           <div className="break-all text-muted-foreground">
-            <span className="text-muted-foreground">URL:</span>{" "}
+            <span className="text-muted-foreground">Payload:</span>{" "}
             <span className="font-mono text-xs text-foreground">{qrUrl}</span>
           </div>
+          <CageQrPrintButton cageName={cageName} qrCode={qrCode} />
         </div>
       </div>
     </div>

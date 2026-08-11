@@ -13,9 +13,10 @@
 | **PH1-C** Idempotency | **Unit OK** / **Pending device retest** | `client-mutation-id` tests pass (9 related tests). Retest double-tap / flush / reopen-with-queue on device. |
 | **PH1-D** Correction refresh | **Implemented** | Edit forms clear cage history cache after successful save; screens pass `cageId` + `recordDate`. **Pending device confirm** that riwayat shows latest without full app reopen. |
 | **PH1-E** Staff Web finance hide | **Implemented** | Staff keeps Web login. Dashboard hides revenue KPI, PO timeline, and finance charts without `view_cashflow`. Permissions not broadened. |
-| **PH1-F** Pilot controls & KPI labels | **Implemented** | HDP/FCR labeled indikatif / bukan angka keputusan; close-cycle amber banner; Mobile Input list-first (QR opsional); Profile offline copy internet-first (no cold-start claim). |
+| **PH1-F** Pilot controls & KPI labels | **Implemented** | HDP/FCR labeled indikatif / bukan angka keputusan; close-cycle amber banner; Mobile Input list-first; Profile offline copy internet-first (no cold-start claim). **Add-on:** optional Scan QR shortcut restored (still not required); Web Cetak QR on cage detail. |
 | **PH1-G** Version + pilot pack | **Implemented** | Mobile Profile version; Web Profile version; [pilot-guide-v1.md](./pilot-guide-v1.md); [pilot-ops-contact.md](./pilot-ops-contact.md) (fill contacts before go-live). |
 | **PH1-H** Dashboard smoke | **Pending device retest** | Labels updated; compare population/production cards vs known inputs on one-cycle farm. |
+| **GAP-012 ops add-on** Optional QR | **Implemented (not Phase 2)** | Reuses `qr_code` + `POST /api/v1/cages/scan` + assignment check. Does **not** close the full post-pilot QR/deep-link gate. |
 
 ## Code / docs touched (high level)
 

@@ -100,7 +100,7 @@ Recorded **2026-08-11** (pilot):
 |----|------------|
 | GAP-003 / GAP-004 / GAP-010 | One Active cycle per cage; **no close/start** new cycle during pilot |
 | GAP-011 / GAP-028 | Internet-first; do not promise cold-start offline; soften “data offline siap” claims |
-| GAP-012 | Staff picks cage from list; QR not primary |
+| GAP-012 | Staff picks cage from list (primary); QR optional shortcut restored — not QR-primary / not required |
 | GAP-013 | Do not activate/promise egg stock sales in pilot |
 | GAP-014 | HDP/FCR indicative only / labeled / hidden as decision |
 | GAP-008 / GAP-009 | **PH1-E shipped:** staff Web login kept; finance/revenue/PO hidden without `view_cashflow` (nav + dashboard KPIs/charts) |
@@ -241,7 +241,7 @@ And staff permissions are not broadened beyond the existing seeded set
 ```text
 Given pilot baseline (Readiness)
 When a pilot user uses the apps per guide
-Then QR is not required (list pick works), sales/egg-stock and multi-cycle are not presented as active capabilities
+Then QR is not required (list pick works), optional Scan QR remains available as a shortcut, sales/egg-stock and multi-cycle are not presented as active capabilities
 And HDP/FCR are labeled as temporary/indicative or not shown as decision KPIs
 And Profile does not claim full offline reopen if cold-start is unsupported
 ```
@@ -308,4 +308,8 @@ And HDP/FCR are not treated as official decision metrics (per PH1-F)
 
 ## Stop point
 
-Phase 1 coding for PH1-A–H is complete (see report). **No Phase 2** (cycle isolation / cold-start offline / QR-primary / egg→sales activation / advanced audit) in this wave. Next: formal device retest of PH1-A/B/C/H on pilot-like build; fill `pilot-ops-contact.md` before customer go-live.
+Phase 1 coding for PH1-A–H is complete (see report). **No Phase 2** (cycle isolation / cold-start offline / QR-primary / egg→sales activation / advanced audit) in this wave.
+
+**Operational add-on (GAP-012, not Phase 2):** optional Mobile Scan QR shortcut restored (list remains primary) + Web **Cetak QR Kandang** on cage detail. Full Follow-up §8 QR/deep-link capability gate remains post-pilot.
+
+Next: formal device retest of PH1-A/B/C/H on pilot-like build; fill `pilot-ops-contact.md` before customer go-live.

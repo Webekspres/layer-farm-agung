@@ -8,10 +8,11 @@
 
 - Satu farm / tenant, 1–3 kandang, **satu siklus aktif** per kandang
 - Internet sebagai jalur utama
-- Staff memilih kandang dari daftar (bukan QR sebagai jalur utama)
+- Staff memilih kandang dari daftar (jalur utama); **Scan QR opsional** sebagai pintasan di lapangan
 - Input harian: produksi, pakan, populasi/mortalitas, kesehatan
 - Histori Android + pemeriksaan web + koreksi dasar
 - Dashboard monitoring operasional
+- Web: **Cetak QR Kandang** di detail kandang untuk label fisik
 
 ## Peran
 
@@ -23,7 +24,7 @@
 ## Fitur yang dinonaktifkan / tidak dijanjikan pada pilot
 
 - Tutup / buka siklus baru (hindari multi-siklus)
-- QR / deep-link sebagai jalur kerja utama
+- QR / deep-link sebagai **satu-satunya** jalur kerja (QR opsional boleh; daftar wajib tetap ada)
 - Cold-start offline (buka ulang app tanpa jaringan)
 - Stok jual telur + penjualan sebagai alur aktif
 - HDP / FCR sebagai **angka keputusan** (ditampilkan sebagai indikatif saja)

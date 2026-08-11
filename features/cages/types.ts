@@ -14,6 +14,7 @@ export type CagesListFilters = {
 export type CageListItem = {
   id: string;
   name: string;
+  qrCode: string;
   locationId: string;
   locationName: string;
   strainId: number;
