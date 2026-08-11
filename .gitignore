@@ -61,3 +61,6 @@ next-env.d.ts
 # user uploads (keep directory via .gitkeep)
 /public/uploads/**
 !/public/uploads/**/.gitkeep
+
+# graphify local knowledge graph (regenerate with graphify . --code-only)
+/graphify-out/
