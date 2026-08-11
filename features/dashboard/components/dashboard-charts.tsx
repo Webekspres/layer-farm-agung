@@ -65,9 +65,14 @@ const gradeConfig = {
 
 type DashboardChartsProps = {
   data: DashboardExecutive;
+  /** When false, hide penjualan/cashflow/laba (staff without view_cashflow). */
+  showFinance?: boolean;
 };
 
-export function DashboardCharts({ data }: DashboardChartsProps) {
+export function DashboardCharts({
+  data,
+  showFinance = true,
+}: DashboardChartsProps) {
   const hasProduction = seriesHasSignal(
     data.production30d.map((p) => ({ value: p.eggs })),
   );
@@ -352,6 +357,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
       </section>
 
+      {showFinance ? (
       <section className="space-y-3">
         <SectionHeading
           title="Ringkasan keuangan"
@@ -486,6 +492,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
           </Card>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }

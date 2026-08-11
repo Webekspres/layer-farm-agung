@@ -176,6 +176,7 @@ export function ProfilePanel({ session, tenantBranding = null }: ProfilePanelPro
             <Row label="Username" value={session.user.username} />
             <Row label="Email" value={session.user.email ?? "—"} />
             <Row label="Peran" value={session.user.roleName} />
+            <Row label="Versi web" value="AAPM Web v0.1.0" />
             <Row
               label="Cabang aktif"
               value={activeTenant ? "Tenant terikat" : "Global"}

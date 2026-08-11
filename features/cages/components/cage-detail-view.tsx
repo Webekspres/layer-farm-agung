@@ -349,13 +349,20 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
               </form>
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 space-y-3">
+              <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+                Batas pilot: jangan menutup atau membuka siklus baru pada kandang
+                yang sama. Ringkasan siklus baru dapat mewarisi data lama sampai
+                perbaikan multi-siklus selesai.
+              </p>
+              <div className="flex justify-end">
               <Button
                 variant="destructive"
                 onClick={() => setCloseOpen(true)}
               >
                 Tutup Siklus Kandang
               </Button>
+              </div>
             </div>
           </div>
         ) : (

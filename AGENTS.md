@@ -239,11 +239,38 @@ When adding nav items, update `features/dashboard/config/navigation.ts` and `fea
 
 ---
 
+## Shared AAPM source context
+
+[`docs/source/`](./docs/source/) holds the **shared AAPM product/business context** for this product (Web + Mobile): requirements, client expectations, UAT feedback, and related project references from the system analyst / client.
+
+Consult these documents **before** changing behavior when the task involves:
+
+- UAT revisions or “implement this UAT feedback”
+- Client-requested changes
+- Business workflows or domain behavior
+- Feature requirements or agreed AAPM scope
+
+They are **source/reference material** — do not invent missing requirements. If the current implementation differs from a documented requirement, **identify the discrepancy** (and any contradiction between source documents) rather than assuming which side is correct. Do not rewrite or “fix” files under `docs/source/`.
+
+Implementation details still come from this repo: codebase, Graphify (`graphify-out/`), architecture docs (`docs/ecosystem.md`, `docs/sitemap.md`), OpenAPI, and `.cursor/rules/`.
+
+**Expected flow for UAT / requirement-driven work:**
+
+1. Read the relevant file(s) under `docs/source/`
+2. Understand expected business behavior
+3. Inspect the current implementation
+4. Identify gap / discrepancy
+5. Impact analysis
+6. Implement only the necessary change
+
+---
+
 ## Related files
 
 | Doc / path | Contents |
 |------------|----------|
 | [DESIGN.md](./DESIGN.md) | Brand, colors, type, components, toasts |
+| [docs/source/](./docs/source/) | Shared AAPM business/UAT/client source context (Web + Mobile) |
 | [docs/sitemap.md](./docs/sitemap.md) | Routes, module progress, planned pages |
 | [docs/README.md](./docs/README.md) | Docs folder: markdown in Git, binaries local |
 | [docs/ecosystem.md](./docs/ecosystem.md) | Two-repo architecture (backend + aapm-mobile) |
