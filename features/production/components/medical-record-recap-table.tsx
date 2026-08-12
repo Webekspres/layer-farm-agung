@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { isMedicalNoneReport } from "@/features/production/schemas/medical-record";
 import type { MedicalRecordRecapRow } from "@/features/production/services/list-medical-record-recap";
 
 type MedicalRecordRecapTableProps = {
@@ -27,7 +28,7 @@ export function MedicalRecordRecapTable({
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
-        Belum ada catatan pengobatan tercatat untuk {recordDateLabel}.
+        Belum dilaporkan untuk {recordDateLabel}.
       </div>
     );
   }
@@ -51,29 +52,44 @@ export function MedicalRecordRecapTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell className="font-medium">{row.cageName}</TableCell>
-              <TableCell>{row.locationName}</TableCell>
-              <TableCell>{row.indication}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {row.sickPopulation.toLocaleString("id-ID")}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {row.mortalityCount.toLocaleString("id-ID")}
-              </TableCell>
-              <TableCell>{row.medicineName}</TableCell>
-              <TableCell>{row.dosageAndDuration}</TableCell>
-              <TableCell>{row.applicationMethod}</TableCell>
-              <TableCell className="max-w-37.5 truncate text-muted-foreground">
-                {row.treatmentNotes || "-"}
-              </TableCell>
-              <TableCell>{row.recordedBy}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatTime(row.createdAt)}
-              </TableCell>
-            </TableRow>
-          ))}
+          {rows.map((row) => {
+            const noneReport = isMedicalNoneReport(row);
+
+            return (
+              <TableRow key={row.id}>
+                <TableCell className="font-medium">{row.cageName}</TableCell>
+                <TableCell>{row.locationName}</TableCell>
+                {noneReport ? (
+                  <TableCell
+                    colSpan={7}
+                    className="font-medium text-muted-foreground"
+                  >
+                    Tidak ada pengobatan
+                  </TableCell>
+                ) : (
+                  <>
+                    <TableCell>{row.indication}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.sickPopulation.toLocaleString("id-ID")}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.mortalityCount.toLocaleString("id-ID")}
+                    </TableCell>
+                    <TableCell>{row.medicineName}</TableCell>
+                    <TableCell>{row.dosageAndDuration}</TableCell>
+                    <TableCell>{row.applicationMethod}</TableCell>
+                    <TableCell className="max-w-37.5 truncate text-muted-foreground">
+                      {row.treatmentNotes || "-"}
+                    </TableCell>
+                  </>
+                )}
+                <TableCell>{row.recordedBy}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatTime(row.createdAt)}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

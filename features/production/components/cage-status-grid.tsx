@@ -19,6 +19,7 @@ const tabStatusKey = {
   feed: "hasFeed",
   population: "hasPopulation",
   medical: "hasMedical",
+  corrections: "hasCorrections",
 } as const;
 
 export function CageStatusGrid({
@@ -78,7 +79,13 @@ export function CageStatusGrid({
                   variant={hasCurrentData ? "default" : "destructive"}
                   className="rounded-full px-3 py-1"
                 >
-                  {hasCurrentData ? "Lapor" : "Belum"}
+                  {activeTab === "corrections"
+                    ? hasCurrentData
+                      ? "Ada koreksi"
+                      : "Belum ada"
+                    : hasCurrentData
+                      ? "Dilaporkan"
+                      : "Belum dilaporkan"}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">{cage.strainName}</p>

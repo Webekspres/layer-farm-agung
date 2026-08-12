@@ -3,6 +3,7 @@ import { applyStockMutation } from "@/features/inventory/services/apply-stock-mu
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { MedicalRecordInput } from "@/features/production/schemas/medical-record";
+import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
@@ -103,7 +104,7 @@ export async function recordMedicalRecord(
         select: { id: true },
       });
 
-      if (input.itemId && input.quantityUsed != null) {
+      if (input.itemId && input.quantityUsed != null && input.quantityUsed > 0) {
         const stock = await applyStockMutation(tx, {
           itemId: input.itemId,
           locationId: cage.location_id,
@@ -116,12 +117,16 @@ export async function recordMedicalRecord(
           throw new StockError(stock.error);
         }
 
+        await ensureDailyReport(tenantId, input.cageId, treatmentDate, tx);
+
         return {
           recordId: record.id,
           lowStock: stock.lowStock,
           remainingStock: stock.newQuantity,
         };
       }
+
+      await ensureDailyReport(tenantId, input.cageId, treatmentDate, tx);
 
       return {
         recordId: record.id,

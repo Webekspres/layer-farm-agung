@@ -44,5 +44,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return apiError(result.error, result.status);
   }
 
-  return apiSuccess({ updated: true }, "Konsumsi pakan berhasil diperbarui.");
+  return apiSuccess(
+    {
+      updated: true,
+      correctionId: result.correctionId,
+      idempotent: result.idempotent,
+    },
+    "Konsumsi pakan berhasil diperbarui.",
+  );
 }

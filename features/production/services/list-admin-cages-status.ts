@@ -10,6 +10,7 @@ export type AdminCageStatusItem = {
   hasFeed: boolean;
   hasPopulation: boolean;
   hasMedical: boolean;
+  hasCorrections: boolean;
 };
 
 export async function listAdminCagesStatus(
@@ -56,6 +57,17 @@ export async function listAdminCagesStatus(
         take: 1,
         select: { id: true },
       },
+      daily_reports: {
+        where: {
+          tenant_id: tenantId,
+          record_date: recordDate,
+        },
+        take: 1,
+        select: {
+          id: true,
+          corrections: { take: 1, select: { id: true } },
+        },
+      },
     },
     orderBy: [
       { location: { name: "asc" } },
@@ -72,5 +84,7 @@ export async function listAdminCagesStatus(
     hasFeed: cage.feed_consumptions.length > 0,
     hasPopulation: cage.population_mutations.length > 0,
     hasMedical: cage.medical_records.length > 0,
+    hasCorrections:
+      (cage.daily_reports[0]?.corrections.length ?? 0) > 0,
   }));
 }

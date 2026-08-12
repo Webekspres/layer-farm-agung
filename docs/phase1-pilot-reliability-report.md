@@ -1,6 +1,6 @@
 # Phase 1 — Pilot Reliability report
 
-**Date:** 2026-08-11  
+**Date:** 2026-08-11 (code) · **Device retest notes:** 2026-08-12 — lihat [phase1-device-retest-checklist.md](./phase1-device-retest-checklist.md)  
 **Scope:** PH1-A through PH1-H only. **No Phase 2.**  
 **Authority:** Approved backlog in [gap-matrix-aapm.md](./gap-matrix-aapm.md).
 
@@ -8,21 +8,21 @@
 
 | Item | Result | Notes |
 |------|--------|-------|
-| **PH1-A** Assignment → cage list | **Pending device retest** | Code path already filters assigned cages; no code change this wave. Retest: assign/revoke → refresh online on Mobile. |
-| **PH1-B** Active cycle (one-cycle) | **Pending device retest** + **pilot limit** | Create/read still tied to Active cycle check. Multi-cycle inheritance bug remains — pilot: one Active cycle; close-cycle warned on Web. |
-| **PH1-C** Idempotency | **Unit OK** / **Pending device retest** | `client-mutation-id` tests pass (9 related tests). Retest double-tap / flush / reopen-with-queue on device. |
-| **PH1-D** Correction refresh | **Implemented** | Edit forms clear cage history cache after successful save; screens pass `cageId` + `recordDate`. **Pending device confirm** that riwayat shows latest without full app reopen. |
-| **PH1-E** Staff Web finance hide | **Implemented** | Staff keeps Web login. Dashboard hides revenue KPI, PO timeline, and finance charts without `view_cashflow`. Permissions not broadened. |
-| **PH1-F** Pilot controls & KPI labels | **Implemented** | HDP/FCR labeled indikatif / bukan angka keputusan; close-cycle amber banner; Mobile Input list-first; Profile offline copy internet-first (no cold-start claim). **Add-on:** optional Scan QR shortcut restored (still not required); Web Cetak QR on cage detail. |
-| **PH1-G** Version + pilot pack | **Implemented** | Mobile Profile version; Web Profile version; [pilot-guide-v1.md](./pilot-guide-v1.md); [pilot-ops-contact.md](./pilot-ops-contact.md) (fill contacts before go-live). |
-| **PH1-H** Dashboard smoke | **Pending device retest** | Labels updated; compare population/production cards vs known inputs on one-cycle farm. |
-| **GAP-012 ops add-on** Optional QR | **Implemented (not Phase 2)** | Reuses `qr_code` + `POST /api/v1/cages/scan` + assignment check. Does **not** close the full post-pilot QR/deep-link gate. |
+| **PH1-A** Assignment → cage list | **PASS** (device 2026-08-12) | Update setelah refresh online; bukan wajib push realtime. |
+| **PH1-B** Active cycle (one-cycle) | **PASS** (device 2026-08-12) | Input Mobile = Web. Multi-cycle inheritance bug remains — pilot: one Active cycle. |
+| **PH1-C** Idempotency | **Unit OK** / **PENDING device** | Belum dijalankan di sesi 12 Agu; lihat cara tes di checklist. |
+| **PH1-D** Correction refresh | **PASS** (device 2026-08-12) | Riwayat update tanpa restart app (keluar-masuk menu cukup). |
+| **PH1-E** Staff Web finance hide | **Implemented** | Staff keeps Web login. Dashboard hides revenue KPI, PO timeline, and finance charts without `view_cashflow`. |
+| **PH1-F** Pilot controls & KPI labels | **Implemented** | HDP/FCR indikatif; close-cycle warned; Input list-first; QR optional. |
+| **PH1-G** Version + pilot pack | **Implemented** | Version UI + [pilot-guide-v1.md](./pilot-guide-v1.md); isi [pilot-ops-contact.md](./pilot-ops-contact.md) sebelum go-live. |
+| **PH1-H** Dashboard smoke | **PASS** (device 2026-08-12) | Dashboard vs catatan sumber OK. |
+| **GAP-012 ops add-on** Optional QR | **Implemented (not Phase 2)** | List primary; QR shortcut. |
 
 ## Code / docs touched (high level)
 
 **Mobile:** history cache clear on correction; Profile offline + version; Input QR demoted.  
 **Web:** dashboard finance gate; HDP/FCR labels; cage close-cycle pilot banner; Profile version.  
-**Docs:** pilot guide, ops contact, this report, gap matrix status.
+**Docs:** pilot guide, ops contact, this report, [device retest checklist](./phase1-device-retest-checklist.md), gap matrix status.
 
 ## Known limitations (pilot)
 

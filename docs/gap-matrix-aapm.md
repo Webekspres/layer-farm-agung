@@ -36,7 +36,7 @@ If runtime-only: **Verification / Retest Required** (do not guess).
 | GAP-004 | Population live calc ignores cycle `start_date` (all mutations on cage) | Follow-up §6; code | `resolve-active-cycle-population.ts` | Root cause of GAP-003 | **2** | Post-Pilot Capability Gate | Contained if no 2nd cycle | Fix when enabling multi-cycle | API / Prisma | Same as GAP-003 | GAP-003 | P0 gate |
 | GAP-005 | Idempotent retry/sync — no duplicate records | Follow-up; Readiness | Catatan ganda; Prioritas Wajib | Improved one-device | **5** | Verification / Retest Required | Must pass | Retest double-tap, flush, reopen-with-queue | Both | See Phase 1 C | — | P0 |
 | GAP-006 | After correction, Android shows latest without ambiguous stale UI | Follow-up Koreksi | 9 Aug: web OK; Android needs reopen | Partial | **5** (residual **2** risk: edit may not bust history cache) | Verification / Retest Required | Must pass | Retest edit → riwayat focus/pull; fix only if fails | Mobile | See Phase 1 D | — | P0 |
-| GAP-007 | Correction requires reason, approval, version, before/after trail | UAT Input Harian; Ringkasan #1; Follow-up | Koreksi / kewenangan data | Open; product-dependent | **3** / **7** | Product Decision Required (+ Post-Pilot Gate) | Not pilot blocker if basic correction OK | Decide policy; then implement | Both | TBD after decision | Product | P2 |
+| GAP-007 | Correction requires reason, actor, before/after trail (no approval) | UAT Input Harian; Ringkasan #1; Follow-up; product decision 2026-08-12 | Koreksi / kewenangan data | **Decided (no approval)** — Input Harian refinement | **3** → implement | Input Harian refinement (not Phase 2 gate) | Ship reason+actor+before/after+history | Implement DailyInputCorrection | Both | Reason required; immutable history; no PENDING_APPROVAL | — | P1 |
 | GAP-008 | Staff Web access scope: retain Web login but restrict to operational/monitoring; hide finance via **nav and dashboard content** (not mobile-only) | Follow-up (staff can enter web + Android); Readiness; product decision 2026-08-11 | Pembatasan staf; “Informasi yang terlihat oleh staff” | **Policy decided**; implementation open | **3** | Pilot Blocker (implement restrict) | Must pass before pilot | Keep Web login; Mobile primary; restrict Web to operational scope; no finance/revenue/PO staff workflow; do **not** broaden perms; hiding Keuangan nav alone is **not** sufficient | Web | See Phase 1 E | GAP-009 | P0 |
 | GAP-009 | Staff dashboard exposes **Pendapatan hari ini** KPI despite no `view_cashflow`; finance must not leak via KPI cards/widgets | Follow-up; code; product decision 2026-08-11 | `get-dashboard-executive.ts` / dashboard overview | **Policy decided**; defect open until KPIs gated | **3** | Pilot Blocker | Must hide revenue/financial KPIs for staff | Gate dashboard KPI build/render for staff (nav hide already insufficient); hide Pendapatan; do not broaden staff permissions | Web | See Phase 1 E | GAP-008 | P0 |
 | GAP-010 | Close/open cycle during pilot | Readiness; Follow-up | Baseline excludes multi-cycle | Must not activate | **6** | Pilot Limit / Operational Workaround | Restrict | Hide/disable or SOP: no close/start 2nd cycle | Web / Docs-Ops | Pilot guide states disabled | GAP-003 | P0 limit |
@@ -46,7 +46,7 @@ If runtime-only: **Verification / Retest Required** (do not guess).
 | GAP-014 | HDP/FCR used as decision KPIs without official formula / labels | Follow-up; Readiness; UAT Dashboard | HDP/FCR | Must not be decision metrics in pilot | **3** / **6** | Pilot Limit (+ Product Decision on official formula) | De-emphasize / label temporary | Phase 1: label or hide as decision KPI | Web | See Phase 1 F / KPI | GAP-003 for trusted numbers | P0 |
 | GAP-015 | Customer-readable release / version identity | Follow-up paket mitra | Versi web + APK | Missing in UI | **1** | Pilot Blocker (Docs-Ops / small UI) | Required for retest package | Expose version web + mobile Profile; document build | Both / Docs-Ops | Version visible on Profile/about | — | P0 |
 | GAP-016 | Pilot guide v1 + basic backup + on-call contact | Follow-up; Readiness | Paket mitra; gate layanan | Missing as customer pack | **1** | Pilot Blocker | Required before pilot | Write guide + backup note + contact | Docs-Ops | Docs delivered | GAP-010–014 limits listed | P0 |
-| GAP-017 | Multi-part daily form partial save vs atomic | UAT; Readiness; Follow-up | Input harian rules | Explained as partial OK | **7** / **5** | Product Decision Required | Clarify UX copy | Decide expected behavior; keep per-component messages | Both | TBD | Product | P1 |
+| GAP-017 | Multi-part daily form: partial OK; zero ≠ unreported | UAT; Readiness; Follow-up; product decision 2026-08-12 | Input harian rules | **Decided** — partial save kept; do not coerce empty→0 | **5** / UX polish | Input Harian refinement | Keep per-component save; label Belum dilaporkan vs 0 | Soft DailyReport + UI labels | Both | Partial OK; explicit 0 distinguishable | — | P1 |
 | GAP-018 | Feed card 0 kg when materials typed “Lainnya” | UAT Master Data / Dashboard | Item type | Open | **3** / **4** | Post-Pilot / polish | Not pilot core | Validate Feed type / dashboard filter | Web | UAT note | — | P2 |
 | GAP-019 | Unit conversion (karung↔kg) | UAT; Follow-up; Ringkasan | Satuan | Needs agreement | **7** | Product Decision Required / Out of pilot | Not required for pilot | Decide later | Web | TBD | Product | P3 |
 | GAP-020 | Min stock alerts empty / unused | UAT Inventory | Ambang minimum | Open | **4** / **5** | Verification / polish | Optional | Seed min alerts or document unused | Web | — | — | P2 |
@@ -113,7 +113,6 @@ Recorded **2026-08-11** (pilot):
 | GAP-011 | Cold-start offline (Follow-up §7 two scenarios) |
 | GAP-012 | QR/deep-link (Follow-up §8 three cases) |
 | GAP-013 | Egg stock + sales with onboarding guide (Follow-up §9) |
-| GAP-007 | Advanced correction audit (after product decision) |
 | GAP-018, GAP-020, GAP-021, GAP-023, GAP-024, GAP-025 | Master-data / reporting hygiene |
 
 ### 4. Product Decisions Required
@@ -121,8 +120,9 @@ Recorded **2026-08-11** (pilot):
 | ID | Question |
 |----|----------|
 | ~~GAP-008 / GAP-009~~ | **Decided 2026-08-11** — see “Decided product policy — Staff Web” above |
-| GAP-007 | Is mandatory reason + immutable audit required before / during / after pilot? |
-| GAP-014 / GAP-017 | Official HDP/FCR definition; rules for multiple inputs same day / partial save |
+| ~~GAP-007~~ | **Decided 2026-08-12** — reason + actor + before/after + immutable history; **no** approval workflow. See [daily-input-correction.md](./daily-input-correction.md). Historical UAT noted alasan opsional — superseded for new corrections. |
+| ~~GAP-017~~ | **Decided 2026-08-12** — partial multi-component save remains OK; empty ≠ 0 (unreported vs explicit zero). Not atomic-required. |
+| GAP-014 | Official HDP/FCR definition (indicative labels already in pilot) |
 | GAP-019 | Unit conversion model |
 | GAP-022 | PO credit / approval in scope? |
 | GAP-025 | Formal export required for pilot or later? |

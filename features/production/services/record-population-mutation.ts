@@ -6,6 +6,7 @@ import {
 } from "@/features/cages/lib/compute-cycle-population";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { PopulationMutationInput } from "@/features/production/schemas/population-mutation";
+import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate, normalizeBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
@@ -75,7 +76,7 @@ export async function recordPopulationMutation(
     targetCage = targetValidation.targetCage;
   }
 
-  if (isPopulationDecreaseType(input.mutationType)) {
+  if (input.quantity > 0 && isPopulationDecreaseType(input.mutationType)) {
     const current = await resolveActiveCyclePopulation(
       input.cageId,
       recordDate,
@@ -110,7 +111,7 @@ export async function recordPopulationMutation(
         select: { id: true },
       });
 
-      if (isPindah && targetCage) {
+      if (isPindah && targetCage && input.quantity > 0) {
         await tx.populationMutation.create({
           data: {
             cage_id: targetCage.id,
@@ -123,6 +124,8 @@ export async function recordPopulationMutation(
           },
         });
       }
+
+      await ensureDailyReport(tenantId, input.cageId, recordDate, tx);
 
       return created;
     });

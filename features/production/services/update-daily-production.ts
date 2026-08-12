@@ -1,11 +1,13 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { UpdateDailyProductionInput } from "@/features/production/schemas/update-daily-production";
+import { recordCorrectionEvent } from "@/features/production/services/record-correction-event";
 import prisma from "@/lib/prisma";
 
 export type UpdateDailyProductionResult =
-  | { ok: true }
+  | { ok: true; correctionId: string; idempotent: boolean }
   | { ok: false; error: string; status: 400 | 403 | 404 };
 
 export async function updateDailyProduction(
@@ -14,6 +16,20 @@ export async function updateDailyProduction(
   recordId: string,
   input: UpdateDailyProductionInput,
 ): Promise<UpdateDailyProductionResult> {
+  if (input.clientMutationId) {
+    const existingCorrection = await prisma.dailyInputCorrection.findUnique({
+      where: { client_mutation_id: input.clientMutationId },
+      select: { id: true },
+    });
+    if (existingCorrection) {
+      return {
+        ok: true,
+        correctionId: existingCorrection.id,
+        idempotent: true,
+      };
+    }
+  }
+
   const existing = await prisma.dailyProduction.findFirst({
     where: {
       id: recordId,
@@ -22,7 +38,10 @@ export async function updateDailyProduction(
     select: {
       id: true,
       cage_id: true,
+      record_date: true,
       tb: true,
+      tr: true,
+      tp: true,
       cage: { select: { location_id: true } },
     },
   });
@@ -45,7 +64,43 @@ export async function updateDailyProduction(
     };
   }
 
-  // Reconcile egg stock so it stays consistent with the edited TB count.
+  const changes: CorrectionChange[] = [];
+  if (existing.tb !== input.tb) {
+    changes.push({
+      component: "production",
+      recordId,
+      field: "tb",
+      before: existing.tb,
+      after: input.tb,
+    });
+  }
+  if (existing.tr !== input.tr) {
+    changes.push({
+      component: "production",
+      recordId,
+      field: "tr",
+      before: existing.tr,
+      after: input.tr,
+    });
+  }
+  if (existing.tp !== input.tp) {
+    changes.push({
+      component: "production",
+      recordId,
+      field: "tp",
+      before: existing.tp,
+      after: input.tp,
+    });
+  }
+
+  if (changes.length === 0) {
+    return {
+      ok: false,
+      error: "Tidak ada perubahan nilai untuk dikoreksi.",
+      status: 400,
+    };
+  }
+
   const tbDelta = input.tb - existing.tb;
   const eggItem =
     tbDelta !== 0
@@ -56,7 +111,7 @@ export async function updateDailyProduction(
       : null;
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const correctionId = await prisma.$transaction(async (tx) => {
       await tx.dailyProduction.update({
         where: { id: recordId },
         data: {
@@ -70,19 +125,37 @@ export async function updateDailyProduction(
         await applyStockMutation(tx, {
           itemId: eggItem.id,
           locationId: existing.cage.location_id,
-          // Positive delta = extra harvest; negative delta = correction down.
           mutationType:
             tbDelta > 0
               ? StockMutationType.IN_HARVEST
               : StockMutationType.OUT_ADJUSTMENT,
           quantity: Math.abs(tbDelta),
           referenceId: recordId,
-          // Correcting a prior IN — allow the balance to drop even if other
-          // movements have since reduced it.
           allowNegative: tbDelta < 0,
         });
       }
+
+      const recorded = await recordCorrectionEvent(
+        {
+          tenantId,
+          cageId: existing.cage_id,
+          recordDate: existing.record_date,
+          actorUserId: userId,
+          reason: input.reason,
+          changes,
+          clientMutationId: input.clientMutationId,
+        },
+        tx,
+      );
+
+      if (!recorded.ok) {
+        throw new Error(recorded.error);
+      }
+
+      return recorded.correctionId;
     });
+
+    return { ok: true, correctionId, idempotent: false };
   } catch {
     return {
       ok: false,
@@ -90,6 +163,4 @@ export async function updateDailyProduction(
       status: 400,
     };
   }
-
-  return { ok: true };
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { POPULATION_MUTATION_TYPES } from "@/features/production/schemas/population-mutation";
+import { correctionMetaFields } from "@/features/production/schemas/correction-meta";
 
 export const updatePopulationMutationSchema = z.object({
   mutationType: z.enum(
@@ -8,15 +9,17 @@ export const updatePopulationMutationSchema = z.object({
       message: `Jenis mutasi harus salah satu dari: ${POPULATION_MUTATION_TYPES.join(", ")}.`,
     },
   ),
+  /** Explicit 0 is allowed (reported zero ≠ unreported). */
   quantity: z.coerce
     .number({ message: "Jumlah harus berupa angka." })
     .int("Jumlah harus bilangan bulat.")
-    .positive("Jumlah mutasi harus lebih dari 0.")
+    .min(0, "Jumlah mutasi tidak boleh negatif.")
     .max(100_000, "Jumlah mutasi melebihi batas wajar."),
   notes: z.preprocess(
     (v) => (v === "" || v === null ? undefined : v),
     z.string().max(500, "Catatan maksimal 500 karakter.").optional(),
   ),
+  ...correctionMetaFields,
 });
 
 export type UpdatePopulationMutationInput = z.infer<

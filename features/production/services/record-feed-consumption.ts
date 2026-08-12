@@ -3,6 +3,7 @@ import { applyStockMutation } from "@/features/inventory/services/apply-stock-mu
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { FeedConsumptionInput } from "@/features/production/schemas/feed-consumption";
+import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
@@ -115,6 +116,8 @@ export async function recordFeedConsumption(
       if (!stock.ok) {
         throw new StockError(stock.error);
       }
+
+      await ensureDailyReport(tenantId, input.cageId, recordDate, tx);
 
       return {
         recordId: feedConsumption.id,

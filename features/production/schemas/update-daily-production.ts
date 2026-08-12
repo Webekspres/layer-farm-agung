@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_EGG_COUNT_PER_ENTRY } from "@/features/production/schemas/daily-production";
+import { correctionMetaFields } from "@/features/production/schemas/correction-meta";
 
 const eggCountField = z.coerce
   .number()
@@ -15,6 +16,7 @@ export const updateDailyProductionSchema = z
     tb: eggCountField.default(0),
     tr: eggCountField.default(0),
     tp: eggCountField.default(0),
+    ...correctionMetaFields,
   })
   .superRefine((data, ctx) => {
     const total = data.tb + data.tr + data.tp;

@@ -2,7 +2,8 @@ export type DailyInputRecapTabId =
   | "eggs"
   | "feed"
   | "population"
-  | "medical";
+  | "medical"
+  | "corrections";
 
 export const DAILY_INPUT_RECAP_TABS: {
   id: DailyInputRecapTabId;
@@ -29,6 +30,11 @@ export const DAILY_INPUT_RECAP_TABS: {
     label: "Pengobatan",
     description: "Laporan kesehatan dan pengobatan",
   },
+  {
+    id: "corrections",
+    label: "Riwayat koreksi",
+    description: "Audit before → after dengan alasan",
+  },
 ];
 
 export function parseDailyInputRecapTab(
@@ -37,7 +43,8 @@ export function parseDailyInputRecapTab(
   if (
     value === "feed" ||
     value === "population" ||
-    value === "medical"
+    value === "medical" ||
+    value === "corrections"
   ) {
     return value;
   }

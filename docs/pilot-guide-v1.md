@@ -37,8 +37,10 @@
 
 ## Verifikasi inti sebelum mulai
 
+Checklist executable: **[phase1-device-retest-checklist.md](./phase1-device-retest-checklist.md)**
+
 1. Penugasan/cabut staff → daftar kandang Mobile update setelah refresh online  
 2. Input tersimpan pada kandang + siklus aktif; nilai sama di Android & web  
-3. Retry/sync tidak menggandakan catatan  
+3. Retry/sync tidak menggandakan catatan (**PH1-C** — masih perlu dicek di perangkat)  
 4. Koreksi produksi menampilkan nilai terbaru di riwayat Android setelah kembali ke layar  
 5. Staff Web: tidak melihat Pendapatan / Ringkasan keuangan  

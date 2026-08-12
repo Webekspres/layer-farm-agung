@@ -45,6 +45,7 @@ model Tenant {
   items                 Item[]
   daily_productions     DailyProduction[]
   feed_consumptions     FeedConsumption[]
+  daily_reports         DailyReport[]
   sync_queues           SyncQueue[]
   customers             Customer[]
   sales_orders          SalesOrder[]
@@ -105,6 +106,7 @@ model User {
   feed_consumptions      FeedConsumption[]
   population_mutations   PopulationMutation[]
   medical_records        MedicalRecord[]
+  daily_input_corrections DailyInputCorrection[]
   sessions               Session[]
   accounts               Account[]
   cage_staff_assignments CageStaffAssignment[]
@@ -199,6 +201,7 @@ model Cage {
   vaccine_schedules    VaccineSchedule[]
   medical_records      MedicalRecord[]
   staff_assignments    CageStaffAssignment[]
+  daily_reports        DailyReport[]
 
   @@unique([location_id, name])
 }
@@ -514,6 +517,40 @@ model MedicalRecord {
   cage Cage  @relation(fields: [cage_id], references: [id], onDelete: Cascade)
   user User  @relation(fields: [user_id], references: [id], onDelete: Restrict)
   item Item? @relation(fields: [item_id], references: [id], onDelete: SetNull)
+}
+
+/** Soft parent: one logical daily report per cage + business date. */
+model DailyReport {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenant_id   String   @db.Uuid
+  cage_id     String   @db.Uuid
+  record_date DateTime @db.Date
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  tenant      Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  cage        Cage                   @relation(fields: [cage_id], references: [id], onDelete: Cascade)
+  corrections DailyInputCorrection[]
+
+  @@unique([tenant_id, cage_id, record_date])
+  @@index([cage_id, record_date])
+}
+
+/** Immutable correction audit for a DailyReport (GAP-007). */
+model DailyInputCorrection {
+  id                 String   @id @default(uuid()) @db.Uuid
+  daily_report_id    String   @db.Uuid
+  actor_user_id      String   @db.Uuid
+  reason             String
+  /** JSON: [{ component, recordId?, field, before, after }] */
+  changes            Json
+  client_mutation_id String?  @unique @db.Uuid
+  created_at         DateTime @default(now())
+
+  daily_report DailyReport @relation(fields: [daily_report_id], references: [id], onDelete: Cascade)
+  actor        User        @relation(fields: [actor_user_id], references: [id], onDelete: Restrict)
+
+  @@index([daily_report_id, created_at])
 }
 
 model SyncQueue {

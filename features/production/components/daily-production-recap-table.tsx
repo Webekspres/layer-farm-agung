@@ -30,7 +30,7 @@ export function DailyProductionRecapTable({
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/30 p-10 text-center text-sm text-muted-foreground">
-        Belum ada produksi tercatat untuk {recordDateLabel}.
+        Belum dilaporkan untuk {recordDateLabel}.
       </div>
     );
   }

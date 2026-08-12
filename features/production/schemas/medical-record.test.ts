@@ -83,4 +83,20 @@ describe("medicalRecordSchema", () => {
       expect(result.data.itemId).toBeUndefined();
     }
   });
+
+  test("accepts noneReported and fills sentinel values", () => {
+    const result = medicalRecordSchema.safeParse({
+      cageId: validUuid,
+      noneReported: true,
+      treatmentDate: "2026-06-25",
+    });
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+    expect(result.data.medicineName).toBe("Tidak ada pengobatan");
+    expect(result.data.indication).toBe("Tidak ada pengobatan");
+    expect(result.data.dosageAndDuration).toBe("-");
+    expect(result.data.applicationMethod).toBe("Minum");
+    expect(result.data.sickPopulation).toBe(0);
+    expect(result.data.itemId).toBeUndefined();
+  });
 });

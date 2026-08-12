@@ -3,6 +3,7 @@ import { applyStockMutation } from "@/features/inventory/services/apply-stock-mu
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
+import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import {
   validateOperationalBusinessDate,
 } from "@/lib/business-date";
@@ -118,6 +119,8 @@ export async function recordDailyProduction(
           throw new StockError(stock.error);
         }
       }
+
+      await ensureDailyReport(tenantId, input.cageId, recordDate, tx);
 
       return production.id;
     });

@@ -65,6 +65,26 @@ describe("populationMutationSchema", () => {
     }
   });
 
+  test("accepts reported zero mortality (Mati = 0)", () => {
+    const result = populationMutationSchema.safeParse({
+      cageId: validUuid,
+      mutationType: "Mati",
+      quantity: 0,
+      recordDate: "2026-06-25",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects zero quantity for non-Mati types", () => {
+    const result = populationMutationSchema.safeParse({
+      cageId: validUuid,
+      mutationType: "Afkir",
+      quantity: 0,
+      recordDate: "2026-06-25",
+    });
+    expect(result.success).toBe(false);
+  });
+
   test("ignores targetCageId for non-Pindah mutation types", () => {
     const result = populationMutationSchema.safeParse({
       cageId: validUuid,
