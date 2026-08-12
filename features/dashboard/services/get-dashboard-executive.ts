@@ -50,12 +50,18 @@ function sparkFromSeries(values: number[], take = 7): number[] {
 export async function getDashboardExecutive(
   tenantId: string,
   recordDate = startOfTodayBusiness(),
+  /** When set, all cage-scoped KPIs/series use only these cages (auth already resolved). */
+  cageIds?: string[],
 ): Promise<DashboardExecutive> {
   const yesterday = shiftBusinessDate(recordDate, -1);
   const weekStart = shiftBusinessDate(recordDate, -6);
   const range30Start = shiftBusinessDate(recordDate, -29);
   const dates30 = enumerateBusinessDates(recordDate, 30);
   const dates7 = enumerateBusinessDates(recordDate, 7);
+
+  const scoped = cageIds !== undefined;
+  const cageIdFilter = scoped ? { cage_id: { in: cageIds } } : {};
+  const emptyScope = scoped && cageIds.length === 0;
 
   const [
     prodToday,
@@ -83,19 +89,37 @@ export async function getDashboardExecutive(
     recentPurchaseOrders,
     recentStockMutations,
   ] = await Promise.all([
-    prisma.dailyProduction.aggregate({
-      where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { tb: true },
-    }),
-    prisma.dailyProduction.aggregate({
-      where: { tenant_id: tenantId, record_date: yesterday },
-      _sum: { tb: true },
-    }),
-    prisma.dailyProduction.groupBy({
-      by: ["cage_id"],
-      where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { tb: true },
-    }),
+    emptyScope
+      ? Promise.resolve({ _sum: { tb: null } })
+      : prisma.dailyProduction.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: recordDate,
+            ...cageIdFilter,
+          },
+          _sum: { tb: true },
+        }),
+    emptyScope
+      ? Promise.resolve({ _sum: { tb: null } })
+      : prisma.dailyProduction.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: yesterday,
+            ...cageIdFilter,
+          },
+          _sum: { tb: true },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.groupBy({
+          by: ["cage_id"],
+          where: {
+            tenant_id: tenantId,
+            record_date: recordDate,
+            ...cageIdFilter,
+          },
+          _sum: { tb: true },
+        }),
     prisma.item.findMany({
       where: { tenant_id: tenantId, type: { not: "Egg" } },
       select: {
@@ -113,6 +137,7 @@ export async function getDashboardExecutive(
         status: "Active",
         location: { tenant_id: tenantId },
         cycle_settings: { some: { status: "Active" } },
+        ...(scoped ? { id: { in: cageIds } } : {}),
       },
       select: {
         id: true,
@@ -126,28 +151,46 @@ export async function getDashboardExecutive(
         },
       },
     }),
-    prisma.feedConsumption.aggregate({
-      where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { quantity: true },
-    }),
-    prisma.feedConsumption.aggregate({
-      where: { tenant_id: tenantId, record_date: yesterday },
-      _sum: { quantity: true },
-    }),
-    prisma.feedConsumption.aggregate({
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: weekStart, lte: recordDate },
-      },
-      _sum: { quantity: true },
-    }),
-    prisma.dailyProduction.aggregate({
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: weekStart, lte: recordDate },
-      },
-      _sum: { tb: true },
-    }),
+    emptyScope
+      ? Promise.resolve({ _sum: { quantity: null } })
+      : prisma.feedConsumption.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: recordDate,
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve({ _sum: { quantity: null } })
+      : prisma.feedConsumption.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: yesterday,
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve({ _sum: { quantity: null } })
+      : prisma.feedConsumption.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: weekStart, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve({ _sum: { tb: null } })
+      : prisma.dailyProduction.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: weekStart, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { tb: true },
+        }),
     prisma.salesOrder.aggregate({
       where: { tenant_id: tenantId, sale_date: recordDate },
       _sum: { total_amount: true },
@@ -171,44 +214,56 @@ export async function getDashboardExecutive(
       },
       _sum: { amount: true },
     }),
-    prisma.populationMutation.groupBy({
-      by: ["cage_id"],
-      where: {
-        mutation_type: "Mati",
-        record_date: { gte: weekStart, lte: recordDate },
-        cage: { location: { tenant_id: tenantId } },
-      },
-      _sum: { quantity: true },
-    }),
-    prisma.dailyProduction.groupBy({
-      by: ["record_date"],
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: range30Start, lte: recordDate },
-      },
-      _sum: { tb: true },
-      orderBy: { record_date: "asc" },
-    }),
-    prisma.feedConsumption.groupBy({
-      by: ["cage_id"],
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: weekStart, lte: recordDate },
-      },
-      _sum: { quantity: true },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: MAX_FEED_CAGES,
-    }),
-    prisma.populationMutation.groupBy({
-      by: ["record_date"],
-      where: {
-        mutation_type: "Mati",
-        record_date: { gte: range30Start, lte: recordDate },
-        cage: { location: { tenant_id: tenantId } },
-      },
-      _sum: { quantity: true },
-      orderBy: { record_date: "asc" },
-    }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.populationMutation.groupBy({
+          by: ["cage_id"],
+          where: {
+            mutation_type: "Mati",
+            record_date: { gte: weekStart, lte: recordDate },
+            cage: { location: { tenant_id: tenantId } },
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.groupBy({
+          by: ["record_date"],
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: range30Start, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { tb: true },
+          orderBy: { record_date: "asc" },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.feedConsumption.groupBy({
+          by: ["cage_id"],
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: weekStart, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+          orderBy: { _sum: { quantity: "desc" } },
+          take: MAX_FEED_CAGES,
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.populationMutation.groupBy({
+          by: ["record_date"],
+          where: {
+            mutation_type: "Mati",
+            record_date: { gte: range30Start, lte: recordDate },
+            cage: { location: { tenant_id: tenantId } },
+            ...(scoped ? { cage_id: { in: cageIds } } : {}),
+          },
+          _sum: { quantity: true },
+          orderBy: { record_date: "asc" },
+        }),
     prisma.salesOrder.groupBy({
       by: ["sale_date"],
       where: {
@@ -238,34 +293,39 @@ export async function getDashboardExecutive(
       },
       _sum: { quantity: true },
     }),
-    prisma.dailyProduction.findMany({
-      where: { tenant_id: tenantId },
-      orderBy: [{ record_date: "desc" }, { created_at: "desc" }],
-      take: 4,
-      select: {
-        id: true,
-        record_date: true,
-        created_at: true,
-        tb: true,
-        cage: { select: { name: true } },
-      },
-    }),
-    prisma.vaccineSchedule.findMany({
-      where: {
-        status: "Completed",
-        cage: { location: { tenant_id: tenantId } },
-      },
-      orderBy: [{ completed_at: "desc" }, { scheduled_date: "desc" }],
-      take: 4,
-      select: {
-        id: true,
-        scheduled_date: true,
-        completed_at: true,
-        quantity_used: true,
-        cage: { select: { name: true } },
-        item: { select: { name: true } },
-      },
-    }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
+          where: { tenant_id: tenantId, ...cageIdFilter },
+          orderBy: [{ record_date: "desc" }, { created_at: "desc" }],
+          take: 4,
+          select: {
+            id: true,
+            record_date: true,
+            created_at: true,
+            tb: true,
+            cage: { select: { name: true } },
+          },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.vaccineSchedule.findMany({
+          where: {
+            status: "Completed",
+            cage: { location: { tenant_id: tenantId } },
+            ...(scoped ? { cage_id: { in: cageIds } } : {}),
+          },
+          orderBy: [{ completed_at: "desc" }, { scheduled_date: "desc" }],
+          take: 4,
+          select: {
+            id: true,
+            scheduled_date: true,
+            completed_at: true,
+            quantity_used: true,
+            cage: { select: { name: true } },
+            item: { select: { name: true } },
+          },
+        }),
     prisma.purchaseOrder.findMany({
       where: {
         vendor: { tenant_id: tenantId },

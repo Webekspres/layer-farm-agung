@@ -24,8 +24,10 @@ import { markDashboardAlertsReadAction } from "@/features/dashboard/actions/mark
 import type { ServerSession } from "@/features/auth/lib/session";
 import { hasPermission } from "@/features/auth/lib/session";
 import { DashboardCharts } from "@/features/dashboard/components/dashboard-charts";
+import { DashboardContextSelector } from "@/features/dashboard/components/dashboard-context-selector";
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import type { DashboardExecutive } from "@/features/dashboard/lib/dashboard-executive-types";
+import type { DashboardCageOption } from "@/features/dashboard/lib/resolve-dashboard-cage-scope";
 import { formatCount } from "@/features/dashboard/lib/dashboard-format";
 import { MORTALITY_WEEK_WARNING_THRESHOLD } from "@/features/dashboard/lib/dashboard-lite-metrics";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,9 @@ import { cn } from "@/lib/utils";
 type DashboardOverviewProps = {
   session: ServerSession;
   data: DashboardExecutive | null;
+  cageOptions?: DashboardCageOption[];
+  selectedCageId?: string | null;
+  scopeError?: string | null;
 };
 
 const timelineIcon = {
@@ -55,7 +60,13 @@ function alertHref(source: string | null, sourceId: string | null) {
   return "/dashboard";
 }
 
-export function DashboardOverview({ session, data }: DashboardOverviewProps) {
+export function DashboardOverview({
+  session,
+  data,
+  cageOptions = [],
+  selectedCageId = null,
+  scopeError = null,
+}: DashboardOverviewProps) {
   const displayName = session.user.fullName ?? session.user.name ?? "Pengguna";
   const canViewFinance = hasPermission(session, "view_cashflow");
   const visibleKpis = data
@@ -86,16 +97,34 @@ export function DashboardOverview({ session, data }: DashboardOverviewProps) {
     );
   }
 
+  const contextHint =
+    selectedCageId != null
+      ? cageOptions.find((c) => c.id === selectedCageId)?.name ??
+        "Kandang terpilih"
+      : null;
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader
           title={`Selamat datang, ${displayName}`}
           description={
-            canViewFinance
-              ? "Ringkasan kesehatan operasional farm — produksi, stok, dan keuangan hari ini."
-              : "Ringkasan operasional farm — produksi, populasi, dan stok saprodi."
+            contextHint
+              ? `Menampilkan data: ${contextHint}. ${
+                  canViewFinance
+                    ? "Ringkasan operasional dan keuangan."
+                    : "Ringkasan operasional farm."
+                }`
+              : canViewFinance
+                ? "Ringkasan kesehatan operasional farm — produksi, stok, dan keuangan hari ini."
+                : "Ringkasan operasional farm — produksi, populasi, dan stok saprodi."
           }
+        />
+        <DashboardContextSelector
+          cages={cageOptions}
+          selectedCageId={selectedCageId}
+          roleName={session.user.roleName ?? ""}
+          scopeError={scopeError}
         />
       </div>
 

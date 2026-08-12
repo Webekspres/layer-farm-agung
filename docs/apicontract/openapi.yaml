@@ -197,8 +197,19 @@ paths:
       summary: Ringkasan dasbor lapangan staff
       description: |
         Agregat KPI + tren 7 hari untuk **kandang yang ditugaskan** ke user session.
+        Query opsional `cageId` mempersempit ke satu kandang yang diizinkan.
         Tidak mencakup penjualan, cashflow, atau inventori tenant-wide.
       operationId: getFieldOverview
+      parameters:
+        - name: cageId
+          in: query
+          required: false
+          description: |
+            UUID kandang yang ditugaskan. Jika diisi, ringkasan hanya untuk kandang itu.
+            Kandang di luar penugasan → 403.
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Berhasil

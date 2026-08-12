@@ -1,7 +1,12 @@
 import { getAssignedCageIdsForUser } from "@/features/cages/lib/cage-staff-db";
 import { cycleAgeInWeeks } from "@/features/cages/lib/cycle-age-weeks";
 import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
+import {
+  DashboardScopeError,
+  resolveDashboardCageScope,
+} from "@/features/dashboard/lib/resolve-dashboard-cage-scope";
 import { lookupTargetHdp } from "@/features/dashboard/services/get-dashboard-stats";
+import { STAFF_ROLE_NAME } from "@/features/roles/config/system-roles";
 import {
   buildFieldOverview,
   emptyFieldOverview,
@@ -20,6 +25,7 @@ type OverviewDeps = {
   getAssignedCageIdsForUser: typeof getAssignedCageIdsForUser;
   resolveActiveCyclePopulation: typeof resolveActiveCyclePopulation;
   lookupTargetHdp: typeof lookupTargetHdp;
+  resolveDashboardCageScope: typeof resolveDashboardCageScope;
 };
 
 const defaultDeps: OverviewDeps = {
@@ -27,21 +33,39 @@ const defaultDeps: OverviewDeps = {
   getAssignedCageIdsForUser,
   resolveActiveCyclePopulation,
   lookupTargetHdp,
+  resolveDashboardCageScope,
 };
+
+export { DashboardScopeError };
 
 /**
  * Staff-scoped operational overview for assigned cages only.
+ * Optional `cageId` narrows to one authorized cage.
  * Does not include sales, cashflow, or tenant-wide inventory.
  */
 export async function getFieldOverview(
   tenantId: string,
   userId: string,
+  options: { cageId?: string | null } = {},
   deps: OverviewDeps = defaultDeps,
 ): Promise<FieldOverview> {
   const recordDate = startOfTodayBusiness();
-  const assignedCageIds = await deps.getAssignedCageIdsForUser(userId);
+  const scope = await deps.resolveDashboardCageScope(
+    {
+      tenantId,
+      userId,
+      roleName: STAFF_ROLE_NAME,
+      requested: options.cageId
+        ? { kind: "cage", cageId: options.cageId }
+        : { kind: "all" },
+    },
+    {
+      prisma: deps.prisma,
+      getAssignedCageIdsForUser: deps.getAssignedCageIdsForUser,
+    },
+  );
 
-  if (assignedCageIds.length === 0) {
+  if (scope.cageIds.length === 0) {
     return emptyFieldOverview(recordDate);
   }
 
@@ -49,7 +73,7 @@ export async function getFieldOverview(
     where: {
       status: "Active",
       location: { tenant_id: tenantId },
-      id: { in: assignedCageIds },
+      id: { in: scope.cageIds },
       cycle_settings: { some: { status: "Active" } },
     },
     select: {
