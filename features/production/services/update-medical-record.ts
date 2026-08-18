@@ -1,6 +1,10 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { UpdateMedicalRecordInput } from "@/features/production/schemas/update-medical-record";
 import { recordCorrectionEvent } from "@/features/production/services/record-correction-event";
@@ -47,7 +51,16 @@ export async function updateMedicalRecord(
       application_method: true,
       treatment_notes: true,
       treatment_date: true,
-      cage: { select: { location_id: true } },
+      cage: {
+        select: {
+          location_id: true,
+          cycle_settings: {
+            where: { status: "Active" },
+            take: 1,
+            select: { start_date: true, end_date: true },
+          },
+        },
+      },
     },
   });
 
@@ -67,6 +80,17 @@ export async function updateMedicalRecord(
       error: "Anda tidak ditugaskan ke kandang ini.",
       status: 403,
     };
+  }
+
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: existing.treatment_date,
+    cycle: existing.cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error, status: 400 };
   }
 
   if (input.quantityUsed != null && !existing.item_id) {

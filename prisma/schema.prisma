@@ -54,6 +54,23 @@ model Tenant {
   cashflow_transactions CashflowTransaction[]
   alert_logs            AlertLog[]
   vaccine_programs      VaccineProgram[]
+  production_settings   TenantProductionSetting?
+}
+
+/** Kebijakan pengendalian input per tenant (poin 2 laporan penyelarasan). */
+model TenantProductionSetting {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tenant_id          String   @unique @db.Uuid
+  /** Maks hari ke belakang utk input/koreksi staf lapangan (default 7). */
+  staff_lookback_days  Int      @default(7)
+  /** Maks hari ke belakang utk input/koreksi administrator (default 30). */
+  admin_lookback_days  Int      @default(30)
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@map("tenant_production_setting")
 }
 
 model Role {

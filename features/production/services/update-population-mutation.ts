@@ -1,4 +1,8 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { UpdatePopulationMutationInput } from "@/features/production/schemas/update-population-mutation";
 import {
@@ -40,6 +44,15 @@ export async function updatePopulationMutation(
       mutation_type: true,
       quantity: true,
       notes: true,
+      cage: {
+        select: {
+          cycle_settings: {
+            where: { status: "Active" },
+            take: 1,
+            select: { start_date: true, end_date: true },
+          },
+        },
+      },
     },
   });
 
@@ -59,6 +72,17 @@ export async function updatePopulationMutation(
       error: "Anda tidak ditugaskan ke kandang ini.",
       status: 403,
     };
+  }
+
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: existing.record_date,
+    cycle: existing.cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error, status: 400 };
   }
 
   if (input.quantity > 0) {

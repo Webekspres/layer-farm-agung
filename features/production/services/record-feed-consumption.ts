@@ -2,6 +2,10 @@ import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { FeedConsumptionInput } from "@/features/production/schemas/feed-consumption";
 import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
@@ -46,7 +50,16 @@ export async function recordFeedConsumption(
       id: input.cageId,
       location: { tenant_id: tenantId },
     },
-    select: { id: true, status: true, location_id: true },
+    select: {
+      id: true,
+      status: true,
+      location_id: true,
+      cycle_settings: {
+        where: { status: "Active" },
+        take: 1,
+        select: { start_date: true, end_date: true },
+      },
+    },
   });
 
   if (!cage) {
@@ -83,6 +96,17 @@ export async function recordFeedConsumption(
   const dateCheck = validateOperationalBusinessDate(input.recordDate);
   if (!dateCheck.ok) {
     return { ok: false, error: dateCheck.error };
+  }
+
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: dateCheck.date,
+    cycle: cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error };
   }
 
   const recordDate = dateCheck.date;

@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 const findCorrection = mock(() => Promise.resolve(null as null | { id: string }));
+const findUser = mock(() =>
+  Promise.resolve(null as null | { role: { name: string } }),
+);
+const findProductionSetting = mock(() =>
+  Promise.resolve(null as null | {
+    staff_lookback_days: number;
+    admin_lookback_days: number;
+  }),
+);
 const findProduction = mock(() =>
   Promise.resolve(null as null | {
     id: string;
@@ -10,7 +19,7 @@ const findProduction = mock(() =>
     tr: number;
     tp: number;
     weight: number | null;
-    cage: { location_id: string };
+    cage: { location_id: string; cycle_settings: Array<{ start_date: Date; end_date: Date | null }> };
     items: Array<{ egg_grade_id: number; quantity: number }>;
   }),
 );
@@ -40,6 +49,8 @@ const transaction = mock(
 mock.module("@/lib/prisma", () => ({
   default: {
     dailyInputCorrection: { findUnique: findCorrection },
+    user: { findUnique: findUser },
+    tenantProductionSetting: { findUnique: findProductionSetting },
     dailyProduction: { findFirst: findProduction },
     eggGrade: { findMany: findGrades },
     item: { findFirst: findEggItem },
@@ -97,13 +108,18 @@ const existingRecord = {
   tr: 0,
   tp: 0,
   weight: null,
-  cage: { location_id: "loc-1" },
+  cage: {
+    location_id: "loc-1",
+    cycle_settings: [{ start_date: new Date("2026-01-01"), end_date: null }],
+  },
   items: [{ egg_grade_id: 1, quantity: 10 }],
 };
 
 describe("updateDailyProduction", () => {
   beforeEach(() => {
     findCorrection.mockReset();
+    findUser.mockReset();
+    findProductionSetting.mockReset();
     findProduction.mockReset();
     findGrades.mockReset();
     findEggItem.mockReset();
@@ -115,6 +131,11 @@ describe("updateDailyProduction", () => {
     createItems.mockReset();
 
     findCorrection.mockResolvedValue(null);
+    findUser.mockResolvedValue({ role: { name: "staff" } });
+    findProductionSetting.mockResolvedValue({
+      staff_lookback_days: 7,
+      admin_lookback_days: 30,
+    });
     isAssigned.mockResolvedValue(true);
     findEggItem.mockResolvedValue(null);
     transaction.mockImplementation(

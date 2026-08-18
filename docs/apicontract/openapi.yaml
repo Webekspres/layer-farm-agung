@@ -561,6 +561,49 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/input-window:
+    get:
+      tags: [Production]
+      summary: Batas tanggal input & koreksi (lookback)
+      description: |
+        Mengembalikan rentang tanggal yang diizinkan untuk input/koreksi data
+        harian, berdasarkan kebijakan lookback tenant dan role user pemanggil
+        (staff vs admin). Opsional `cageId` menyertakan batas siklus aktif kandang.
+        Dipakai Mobile untuk date picker backfill.
+      operationId: getInputWindow
+      parameters:
+        - name: cageId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Kandang untuk menyertakan batas start_date / end_date siklus aktif.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/InputWindow"
+              example:
+                success: true
+                message: Batas input berhasil dimuat.
+                data:
+                  minDate: "2026-08-12"
+                  maxDate: "2026-08-18"
+                  lookbackDays: 7
+                  hasActiveCycle: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /api/v1/production:
     post:
       tags: [Production]
@@ -1379,6 +1422,28 @@ components:
         activeCyclePopulation:
           type: integer
           nullable: true
+
+    InputWindow:
+      type: object
+      required: [minDate, maxDate, lookbackDays, hasActiveCycle]
+      properties:
+        minDate:
+          type: string
+          format: date
+          description: |
+            Tanggal paling awal yang diizinkan (irisan lookback tenant dengan
+            start_date siklus aktif kandang bila `cageId` diberikan).
+        maxDate:
+          type: string
+          format: date
+          description: Tanggal paling akhir yang diizinkan (hari ini, atau end_date siklus aktif).
+        lookbackDays:
+          type: integer
+          minimum: 0
+          description: Jumlah hari lookback yang berlaku untuk role pemanggil.
+        hasActiveCycle:
+          type: boolean
+          description: false bila kandang (bila diisi) tidak punya siklus aktif.
 
     EggGradeOption:
       type: object

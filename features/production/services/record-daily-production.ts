@@ -3,6 +3,10 @@ import { applyStockMutation } from "@/features/inventory/services/apply-stock-mu
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import { resolveProductionBuckets } from "@/features/production/lib/production-grade-mapping";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
 import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
@@ -42,7 +46,7 @@ export async function recordDailyProduction(
       cycle_settings: {
         where: { status: "Active" },
         take: 1,
-        select: { id: true },
+        select: { id: true, start_date: true, end_date: true },
       },
     },
   });
@@ -77,6 +81,17 @@ export async function recordDailyProduction(
   const dateCheck = validateOperationalBusinessDate(input.recordDate);
   if (!dateCheck.ok) {
     return { ok: false, error: dateCheck.error };
+  }
+
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: dateCheck.date,
+    cycle: cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error };
   }
 
   const grades = await prisma.eggGrade.findMany({

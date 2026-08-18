@@ -5,6 +5,10 @@ import {
   isPopulationDecreaseType,
 } from "@/features/cages/lib/compute-cycle-population";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { PopulationMutationInput } from "@/features/production/schemas/population-mutation";
 import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate, normalizeBusinessDate } from "@/lib/business-date";
@@ -35,7 +39,16 @@ export async function recordPopulationMutation(
       id: input.cageId,
       location: { tenant_id: tenantId },
     },
-    select: { id: true, name: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      cycle_settings: {
+        where: { status: "Active" },
+        take: 1,
+        select: { start_date: true, end_date: true },
+      },
+    },
   });
 
   if (!cage) {
@@ -54,6 +67,17 @@ export async function recordPopulationMutation(
   const dateCheck = validateOperationalBusinessDate(input.recordDate);
   if (!dateCheck.ok) {
     return { ok: false, error: dateCheck.error };
+  }
+
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: dateCheck.date,
+    cycle: cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error };
   }
 
   const recordDate = dateCheck.date;
