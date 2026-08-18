@@ -257,10 +257,16 @@ model ProductionTarget {
 model EggGrade {
   id          Int      @id @default(autoincrement())
   name        String   @unique
+  /** Kode stabil utk mapping bucket legacy (TB/TR/TP) dan referensi sistem. Null utk grade non-produksi (label harga). */
+  code        String?  @unique
   description String?
+  /** Hanya grade aktif yang muncul di form input produksi (Web + Mobile). */
+  is_active   Boolean  @default(true)
+  sort_order  Int      @default(0)
 
   // Katalog opsional (label harga); stok jual = Item Egg dari panen TB, bukan grade
   sales_order_items SalesOrderItem[]
+  production_items  DailyProductionItem[]
 }
 
 model Vendor {
@@ -370,12 +376,13 @@ model DailyProduction {
   cage_id      String   @db.Uuid
   user_id      String   @db.Uuid
   record_date  DateTime @db.Date
-  /** Telur bagus (TB) */
+  /** Denormalisasi bucket TB (Telur Bagus) — sumber kebenaran ada di DailyProductionItem. */
   tb           Int      @default(0)
-  /** Telur retak (TR) */
+  /** Denormalisasi bucket TR (Telur Retak) — sumber kebenaran ada di DailyProductionItem. */
   tr           Int      @default(0)
-  /** Telur pecah (TP) */
+  /** Denormalisasi bucket TP (Telur Putih, bukan Telur Pecah) — sumber kebenaran ada di DailyProductionItem. */
   tp           Int      @default(0)
+  /** Berat rata-rata telur (gram), opsional — dipakai utk Egg Mass pada FCR. */
   weight       Float?
   is_synced    Boolean  @default(true)
   client_mutation_id String? @unique @db.Uuid
@@ -385,6 +392,22 @@ model DailyProduction {
   tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   cage   Cage   @relation(fields: [cage_id], references: [id], onDelete: Restrict)
   user   User   @relation(fields: [user_id], references: [id], onDelete: Restrict)
+  items  DailyProductionItem[]
+}
+
+/** Rincian per-grade dari satu catatan produksi harian (grade master dinamis). */
+model DailyProductionItem {
+  id            String   @id @default(uuid()) @db.Uuid
+  production_id String   @db.Uuid
+  egg_grade_id  Int
+  quantity      Int
+  created_at    DateTime @default(now())
+
+  production DailyProduction @relation(fields: [production_id], references: [id], onDelete: Cascade)
+  egg_grade  EggGrade        @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+
+  @@index([production_id])
+  @@index([egg_grade_id])
 }
 
 model FeedConsumption {

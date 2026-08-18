@@ -8,6 +8,8 @@ export type CageProductionHistoryItem = {
   tr: number;
   tp: number;
   total: number;
+  /** Berat rata-rata telur (gram) saat entri dibuat, opsional. */
+  weight: number | null;
   recordedBy: string;
   createdAt: Date;
 };
@@ -145,6 +147,7 @@ export async function listCageDailyHistory(
       tr: row.tr,
       tp: row.tp,
       total: row.tb + row.tr + row.tp,
+      weight: row.weight,
       recordedBy: row.user.full_name || row.user.username,
       createdAt: row.created_at,
     })),

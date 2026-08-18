@@ -18,6 +18,7 @@ function buildWhere({
     and.push({
       OR: [
         { name: { contains: q, mode: "insensitive" } },
+        { code: { contains: q, mode: "insensitive" } },
         { description: { contains: q, mode: "insensitive" } },
       ],
     });
@@ -25,10 +26,12 @@ function buildWhere({
 
   if (usage === "in_use") {
     and.push({
-      sales_order_items: { some: {} },
+      OR: [{ sales_order_items: { some: {} } }, { production_items: { some: {} } }],
     });
   } else if (usage === "unused") {
-    and.push({ sales_order_items: { none: {} } });
+    and.push({
+      AND: [{ sales_order_items: { none: {} } }, { production_items: { none: {} } }],
+    });
   }
 
   if (and.length === 0) return {};
@@ -40,6 +43,28 @@ export type PaginatedEggGradesResult = {
   items: EggGradeListItem[];
 } & PaginationMeta;
 
+type EggGradeRow = {
+  id: number;
+  name: string;
+  code: string | null;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number;
+  _count: { sales_order_items: number; production_items: number };
+};
+
+function toListItem(row: EggGradeRow): EggGradeListItem {
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    description: row.description,
+    isActive: row.is_active,
+    sortOrder: row.sort_order,
+    usageCount: row._count.sales_order_items + row._count.production_items,
+  };
+}
+
 export async function listEggGrades(
   filters: EggGradesListFilters & { page?: number; pageSize?: number } = {},
 ): Promise<PaginatedEggGradesResult> {
@@ -47,8 +72,15 @@ export async function listEggGrades(
   const where = buildWhere(searchFilters);
 
   const includeClause = {
-    _count: { select: { sales_order_items: true } },
+    _count: {
+      select: { sales_order_items: true, production_items: true },
+    },
   } as const;
+
+  const orderBy: Prisma.EggGradeOrderByWithRelationInput[] = [
+    { sort_order: "asc" },
+    { name: "asc" },
+  ];
 
   if (page !== undefined && pageSize !== undefined) {
     const total = await prisma.eggGrade.count({ where });
@@ -59,18 +91,13 @@ export async function listEggGrades(
     const rows = await prisma.eggGrade.findMany({
       where,
       include: includeClause,
-      orderBy: { name: "asc" },
+      orderBy,
       skip,
       take: pageSize,
     });
 
     return {
-      items: rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        usageCount: row._count.sales_order_items,
-      })),
+      items: rows.map(toListItem),
       total,
       page: safePage,
       pageSize,
@@ -81,15 +108,10 @@ export async function listEggGrades(
   const rows = await prisma.eggGrade.findMany({
     where,
     include: includeClause,
-    orderBy: { name: "asc" },
+    orderBy,
   });
 
-  const mapped = rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    usageCount: row._count.sales_order_items,
-  }));
+  const mapped = rows.map(toListItem);
 
   return {
     items: mapped,

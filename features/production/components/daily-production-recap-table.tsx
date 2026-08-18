@@ -72,11 +72,8 @@ export function DailyProductionRecapTable({
                   {row.tb.toLocaleString("id-ID")}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {row.tr.toLocaleString("id-ID")}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
                   <span className="inline-flex items-center justify-end gap-2">
-                    {row.tp.toLocaleString("id-ID")}
+                    {row.tr.toLocaleString("id-ID")}
                     {defectWarning ? (
                       <Badge
                         variant="outline"
@@ -86,6 +83,9 @@ export function DailyProductionRecapTable({
                       </Badge>
                     ) : null}
                   </span>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {row.tp.toLocaleString("id-ID")}
                 </TableCell>
                 <TableCell className="text-right tabular-nums font-medium">
                   {total.toLocaleString("id-ID")}

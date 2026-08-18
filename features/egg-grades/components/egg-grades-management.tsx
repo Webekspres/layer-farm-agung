@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { useSearchParams } from "next/navigation";
 import { Loader2, Pencil } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { EggGradesToolbar } from "@/features/egg-grades/components/egg-grades-toolbar";
 import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-message";
 import { listFiltersAreActive } from "@/features/master-data/lib/url-list-params";
@@ -95,7 +96,9 @@ export function EggGradesManagement({
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
                 <TableHead>Nama</TableHead>
+                <TableHead className="hidden sm:table-cell">Kode</TableHead>
                 <TableHead className="hidden md:table-cell">Deskripsi</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -103,8 +106,20 @@ export function EggGradesManagement({
               {grades.map((grade) => (
                 <TableRow key={grade.id}>
                   <TableCell className="font-medium">{grade.name}</TableCell>
+                  <TableCell className="hidden font-mono text-xs sm:table-cell">
+                    {grade.code ?? "—"}
+                  </TableCell>
                   <TableCell className="hidden text-muted-foreground md:table-cell">
                     {grade.description ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    {grade.isActive ? (
+                      <Badge variant="outline" className="border-emerald-600/40 text-emerald-700 dark:text-emerald-400">
+                        Aktif
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Nonaktif</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -140,9 +155,41 @@ export function EggGradesManagement({
                 <Input id="grade-name" name="name" required />
               </Field>
               <Field>
+                <FieldLabel htmlFor="grade-code">Kode (opsional)</FieldLabel>
+                <Input
+                  id="grade-code"
+                  name="code"
+                  placeholder="Mis. TB, TR, TP — huruf/angka, tanpa spasi"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Kode dipakai untuk mapping bucket produksi (TB/TR/TP). Grade
+                  penjualan (label harga) boleh tanpa kode.
+                </p>
+              </Field>
+              <Field>
                 <FieldLabel htmlFor="grade-desc">Deskripsi</FieldLabel>
                 <Textarea id="grade-desc" name="description" rows={3} />
               </Field>
+              <Field>
+                <FieldLabel htmlFor="grade-sort">Urutan</FieldLabel>
+                <Input
+                  id="grade-sort"
+                  name="sort_order"
+                  type="number"
+                  defaultValue={0}
+                  min={0}
+                />
+              </Field>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  value="on"
+                  defaultChecked
+                  className="size-4 accent-primary"
+                />
+                Aktif (muncul di form input produksi)
+              </label>
               {createState.error ? <FieldError>{createState.error}</FieldError> : null}
             </FieldGroup>
             <DialogFooter className="mt-4">
@@ -174,6 +221,15 @@ export function EggGradesManagement({
                   />
                 </Field>
                 <Field>
+                  <FieldLabel htmlFor="edit-grade-code">Kode (opsional)</FieldLabel>
+                  <Input
+                    id="edit-grade-code"
+                    name="code"
+                    defaultValue={editing.code ?? ""}
+                    placeholder="Mis. TB, TR, TP"
+                  />
+                </Field>
+                <Field>
                   <FieldLabel htmlFor="edit-grade-desc">Deskripsi</FieldLabel>
                   <Textarea
                     id="edit-grade-desc"
@@ -182,6 +238,26 @@ export function EggGradesManagement({
                     defaultValue={editing.description ?? ""}
                   />
                 </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-grade-sort">Urutan</FieldLabel>
+                  <Input
+                    id="edit-grade-sort"
+                    name="sort_order"
+                    type="number"
+                    defaultValue={editing.sortOrder}
+                    min={0}
+                  />
+                </Field>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="is_active"
+                    value="on"
+                    defaultChecked={editing.isActive}
+                    className="size-4 accent-primary"
+                  />
+                  Aktif (muncul di form input produksi)
+                </label>
                 {updateState.error ? (
                   <FieldError>{updateState.error}</FieldError>
                 ) : null}

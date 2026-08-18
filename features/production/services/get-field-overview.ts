@@ -128,7 +128,7 @@ export async function getFieldOverview(
         cage_id: { in: cageIds },
         record_date: { gte: weekStart, lte: recordDate },
       },
-      _sum: { tb: true },
+      _sum: { tb: true, tr: true, tp: true },
     }),
     deps.prisma.vaccineSchedule.findMany({
       where: {
@@ -168,10 +168,11 @@ export async function getFieldOverview(
     }),
   );
 
-  const tbByDate = toDateKeyMap(
+  const eggsByDate = toDateKeyMap(
     weekAgg.map((row) => ({
       date: row.record_date,
-      value: row._sum.tb ?? 0,
+      value:
+        (row._sum.tb ?? 0) + (row._sum.tr ?? 0) + (row._sum.tp ?? 0),
     })),
   );
 
@@ -183,7 +184,7 @@ export async function getFieldOverview(
     todayTp: todayAgg._sum.tp ?? 0,
     pendingVaccineCount,
     overdueVaccineCount,
-    tbByDate,
+    eggsByDate,
   });
 }
 

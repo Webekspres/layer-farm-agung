@@ -19,8 +19,12 @@ export function buildMortalityWarnings(
     .sort((a, b) => b.deaths - a.deaths);
 }
 
-export function buildFcrSnapshot(feedKg: number, tb: number): number | null {
-  return computeFcr(feedKg, tb);
+/** FCR snapshot berbasis Egg Mass (kg) — null bila egg mass ≤ 0 (berat kosong). */
+export function buildFcrSnapshot(
+  feedKg: number,
+  eggMassKg: number,
+): number | null {
+  return computeFcr(feedKg, eggMassKg);
 }
 
 export function buildCashWeekBalance(income: number, expense: number): number {

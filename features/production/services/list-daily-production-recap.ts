@@ -56,7 +56,10 @@ export async function listDailyProductionRecap(
       row.cage.id,
       recordDate,
     );
-    const hdpPercent = computeHdpPercent(row.tb, population ?? 0);
+    const hdpPercent = computeHdpPercent(
+      row.tb + row.tr + row.tp,
+      population ?? 0,
+    );
 
     const activeCycle = row.cage.cycle_settings[0];
     let targetHdp: number | null = null;

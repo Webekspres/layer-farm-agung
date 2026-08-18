@@ -18,7 +18,10 @@ export async function createEggGradeAction(
 
   const parsed = eggGradeSchema.safeParse({
     name: formData.get("name"),
+    code: formData.get("code"),
     description: formData.get("description"),
+    isActive: formData.get("is_active"),
+    sortOrder: formData.get("sort_order"),
   });
 
   if (!parsed.success) {
@@ -29,11 +32,14 @@ export async function createEggGradeAction(
     await prisma.eggGrade.create({
       data: {
         name: parsed.data.name,
+        code: parsed.data.code ?? null,
         description: parsed.data.description ?? null,
+        is_active: parsed.data.isActive,
+        sort_order: parsed.data.sortOrder,
       },
     });
   } catch {
-    return { error: "Gagal membuat grade. Nama mungkin sudah dipakai." };
+    return { error: "Gagal membuat grade. Nama atau kode mungkin sudah dipakai." };
   }
 
   revalidatePath("/dashboard/egg-grades");

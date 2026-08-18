@@ -7,9 +7,11 @@ import {
 } from "./dashboard-lite-metrics";
 
 describe("dashboard-lite-metrics", () => {
-  test("buildFcrSnapshot uses feed/TB", () => {
+  test("buildFcrSnapshot uses feed / egg mass (kg)", () => {
     expect(buildFcrSnapshot(200, 100)).toBe(2);
     expect(buildFcrSnapshot(0, 100)).toBeNull();
+    expect(buildFcrSnapshot(200, 0)).toBeNull();
+    expect(buildFcrSnapshot(200, -5)).toBeNull();
   });
 
   test("buildMortalityWarnings keeps cages at or above threshold", () => {

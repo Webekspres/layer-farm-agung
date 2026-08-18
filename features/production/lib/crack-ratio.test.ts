@@ -6,11 +6,15 @@ describe("crackRatioExceedsThreshold", () => {
     expect(crackRatioExceedsThreshold(0, 0, 0)).toBe(false);
   });
 
-  test("returns false at exactly 5% defect (TR+TP)", () => {
+  test("returns false at exactly 5% TR", () => {
     expect(crackRatioExceedsThreshold(19, 1, 0)).toBe(false);
   });
 
-  test("returns true above 5% defect", () => {
+  test("returns true above 5% TR", () => {
     expect(crackRatioExceedsThreshold(80, 10, 10)).toBe(true);
+  });
+
+  test("TP (Telur Putih) bukan cacat — tidak memicu peringatan", () => {
+    expect(crackRatioExceedsThreshold(80, 0, 10)).toBe(false);
   });
 });

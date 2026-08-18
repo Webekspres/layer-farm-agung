@@ -566,10 +566,12 @@ paths:
       tags: [Production]
       summary: Catat produksi telur harian
       description: |
-        Catat satu entri panen harian dengan bucket TB (telur bagus), TR (telur retak), TP (telur pecah).
-        Boleh lebih dari satu entri per kandang per hari (mis. pagi/sore).
-        Validasi bisnis: kandang aktif, siklus aktif, total `tb + tr + tp >= 1`,
-        maksimal 10.000 butir per field.
+        Catat satu entri panen harian sebagai daftar **klasifikasi per grade aktif**
+        (dari master `EggGrade`, mis. TB/TR/TP). Boleh lebih dari satu entri per
+        kandang per hari (mis. pagi/sore).
+        Validasi bisnis: grade harus ada dan aktif, kandang aktif, siklus aktif,
+        total butir >= 1, maksimal 10.000 butir per baris, maksimal 20 baris.
+        `weight` = berat rata-rata telur (gram), opsional — dipakai utk Egg Mass pada FCR.
       operationId: recordDailyProduction
       requestBody:
         required: true
@@ -580,10 +582,14 @@ paths:
             example:
               cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
               recordDate: "2026-06-04"
-              tb: 1200
-              tr: 30
-              tp: 15
-              weight: 72.5
+              entries:
+                - eggGradeId: 4
+                  quantity: 1200
+                - eggGradeId: 5
+                  quantity: 30
+                - eggGradeId: 6
+                  quantity: 15
+              weight: 62.5
       responses:
         "201":
           description: Produksi tercatat
@@ -613,7 +619,8 @@ paths:
       tags: [Production]
       summary: Perbarui entri produksi harian
       description: |
-        Koreksi in-place + audit event (GAP-007). Wajib `reason`.
+        Koreksi in-place + audit event (GAP-007). Body memakai `entries` per grade
+        aktif (sama seperti POST) plus `weight` dan `reason` wajib.
         Opsional `clientMutationId` untuk idempotency. Staff harus ditugaskan.
       operationId: updateDailyProduction
       parameters:
@@ -1111,7 +1118,7 @@ components:
             $ref: "#/components/schemas/ApiError"
           example:
             success: false
-            error: Isi jumlah telur layak atau telur pecah minimal 1 butir.
+            error: Isi minimal satu klasifikasi telur dengan jumlah lebih dari 0.
 
   schemas:
     ApiSuccess:
@@ -1375,16 +1382,36 @@ components:
 
     EggGradeOption:
       type: object
-      required: [id, name]
+      required: [id, name, code, isActive]
       properties:
         id:
           type: integer
         name:
           type: string
+        code:
+          type: string
+          nullable: true
+          description: Kode stabil (TB/TR/TP); null utk grade non-produksi (label harga).
+        isActive:
+          type: boolean
+          description: Hanya grade aktif yang boleh dipakai input produksi baru.
+
+    DailyProductionEntry:
+      type: object
+      required: [eggGradeId, quantity]
+      properties:
+        eggGradeId:
+          type: integer
+          description: ID grade dari `GET /api/v1/egg-grades` (harus aktif).
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Jumlah butir telur untuk grade tersebut.
 
     DailyProductionInput:
       type: object
-      required: [cageId, recordDate]
+      required: [cageId, recordDate, entries]
       properties:
         cageId:
           type: string
@@ -1393,29 +1420,17 @@ components:
           type: string
           format: date
           description: Tanggal panen (ISO 8601 date)
-        tb:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          default: 0
-          description: Telur bagus (butir)
-        tr:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          default: 0
-          description: Telur retak (butir)
-        tp:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          default: 0
-          description: Telur pecah (butir)
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/DailyProductionEntry"
         weight:
           type: number
           format: float
           minimum: 0
-          description: Total berat telur (kg), opsional
+          description: Berat rata-rata telur (gram), opsional — utk Egg Mass pada FCR.
         clientMutationId:
           type: string
           format: uuid
@@ -1451,20 +1466,19 @@ components:
 
     UpdateDailyProductionInput:
       type: object
-      required: [reason]
+      required: [entries, reason]
       properties:
-        tb:
-          type: integer
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/DailyProductionEntry"
+        weight:
+          type: number
+          format: float
           minimum: 0
-          maximum: 10000
-        tr:
-          type: integer
-          minimum: 0
-          maximum: 10000
-        tp:
-          type: integer
-          minimum: 0
-          maximum: 10000
+          description: Berat rata-rata telur (gram), opsional.
         reason:
           type: string
           minLength: 3
@@ -1661,6 +1675,11 @@ components:
           type: integer
         tp:
           type: integer
+        weight:
+          type: number
+          format: float
+          nullable: true
+          description: Berat rata-rata telur (gram) saat entri dibuat.
         total:
           type: integer
         recordedBy:

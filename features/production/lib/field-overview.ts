@@ -62,8 +62,8 @@ export type FieldOverviewBuildInput = {
   todayTp: number;
   pendingVaccineCount: number;
   overdueVaccineCount: number;
-  /** Daily TB totals keyed by business date string (YYYY-MM-DD). */
-  tbByDate: Map<string, number>;
+  /** Daily total telur (seluruh grade) keyed by business date string (YYYY-MM-DD). */
+  eggsByDate: Map<string, number>;
 };
 
 function round1(value: number): number {
@@ -116,7 +116,8 @@ export function buildFieldOverview(
 
   const populationTotal = cages.reduce((sum, c) => sum + c.population, 0);
   const recordedTodayCount = cages.filter((c) => c.recordedToday).length;
-  const todayHdp = computeHdpPercent(input.todayTb, populationTotal);
+  const todayTotal = input.todayTb + input.todayTr + input.todayTp;
+  const todayHdp = computeHdpPercent(todayTotal, populationTotal);
 
   const targets = cages
     .map((c) => c.targetHdp)
@@ -127,7 +128,7 @@ export function buildFieldOverview(
       : null;
 
   const dates7 = enumerateBusinessDates(recordDate, 7);
-  const production7d = fillSeries(dates7, input.tbByDate).map((p) => ({
+  const production7d = fillSeries(dates7, input.eggsByDate).map((p) => ({
     date: p.date,
     label: p.label,
     eggs: p.value,

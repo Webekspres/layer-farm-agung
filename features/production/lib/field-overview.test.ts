@@ -17,7 +17,7 @@ describe("buildFieldOverview", () => {
       todayTp: 0,
       pendingVaccineCount: 0,
       overdueVaccineCount: 0,
-      tbByDate: new Map(),
+      eggsByDate: new Map(),
     });
 
     expect(result).toEqual(emptyFieldOverview(TODAY));
@@ -44,7 +44,7 @@ describe("buildFieldOverview", () => {
       todayTp: 0,
       pendingVaccineCount: 0,
       overdueVaccineCount: 0,
-      tbByDate: new Map([["2026-08-03", 100]]),
+      eggsByDate: new Map([["2026-08-03", 100]]),
     });
 
     expect(result.todayHdp).toBeNull();
@@ -77,9 +77,9 @@ describe("buildFieldOverview", () => {
       todayTp: 5,
       pendingVaccineCount: 3,
       overdueVaccineCount: 1,
-      tbByDate: new Map([
+      eggsByDate: new Map([
         ["2026-08-02", 1700],
-        ["2026-08-03", 1800],
+        ["2026-08-03", 1815],
       ]),
     });
 
@@ -89,17 +89,18 @@ describe("buildFieldOverview", () => {
     expect(result.todayTb).toBe(1800);
     expect(result.todayTr).toBe(10);
     expect(result.todayTp).toBe(5);
-    expect(result.todayHdp).toBe(90);
+    // HDP memakai TOTAL seluruh kategori (1815), bukan TB saja (1800).
+    expect(result.todayHdp).toBe(90.8);
     expect(result.targetHdpAvg).toBe(90);
     expect(result.pendingVaccineCount).toBe(3);
     expect(result.overdueVaccineCount).toBe(1);
     expect(result.incompleteCages).toEqual([{ id: "c2", name: "B2" }]);
 
     const todayPoint = result.production7d.find((p) => p.date === "2026-08-03");
-    expect(todayPoint?.eggs).toBe(1800);
+    expect(todayPoint?.eggs).toBe(1815);
 
     const todayHdp = result.hdp7d.find((p) => p.date === "2026-08-03");
-    expect(todayHdp?.hdp).toBe(90);
+    expect(todayHdp?.hdp).toBe(90.8);
     expect(todayHdp?.target).toBe(90);
   });
 
@@ -120,7 +121,7 @@ describe("buildFieldOverview", () => {
       todayTp: 0,
       pendingVaccineCount: 0,
       overdueVaccineCount: 0,
-      tbByDate: new Map([["2026-08-01", 400]]),
+      eggsByDate: new Map([["2026-08-01", 400]]),
     });
 
     expect(result.production7d).toHaveLength(7);

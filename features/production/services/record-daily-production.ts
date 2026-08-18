@@ -2,11 +2,10 @@ import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
+import { resolveProductionBuckets } from "@/features/production/lib/production-grade-mapping";
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
 import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
-import {
-  validateOperationalBusinessDate,
-} from "@/lib/business-date";
+import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type RecordDailyProductionResult =
@@ -80,13 +79,28 @@ export async function recordDailyProduction(
     return { ok: false, error: dateCheck.error };
   }
 
+  const grades = await prisma.eggGrade.findMany({
+    where: { id: { in: input.entries.map((entry) => entry.eggGradeId) } },
+    select: { id: true, code: true, is_active: true },
+  });
+
+  const resolved = resolveProductionBuckets(input.entries, grades);
+  if (!resolved.ok) {
+    return { ok: false, error: resolved.error };
+  }
+
   const recordDate = dateCheck.date;
   const isSynced = !input.fromSync;
+  const { tb, tr, tp } = resolved.buckets;
 
-  const eggItem = await prisma.item.findFirst({
-    where: { tenant_id: tenantId, type: "Egg" },
-    select: { id: true },
-  });
+  // Stok jual telur hanya dari bucket TB (Telur Bagus) — grade lain dicatat di produksi saja.
+  const eggItem =
+    tb > 0
+      ? await prisma.item.findFirst({
+          where: { tenant_id: tenantId, type: "Egg" },
+          select: { id: true },
+        })
+      : null;
 
   try {
     const recordId = await prisma.$transaction(async (tx) => {
@@ -96,22 +110,28 @@ export async function recordDailyProduction(
           cage_id: input.cageId,
           user_id: userId,
           record_date: recordDate,
-          tb: input.tb,
-          tr: input.tr,
-          tp: input.tp,
+          tb,
+          tr,
+          tp,
           weight: input.weight ?? null,
           is_synced: isSynced,
           client_mutation_id: input.clientMutationId ?? null,
+          items: {
+            create: input.entries.map((entry) => ({
+              egg_grade_id: entry.eggGradeId,
+              quantity: entry.quantity,
+            })),
+          },
         },
         select: { id: true },
       });
 
-      if (eggItem && input.tb > 0) {
+      if (eggItem && tb > 0) {
         const stock = await applyStockMutation(tx, {
           itemId: eggItem.id,
           locationId: cage.location_id,
           mutationType: StockMutationType.IN_HARVEST,
-          quantity: input.tb,
+          quantity: tb,
           referenceId: production.id,
         });
 

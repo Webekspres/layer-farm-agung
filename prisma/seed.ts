@@ -182,6 +182,48 @@ async function main() {
     });
   }
 
+  // Grade produksi (sumber klasifikasi panen — sesuai ERP AAPM; TP = Telur Putih).
+  const productionGrades = [
+    {
+      code: "TB",
+      name: "Telur Bagus",
+      description: "Telur layak jual / konsumsi",
+      sortOrder: 1,
+    },
+    {
+      code: "TR",
+      name: "Telur Retak",
+      description: "Telur retak (termasuk rincian telur pecah)",
+      sortOrder: 2,
+    },
+    {
+      code: "TP",
+      name: "Telur Putih",
+      description: "Telur putih (referensi ERP AAPM)",
+      sortOrder: 3,
+    },
+  ] as const;
+  const gradeIdByCode = new Map<string, number>();
+  for (const g of productionGrades) {
+    const record = await prisma.eggGrade.upsert({
+      where: { code: g.code },
+      update: {
+        name: g.name,
+        description: g.description,
+        is_active: true,
+        sort_order: g.sortOrder,
+      },
+      create: {
+        code: g.code,
+        name: g.name,
+        description: g.description,
+        is_active: true,
+        sort_order: g.sortOrder,
+      },
+    });
+    gradeIdByCode.set(g.code, record.id);
+  }
+
   const mainLocation = await prisma.location.upsert({
     where: { id: "00000000-0000-4000-8000-000000000001" },
     update: { name: "Kawasan Utama" },
@@ -252,6 +294,17 @@ async function main() {
         select: { id: true },
       });
 
+      const gradeItems = [
+        { code: "TB", quantity: sample.tb },
+        { code: "TR", quantity: sample.tr },
+        { code: "TP", quantity: sample.tp },
+      ]
+        .filter((item) => item.quantity > 0)
+        .map((item) => ({
+          egg_grade_id: gradeIdByCode.get(item.code)!,
+          quantity: item.quantity,
+        }));
+
       if (existing) {
         await prisma.dailyProduction.update({
           where: { id: existing.id },
@@ -260,11 +313,22 @@ async function main() {
             tb: sample.tb,
             tr: sample.tr,
             tp: sample.tp,
+            weight: 62,
             is_synced: true,
           },
         });
+        await prisma.dailyProductionItem.deleteMany({
+          where: { production_id: existing.id },
+        });
+        await prisma.dailyProductionItem.createMany({
+          data: gradeItems.map((item) => ({
+            production_id: existing.id,
+            egg_grade_id: item.egg_grade_id,
+            quantity: item.quantity,
+          })),
+        });
       } else {
-        await prisma.dailyProduction.create({
+        const created = await prisma.dailyProduction.create({
           data: {
             tenant_id: defaultTenant.id,
             cage_id: seedCage.id,
@@ -273,8 +337,17 @@ async function main() {
             tb: sample.tb,
             tr: sample.tr,
             tp: sample.tp,
+            weight: 62,
             is_synced: true,
           },
+          select: { id: true },
+        });
+        await prisma.dailyProductionItem.createMany({
+          data: gradeItems.map((item) => ({
+            production_id: created.id,
+            egg_grade_id: item.egg_grade_id,
+            quantity: item.quantity,
+          })),
         });
       }
     }

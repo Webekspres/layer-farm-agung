@@ -7,6 +7,8 @@ import {
   computeCycleAgeParts,
   computeFcr,
   filterMedicalInPeriod,
+  productionTotal,
+  sumEggMassKgInPeriod,
   sumProductionInPeriod,
   sumProductionOnDate,
   type DailyProductionLike,
@@ -111,7 +113,7 @@ export function buildCycleOperationalSummary(
     : { tb: 0, tr: 0, tp: 0 };
 
   const todayHdp = isActive
-    ? computeHdpPercent(todayProduction.tb, currentPopulation)
+    ? computeHdpPercent(productionTotal(todayProduction), currentPopulation)
     : null;
 
   const { ageDaysRemainder, ageWeeksFloor } = computeCycleAgeParts(
@@ -165,7 +167,10 @@ export function buildCycleOperationalSummary(
     },
     feed: {
       totalQuantity: totalFeed,
-      fcr: computeFcr(totalFeed, cumulative.tb),
+      fcr: computeFcr(
+        totalFeed,
+        sumEggMassKgInPeriod(raw.production, cycle.start_date, periodEnd),
+      ),
     },
     medical: {
       eventCount: medicalInPeriod.length,
@@ -201,6 +206,7 @@ export async function loadCageCycleRawData(
         tb: true,
         tr: true,
         tp: true,
+        weight: true,
       },
     }),
     prisma.feedConsumption.findMany({

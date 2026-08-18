@@ -1,6 +1,7 @@
 import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
 import { cycleAgeInWeeks } from "@/features/cages/lib/cycle-age-weeks";
 import { computeHdpPercent } from "@/features/production/lib/compute-hdp";
+import { sumEggMassKgInPeriod } from "@/features/cages/lib/cycle-operational-metrics";
 import {
   buildCashWeekBalance,
   buildFcrSnapshot,
@@ -90,24 +91,36 @@ export async function getDashboardExecutive(
     recentStockMutations,
   ] = await Promise.all([
     emptyScope
-      ? Promise.resolve({ _sum: { tb: null } })
-      : prisma.dailyProduction.aggregate({
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
           where: {
             tenant_id: tenantId,
             record_date: recordDate,
             ...cageIdFilter,
           },
-          _sum: { tb: true },
+          select: {
+            record_date: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            weight: true,
+          },
         }),
     emptyScope
-      ? Promise.resolve({ _sum: { tb: null } })
-      : prisma.dailyProduction.aggregate({
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
           where: {
             tenant_id: tenantId,
             record_date: yesterday,
             ...cageIdFilter,
           },
-          _sum: { tb: true },
+          select: {
+            record_date: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            weight: true,
+          },
         }),
     emptyScope
       ? Promise.resolve([])
@@ -118,7 +131,7 @@ export async function getDashboardExecutive(
             record_date: recordDate,
             ...cageIdFilter,
           },
-          _sum: { tb: true },
+          _sum: { tb: true, tr: true, tp: true },
         }),
     prisma.item.findMany({
       where: { tenant_id: tenantId, type: { not: "Egg" } },
@@ -182,14 +195,20 @@ export async function getDashboardExecutive(
           _sum: { quantity: true },
         }),
     emptyScope
-      ? Promise.resolve({ _sum: { tb: null } })
-      : prisma.dailyProduction.aggregate({
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
           where: {
             tenant_id: tenantId,
             record_date: { gte: weekStart, lte: recordDate },
             ...cageIdFilter,
           },
-          _sum: { tb: true },
+          select: {
+            record_date: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            weight: true,
+          },
         }),
     prisma.salesOrder.aggregate({
       where: { tenant_id: tenantId, sale_date: recordDate },
@@ -235,7 +254,7 @@ export async function getDashboardExecutive(
             record_date: { gte: range30Start, lte: recordDate },
             ...cageIdFilter,
           },
-          _sum: { tb: true },
+          _sum: { tb: true, tr: true, tp: true },
           orderBy: { record_date: "asc" },
         }),
     emptyScope
@@ -304,6 +323,8 @@ export async function getDashboardExecutive(
             record_date: true,
             created_at: true,
             tb: true,
+            tr: true,
+            tp: true,
             cage: { select: { name: true } },
           },
         }),
@@ -356,8 +377,11 @@ export async function getDashboardExecutive(
     }),
   ]);
 
-  const cageTbById = new Map(
-    cageProdToday.map((row) => [row.cage_id, row._sum.tb ?? 0]),
+  const cageEggsById = new Map(
+    cageProdToday.map((row) => [
+      row.cage_id,
+      (row._sum.tb ?? 0) + (row._sum.tr ?? 0) + (row._sum.tp ?? 0),
+    ]),
   );
 
   const cagePopulations = await Promise.all(
@@ -381,8 +405,8 @@ export async function getDashboardExecutive(
     if (!activeCycle) continue;
 
     const population = cagePopulations[i];
-    const tb = cageTbById.get(cage.id) ?? 0;
-    const actualHdp = computeHdpPercent(tb, population ?? 0);
+    const eggs = cageEggsById.get(cage.id) ?? 0;
+    const actualHdp = computeHdpPercent(eggs, population ?? 0);
     if (actualHdp === null) continue;
 
     const ageWeeks = cycleAgeInWeeks(activeCycle.start_date, recordDate);
@@ -492,19 +516,31 @@ export async function getDashboardExecutive(
     },
   });
 
-  const todayTb = prodToday._sum.tb ?? 0;
-  const yesterdayTb = prodYesterday._sum.tb ?? 0;
-  const weekTb = prodWeek._sum.tb ?? 0;
+  const todayTotal = prodToday.reduce(
+    (sum, row) => sum + row.tb + row.tr + row.tp,
+    0,
+  );
+  const yesterdayTotal = prodYesterday.reduce(
+    (sum, row) => sum + row.tb + row.tr + row.tp,
+    0,
+  );
+  const todayEggMassKg = sumEggMassKgInPeriod(prodToday, recordDate, recordDate);
+  const yesterdayEggMassKg = sumEggMassKgInPeriod(
+    prodYesterday,
+    yesterday,
+    yesterday,
+  );
+  const weekEggMassKg = sumEggMassKgInPeriod(prodWeek, weekStart, recordDate);
   const feedTodayKg = feedToday._sum.quantity ?? 0;
   const feedYesterdayKg = feedYesterday._sum.quantity ?? 0;
   const feedWeekKg = feedWeek._sum.quantity ?? 0;
 
-  const fcrToday = buildFcrSnapshot(feedTodayKg, todayTb);
-  const fcrYesterday = buildFcrSnapshot(feedYesterdayKg, yesterdayTb);
-  const fcrWeek = buildFcrSnapshot(feedWeekKg, weekTb);
+  const fcrToday = buildFcrSnapshot(feedTodayKg, todayEggMassKg);
+  const fcrYesterday = buildFcrSnapshot(feedYesterdayKg, yesterdayEggMassKg);
+  const fcrWeek = buildFcrSnapshot(feedWeekKg, weekEggMassKg);
 
-  const hdpToday = computeHdpPercent(todayTb, activePopulationTotal);
-  const hdpYesterday = computeHdpPercent(yesterdayTb, activePopulationTotal);
+  const hdpToday = computeHdpPercent(todayTotal, activePopulationTotal);
+  const hdpYesterday = computeHdpPercent(yesterdayTotal, activePopulationTotal);
 
   const revenueToday = decimalToNumber(salesToday._sum.total_amount ?? 0);
   const revenueYesterday = decimalToNumber(
@@ -521,11 +557,12 @@ export async function getDashboardExecutive(
   }
   const weeklyProfit = buildCashWeekBalance(weekCashIncome, weekCashExpense);
 
-  // --- Series: production 30d (zeros = no record that day) ---
+  // --- Series: production 30d (total seluruh kategori; zeros = no record that day) ---
   const prodKeyed = toDateKeyMap(
     prodByDate.map((row) => ({
       date: row.record_date,
-      value: row._sum.tb ?? 0,
+      value:
+        (row._sum.tb ?? 0) + (row._sum.tr ?? 0) + (row._sum.tp ?? 0),
     })),
   );
   const production30d = fillSeries(dates30, prodKeyed).map((p) => ({
@@ -534,7 +571,7 @@ export async function getDashboardExecutive(
     eggs: p.value,
   }));
 
-  // --- HDP vs target (daily TB / current active population) ---
+  // --- HDP vs target (daily total telur / current active population) ---
   const hdpVsTarget30d = production30d.map((point) => {
     const hdp =
       activePopulationTotal > 0
@@ -659,7 +696,9 @@ export async function getDashboardExecutive(
       id: `prod-${row.id}`,
       kind: "production",
       title: "Produksi harian",
-      description: `${row.cage.name}: ${row.tb.toLocaleString("id-ID")} butir TB`,
+      description: `${row.cage.name}: ${(
+        row.tb + row.tr + row.tp
+      ).toLocaleString("id-ID")} butir telur`,
       at: row.created_at.toISOString(),
       href: "/dashboard/production",
     });
@@ -717,8 +756,8 @@ export async function getDashboardExecutive(
     buildKpi({
       id: "eggs",
       label: "Produksi telur hari ini",
-      value: todayTb,
-      previous: yesterdayTb,
+      value: todayTotal,
+      previous: yesterdayTotal,
       format: "count",
       unit: "butir",
       comparisonLabel: "vs kemarin",
@@ -746,12 +785,12 @@ export async function getDashboardExecutive(
     }),
     buildKpi({
       id: "fcr",
-      label: "FCR hari ini (indikatif)",
+      label: "FCR hari ini (egg mass, indikatif)",
       value: fcrToday,
       previous: fcrYesterday ?? fcrWeek,
       format: "fcr",
-      unit: "kg/butir",
-      comparisonLabel: "vs kemarin — bukan angka keputusan",
+      unit: "kg/kg",
+      comparisonLabel: "vs kemarin — tersembunyi bila berat kosong",
       sparkline: fcrSpark,
       invertTrend: true,
     }),

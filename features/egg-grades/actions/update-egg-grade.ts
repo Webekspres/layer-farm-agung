@@ -19,7 +19,10 @@ export async function updateEggGradeAction(
   const parsed = updateEggGradeSchema.safeParse({
     id: formData.get("id"),
     name: formData.get("name"),
+    code: formData.get("code"),
     description: formData.get("description"),
+    isActive: formData.get("is_active"),
+    sortOrder: formData.get("sort_order"),
   });
 
   if (!parsed.success) {
@@ -31,11 +34,17 @@ export async function updateEggGradeAction(
       where: { id: parsed.data.id },
       data: {
         name: parsed.data.name,
+        code: parsed.data.code ?? null,
         description: parsed.data.description ?? null,
+        is_active: parsed.data.isActive,
+        sort_order: parsed.data.sortOrder,
       },
     });
   } catch {
-    return { error: "Gagal memperbarui grade." };
+    return {
+      error:
+        "Gagal memperbarui grade. Nama atau kode mungkin sudah dipakai grade lain.",
+    };
   }
 
   revalidatePath("/dashboard/egg-grades");

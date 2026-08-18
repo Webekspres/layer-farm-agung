@@ -1,6 +1,7 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import { resolveProductionBuckets } from "@/features/production/lib/production-grade-mapping";
 import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { UpdateDailyProductionInput } from "@/features/production/schemas/update-daily-production";
 import { recordCorrectionEvent } from "@/features/production/services/record-correction-event";
@@ -42,7 +43,9 @@ export async function updateDailyProduction(
       tb: true,
       tr: true,
       tp: true,
+      weight: true,
       cage: { select: { location_id: true } },
+      items: { select: { egg_grade_id: true, quantity: true } },
     },
   });
 
@@ -64,32 +67,52 @@ export async function updateDailyProduction(
     };
   }
 
+  const grades = await prisma.eggGrade.findMany({
+    where: { id: { in: input.entries.map((entry) => entry.eggGradeId) } },
+    select: { id: true, code: true, is_active: true },
+  });
+
+  const resolved = resolveProductionBuckets(input.entries, grades);
+  if (!resolved.ok) {
+    return { ok: false, error: resolved.error, status: 400 };
+  }
+
+  const { tb, tr, tp } = resolved.buckets;
+
+  const existingByGradeId = new Map(
+    existing.items.map((item) => [item.egg_grade_id, item.quantity]),
+  );
   const changes: CorrectionChange[] = [];
-  if (existing.tb !== input.tb) {
-    changes.push({
-      component: "production",
-      recordId,
-      field: "tb",
-      before: existing.tb,
-      after: input.tb,
-    });
+  const allGradeIds = new Set<number>([
+    ...existingByGradeId.keys(),
+    ...input.entries.map((entry) => entry.eggGradeId),
+  ]);
+
+  const gradeLabelById = new Map(grades.map((g) => [g.id, g.code ?? `grade-${g.id}`]));
+
+  for (const gradeId of allGradeIds) {
+    const before = existingByGradeId.get(gradeId) ?? 0;
+    const after =
+      input.entries.find((entry) => entry.eggGradeId === gradeId)?.quantity ?? 0;
+    if (before !== after) {
+      changes.push({
+        component: "production",
+        recordId,
+        field: gradeLabelById.get(gradeId) ?? `grade-${gradeId}`,
+        before,
+        after,
+      });
+    }
   }
-  if (existing.tr !== input.tr) {
+
+  const nextWeight = input.weight ?? null;
+  if ((existing.weight ?? null) !== nextWeight) {
     changes.push({
       component: "production",
       recordId,
-      field: "tr",
-      before: existing.tr,
-      after: input.tr,
-    });
-  }
-  if (existing.tp !== input.tp) {
-    changes.push({
-      component: "production",
-      recordId,
-      field: "tp",
-      before: existing.tp,
-      after: input.tp,
+      field: "weight",
+      before: existing.weight ?? null,
+      after: nextWeight,
     });
   }
 
@@ -101,7 +124,7 @@ export async function updateDailyProduction(
     };
   }
 
-  const tbDelta = input.tb - existing.tb;
+  const tbDelta = tb - existing.tb;
   const eggItem =
     tbDelta !== 0
       ? await prisma.item.findFirst({
@@ -115,10 +138,22 @@ export async function updateDailyProduction(
       await tx.dailyProduction.update({
         where: { id: recordId },
         data: {
-          tb: input.tb,
-          tr: input.tr,
-          tp: input.tp,
+          tb,
+          tr,
+          tp,
+          weight: input.weight ?? null,
         },
+      });
+
+      await tx.dailyProductionItem.deleteMany({
+        where: { production_id: recordId },
+      });
+      await tx.dailyProductionItem.createMany({
+        data: input.entries.map((entry) => ({
+          production_id: recordId,
+          egg_grade_id: entry.eggGradeId,
+          quantity: entry.quantity,
+        })),
       });
 
       if (eggItem && tbDelta !== 0) {

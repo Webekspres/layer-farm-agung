@@ -1,6 +1,7 @@
 import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
 import { cycleAgeInWeeks } from "@/features/cages/lib/cycle-age-weeks";
 import { computeHdpPercent } from "@/features/production/lib/compute-hdp";
+import { sumEggMassKgInPeriod } from "@/features/cages/lib/cycle-operational-metrics";
 import {
   buildCashWeekBalance,
   buildFcrSnapshot,
@@ -36,9 +37,9 @@ export type DashboardStats = {
   activePopulationTotal: number;
   lowStockItemCount: number;
   activeUserCount: number;
-  /** FCR = kg pakan ÷ TB (hari ini). */
+  /** FCR = kg pakan ÷ Egg Mass kg (hari ini); null bila berat telur kosong. */
   fcrToday: number | null;
-  /** FCR 7 hari kalender operasional (termasuk hari ini). */
+  /** FCR 7 hari kalender operasional (termasuk hari ini); null bila berat kosong. */
   fcrLast7Days: number | null;
   weekSalesTotal: number;
   weekCashIncome: number;
@@ -78,14 +79,20 @@ export async function getDashboardStats(
     cashWeek,
     mortalityRows,
   ] = await Promise.all([
-    prisma.dailyProduction.aggregate({
+    prisma.dailyProduction.findMany({
       where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { tb: true },
+      select: {
+        record_date: true,
+        tb: true,
+        tr: true,
+        tp: true,
+        weight: true,
+      },
     }),
     prisma.dailyProduction.groupBy({
       by: ["cage_id"],
       where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { tb: true },
+      _sum: { tb: true, tr: true, tp: true },
     }),
     prisma.item.findMany({
       where: { tenant_id: tenantId, type: { not: "Egg" } },
@@ -130,12 +137,18 @@ export async function getDashboardStats(
       },
       _sum: { quantity: true },
     }),
-    prisma.dailyProduction.aggregate({
+    prisma.dailyProduction.findMany({
       where: {
         tenant_id: tenantId,
         record_date: { gte: weekStart, lte: recordDate },
       },
-      _sum: { tb: true },
+      select: {
+        record_date: true,
+        tb: true,
+        tr: true,
+        tp: true,
+        weight: true,
+      },
     }),
     prisma.salesOrder.aggregate({
       where: {
@@ -163,8 +176,11 @@ export async function getDashboardStats(
     }),
   ]);
 
-  const cageTbById = new Map(
-    cageProdGroups.map((row) => [row.cage_id, row._sum.tb ?? 0]),
+  const cageEggsById = new Map(
+    cageProdGroups.map((row) => [
+      row.cage_id,
+      (row._sum.tb ?? 0) + (row._sum.tr ?? 0) + (row._sum.tp ?? 0),
+    ]),
   );
 
   const cagePopulations = await Promise.all(
@@ -186,8 +202,8 @@ export async function getDashboardStats(
     if (!activeCycle) continue;
 
     const population = cagePopulations[i];
-    const tb = cageTbById.get(cage.id) ?? 0;
-    const actualHdp = computeHdpPercent(tb, population ?? 0);
+    const eggs = cageEggsById.get(cage.id) ?? 0;
+    const actualHdp = computeHdpPercent(eggs, population ?? 0);
     if (actualHdp === null) continue;
 
     const ageWeeks = cycleAgeInWeeks(activeCycle.start_date, recordDate);
@@ -248,8 +264,12 @@ export async function getDashboardStats(
     MORTALITY_WEEK_WARNING_THRESHOLD,
   ).slice(0, MAX_MORTALITY_WARNINGS);
 
-  const todayTb = prodAgg._sum.tb ?? 0;
-  const weekTb = prodWeek._sum.tb ?? 0;
+  const todayTotal = prodAgg.reduce(
+    (sum, row) => sum + row.tb + row.tr + row.tp,
+    0,
+  );
+  const todayEggMassKg = sumEggMassKgInPeriod(prodAgg, recordDate, recordDate);
+  const weekEggMassKg = sumEggMassKgInPeriod(prodWeek, weekStart, recordDate);
   const feedTodayKg = feedToday._sum.quantity ?? 0;
   const feedWeekKg = feedWeek._sum.quantity ?? 0;
 
@@ -264,12 +284,12 @@ export async function getDashboardStats(
   const weekSalesTotal = decimalToNumber(salesWeek._sum.total_amount ?? 0);
 
   return {
-    todayEggTotal: todayTb,
+    todayEggTotal: todayTotal,
     activePopulationTotal,
     lowStockItemCount: lowStockAll.length,
     activeUserCount,
-    fcrToday: buildFcrSnapshot(feedTodayKg, todayTb),
-    fcrLast7Days: buildFcrSnapshot(feedWeekKg, weekTb),
+    fcrToday: buildFcrSnapshot(feedTodayKg, todayEggMassKg),
+    fcrLast7Days: buildFcrSnapshot(feedWeekKg, weekEggMassKg),
     weekSalesTotal,
     weekCashIncome,
     weekCashExpense,

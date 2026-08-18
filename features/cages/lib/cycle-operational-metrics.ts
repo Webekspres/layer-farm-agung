@@ -25,6 +25,8 @@ export type DailyProductionLike = {
   tb: number;
   tr: number;
   tp: number;
+  /** Berat rata-rata telur (gram), opsional — utk Egg Mass pada FCR. */
+  weight?: number | null;
 };
 
 export function aggregateMutationTotals(
@@ -104,15 +106,60 @@ export function sumProductionOnDate(
   return { tb, tr, tp };
 }
 
-export function computeCrackRatio(tb: number, tr: number, tp: number): number | null {
+/**
+ * Rasio telur cacat = Telur Retak (TR) ÷ total. TP (Telur Putih) bukan cacat,
+ * jadi tidak ikut pembilang (laporan revisi 1 §1 — TP = Telur Putih).
+ */
+export function computeCrackRatio(
+  tb: number,
+  tr: number,
+  tp: number,
+): number | null {
   const total = tb + tr + tp;
   if (total <= 0) return null;
-  return (tr + tp) / total;
+  return tr / total;
 }
 
-export function computeFcr(feedQuantity: number, tb: number): number | null {
-  if (tb <= 0 || feedQuantity <= 0) return null;
-  return feedQuantity / tb;
+/**
+ * FCR (referensi ERP AAPM) = Total Konsumsi Pakan (kg) ÷ Egg Mass (kg).
+ * Egg Mass (kg) = Total Butir Telur × Berat Rata-rata Telur (kg).
+ * Bila egg mass ≤ 0 (data berat belum ada), FCR disembunyikan (null).
+ */
+export function computeFcr(feedKg: number, eggMassKg: number): number | null {
+  if (eggMassKg <= 0 || feedKg <= 0) return null;
+  return feedKg / eggMassKg;
+}
+
+/** Total butir telur seluruh kategori pada satu baris produksi. */
+export function productionTotal(row: {
+  tb: number;
+  tr: number;
+  tp: number;
+}): number {
+  return row.tb + row.tr + row.tp;
+}
+
+/**
+ * Egg Mass (kg) untuk rentang periode: Σ((tb+tr+tp) × berat rata-rata (gram)) ÷ 1000.
+ * Baris tanpa berat tidak ikut dihitung (FCR disembunyikan bila datanya kosong).
+ */
+export function sumEggMassKgInPeriod(
+  rows: DailyProductionLike[],
+  startDate: Date,
+  endDate: Date,
+): number {
+  const start = normalizeBusinessDate(startDate).getTime();
+  const end = normalizeBusinessDate(endDate).getTime();
+
+  let eggMassKg = 0;
+  for (const row of rows) {
+    const ts = normalizeBusinessDate(row.record_date).getTime();
+    if (ts < start || ts > end) continue;
+    if (!row.weight || row.weight <= 0) continue;
+    const totalEggs = row.tb + row.tr + row.tp;
+    eggMassKg += (totalEggs * row.weight) / 1000;
+  }
+  return eggMassKg;
 }
 
 export function computeCapacityPercent(
@@ -147,9 +194,10 @@ export function computeAverageHdpForPeriod(
   let day = start;
   while (day.getTime() <= end.getTime()) {
     const dayProduction = sumProductionOnDate(productionRows, day);
-    if (dayProduction.tb > 0) {
+    const totalEggs = dayProduction.tb + dayProduction.tr + dayProduction.tp;
+    if (totalEggs > 0) {
       const population = computeCyclePopulation(initialPopulation, mutations, day);
-      const hdp = computeHdpPercent(dayProduction.tb, population);
+      const hdp = computeHdpPercent(totalEggs, population);
       if (hdp !== null) hdpValues.push(hdp);
     }
     day = shiftBusinessDate(day, 1);
