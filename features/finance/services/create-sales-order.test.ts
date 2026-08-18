@@ -4,6 +4,7 @@ import {
   type CreateSalesOrderOptions,
 } from "./create-sales-order";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import type { ApplyStockMutationParams } from "@/features/inventory/services/apply-stock-mutation";
 import type { CreateSalesOrderInput } from "@/features/finance/schemas/sales-order";
 import { parseBusinessDate } from "@/lib/business-date";
 
@@ -124,7 +125,12 @@ describe("createSalesOrder", () => {
 
     expect(result).toEqual({ ok: true, saleId: SALE_ID });
     expect(applyStockMutation).toHaveBeenCalledTimes(1);
-    const [, params] = applyStockMutation.mock.calls[0];
+    const stockCalls = applyStockMutation.mock.calls as unknown as Array<
+      [unknown, ApplyStockMutationParams]
+    >;
+    const [, params] = stockCalls[0] ?? [];
+    expect(params).toBeDefined();
+    if (!params) return;
     expect(params).toMatchObject({
       itemId: EGG_ITEM,
       locationId: LOCATION,
@@ -133,7 +139,12 @@ describe("createSalesOrder", () => {
       referenceId: SALE_ID,
     });
     expect(deliveryCreate).toHaveBeenCalledTimes(1);
-    const [deliveryArgs] = deliveryCreate.mock.calls[0];
+    const deliveryCalls = deliveryCreate.mock.calls as unknown as Array<
+      [{ data: { tenant_id: string; sale_id: string; status: string; quantity: number; weight: number } }]
+    >;
+    const [deliveryArgs] = deliveryCalls[0] ?? [];
+    expect(deliveryArgs).toBeDefined();
+    if (!deliveryArgs) return;
     expect(deliveryArgs.data).toMatchObject({
       tenant_id: TENANT,
       sale_id: SALE_ID,

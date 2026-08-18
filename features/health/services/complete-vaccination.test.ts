@@ -4,6 +4,7 @@ import {
   type CompleteVaccinationOptions,
 } from "./complete-vaccination";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import type { ApplyStockMutationParams } from "@/features/inventory/services/apply-stock-mutation";
 import type { CompleteVaccinationInput } from "@/features/health/schemas/vaccine-schedule";
 
 /**
@@ -183,7 +184,12 @@ describe("completeVaccination", () => {
     expect(result.lowStock).toBe(false);
 
     expect(applyStockMutation).toHaveBeenCalledTimes(1);
-    const [, params] = applyStockMutation.mock.calls[0];
+    const stockCalls = applyStockMutation.mock.calls as unknown as Array<
+      [unknown, ApplyStockMutationParams]
+    >;
+    const [, params] = stockCalls[0] ?? [];
+    expect(params).toBeDefined();
+    if (!params) return;
     expect(params.itemId).toBe("item-1");
     expect(params.locationId).toBe("loc-1");
     expect(params.mutationType).toBe(StockMutationType.OUT_VACCINE);
@@ -191,7 +197,12 @@ describe("completeVaccination", () => {
     expect(params.referenceId).toBe("sched-1");
 
     expect(updateMany).toHaveBeenCalledTimes(1);
-    const [updateArgs] = updateMany.mock.calls[0];
+    const updateCalls = updateMany.mock.calls as unknown as Array<
+      [{ data: { status: string; quantity_used: number } }]
+    >;
+    const [updateArgs] = updateCalls[0] ?? [];
+    expect(updateArgs).toBeDefined();
+    if (!updateArgs) return;
     expect(updateArgs.data.status).toBe("Completed");
     expect(updateArgs.data.quantity_used).toBe(12.5);
   });
