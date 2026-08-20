@@ -77,7 +77,10 @@ export function DashboardCharts({
     data.production30d.map((p) => ({ value: p.eggs })),
   );
   const hasHdp =
-    hasProduction && data.hdpVsTarget30d.some((p) => p.hdp > 0 || p.target > 0);
+    hasProduction &&
+    data.hdpVsTarget30d.some(
+      (p) => (p.hdp != null && p.hdp > 0) || p.target > 0,
+    );
   const hasGrades = data.eggGradeDistribution.length > 0;
   const hasFeed = data.feedPerCage.length > 0;
   const hasMortality = seriesHasSignal(

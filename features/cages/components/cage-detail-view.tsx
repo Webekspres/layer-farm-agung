@@ -350,11 +350,6 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
             </div>
 
             <div className="mt-4 space-y-3">
-              <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
-                Batas pilot: jangan menutup atau membuka siklus baru pada kandang
-                yang sama. Ringkasan siklus baru dapat mewarisi data lama sampai
-                perbaikan multi-siklus selesai.
-              </p>
               <div className="flex justify-end">
               <Button
                 variant="destructive"
@@ -466,6 +461,23 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
                   defaultValue={todayString}
                   required
                 />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="go-live-date">
+                  Tanggal Go-Live (Mulai Pakai Aplikasi)
+                </FieldLabel>
+                <Input
+                  id="go-live-date"
+                  name="goLiveDate"
+                  type="date"
+                  max={todayString}
+                  defaultValue={todayString}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Kosongkan bila sama dengan tanggal mulai. Periode sebelum
+                  go-live akan berlabel &ldquo;Pra-Go-Live&rdquo; dan tidak
+                  dihitung sebagai nol.
+                </p>
               </Field>
               <Field>
                 <FieldLabel htmlFor="initial-population">

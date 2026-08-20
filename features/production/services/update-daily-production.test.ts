@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { shiftBusinessDate, startOfTodayBusiness } from "@/lib/business-date";
 
 const findCorrection = mock(() => Promise.resolve(null as null | { id: string }));
 const findUser = mock(() =>
@@ -98,12 +99,15 @@ const { updateDailyProduction } = await import(
   "@/features/production/services/update-daily-production"
 );
 
+/** Kemarin relatif terhadap hari ini — selalu dalam jendela lookback 7 hari (staff). */
+const RECORD_DATE = shiftBusinessDate(startOfTodayBusiness(), -1);
+
 const TB_GRADE = { id: 1, code: "TB", is_active: true };
 
 const existingRecord = {
   id: "rec-1",
   cage_id: "cage-1",
-  record_date: new Date("2026-08-12"),
+  record_date: RECORD_DATE,
   tb: 10,
   tr: 0,
   tp: 0,

@@ -76,7 +76,13 @@ export function CageStatusGrid({
                   <p className="text-xs text-muted-foreground">{cage.locationName}</p>
                 </div>
                 <Badge
-                  variant={hasCurrentData ? "default" : "destructive"}
+                  variant={
+                    hasCurrentData
+                      ? "default"
+                      : cage.preGoLive && activeTab !== "corrections"
+                        ? "outline"
+                        : "destructive"
+                  }
                   className="rounded-full px-3 py-1"
                 >
                   {activeTab === "corrections"
@@ -85,7 +91,9 @@ export function CageStatusGrid({
                       : "Belum ada"
                     : hasCurrentData
                       ? "Dilaporkan"
-                      : "Belum dilaporkan"}
+                      : cage.preGoLive
+                        ? "Pra-Go-Live"
+                        : "Belum dilaporkan"}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">{cage.strainName}</p>

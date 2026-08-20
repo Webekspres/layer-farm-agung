@@ -29,11 +29,13 @@ export async function createCycleAction(
 
   const rawCageId = formData.get("cageId");
   const rawStartDate = formData.get("startDate");
+  const rawGoLiveDate = formData.get("goLiveDate");
   const rawInitialPopulation = formData.get("initialPopulation");
 
   const parsed = createCycleSchema.safeParse({
     cageId: rawCageId,
     startDate: rawStartDate,
+    goLiveDate: rawGoLiveDate,
     initialPopulation: rawInitialPopulation,
   });
 
@@ -41,7 +43,7 @@ export async function createCycleAction(
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid." };
   }
 
-  const { cageId, startDate, initialPopulation } = parsed.data;
+  const { cageId, startDate, goLiveDate, initialPopulation } = parsed.data;
 
   // Verify cage exists under the tenant and get capacity
   const cage = await prisma.cage.findFirst({
@@ -81,6 +83,7 @@ export async function createCycleAction(
       data: {
         cage_id: cageId,
         start_date: startDate,
+        go_live_date: goLiveDate ?? null,
         initial_population: initialPopulation,
         status: "Active",
       },

@@ -240,6 +240,8 @@ model CycleSetting {
   id                 String    @id @default(uuid()) @db.Uuid
   cage_id            String    @db.Uuid
   start_date         DateTime  @db.Date
+  /** Tanggal mulai pemakaian aplikasi (opsional). Null = tidak ada rentang Pra-Go-Live (dianggap sama dengan start_date). */
+  go_live_date       DateTime? @db.Date
   end_date           DateTime? @db.Date
   initial_population Int
   status             String    @default("Active")

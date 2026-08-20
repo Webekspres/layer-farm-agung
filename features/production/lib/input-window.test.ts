@@ -96,4 +96,42 @@ describe("validateDateInCycle", () => {
     );
     expect(result.ok).toBe(true);
   });
+
+  test("rejects date before go_live_date (Pra-Go-Live)", () => {
+    const goLiveCycle = {
+      start_date: start,
+      go_live_date: normalizeBusinessDate(new Date("2026-02-01T00:00:00.000Z")),
+      end_date: null,
+    };
+    const result = validateDateInCycle(
+      normalizeBusinessDate(new Date("2026-01-15T00:00:00.000Z")),
+      goLiveCycle,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("Pra-Go-Live");
+    }
+  });
+
+  test("accepts date on or after go_live_date", () => {
+    const goLiveCycle = {
+      start_date: start,
+      go_live_date: normalizeBusinessDate(new Date("2026-02-01T00:00:00.000Z")),
+      end_date: null,
+    };
+    const result = validateDateInCycle(
+      normalizeBusinessDate(new Date("2026-02-01T00:00:00.000Z")),
+      goLiveCycle,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  test("falls back to start_date when go_live_date is null", () => {
+    const cycle = { start_date: start, go_live_date: null, end_date: null };
+    const result = validateDateInCycle(
+      normalizeBusinessDate(new Date("2026-01-01T00:00:00.000Z")),
+      cycle,
+    );
+    expect(result.ok).toBe(true);
+  });
 });

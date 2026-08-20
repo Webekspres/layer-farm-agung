@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { shiftBusinessDate, startOfTodayBusiness } from "@/lib/business-date";
 
 const findCorrection = mock(() => Promise.resolve(null as null | { id: string }));
 const findUser = mock(() =>
@@ -78,13 +79,16 @@ const { deleteFeedConsumption } = await import(
   "@/features/production/services/delete-feed-consumption"
 );
 
+/** Kemarin relatif terhadap hari ini — selalu dalam jendela lookback 7 hari (staff). */
+const RECORD_DATE = shiftBusinessDate(startOfTodayBusiness(), -1);
+
 const existingRecord = {
   id: "rec-1",
   cage_id: "cage-1",
   item_id: "feed-item",
   quantity: 40,
   notes: "Pakan pagi",
-  record_date: new Date("2026-08-12"),
+  record_date: RECORD_DATE,
   cage: {
     location_id: "loc-1",
     cycle_settings: [{ start_date: new Date("2026-01-01"), end_date: null }],

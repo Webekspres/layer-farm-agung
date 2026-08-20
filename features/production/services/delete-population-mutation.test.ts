@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { shiftBusinessDate, startOfTodayBusiness } from "@/lib/business-date";
 
 const findCorrection = mock(() => Promise.resolve(null as null | { id: string }));
 const findUser = mock(() =>
@@ -80,10 +81,14 @@ const { deletePopulationMutation } = await import(
   "@/features/production/services/delete-population-mutation"
 );
 
+/** Relatif terhadap hari ini — selalu dalam jendela lookback 7 hari (staff). */
+const RECORD_DATE = shiftBusinessDate(startOfTodayBusiness(), -1);
+const EARLIER_DATE = shiftBusinessDate(RECORD_DATE, -2);
+
 const baseRecord = {
   id: "rec-1",
   cage_id: "cage-1",
-  record_date: new Date("2026-08-12"),
+  record_date: RECORD_DATE,
   mutation_type: "Mati",
   quantity: 5,
   notes: null,
@@ -178,8 +183,8 @@ describe("deletePopulationMutation", () => {
     });
     findCycle.mockResolvedValue({ initial_population: 100 });
     findMutations.mockResolvedValue([
-      { mutation_type: "Mati", quantity: 300, record_date: new Date("2026-08-10") },
-      { mutation_type: "Masuk", quantity: 150, record_date: new Date("2026-08-12") },
+      { mutation_type: "Mati", quantity: 300, record_date: EARLIER_DATE },
+      { mutation_type: "Masuk", quantity: 150, record_date: RECORD_DATE },
     ]);
 
     const result = await deletePopulationMutation("tenant-1", "user-1", "rec-1", {
@@ -203,7 +208,7 @@ describe("deletePopulationMutation", () => {
     });
     findCycle.mockResolvedValue({ initial_population: 150 });
     findMutations.mockResolvedValue([
-      { mutation_type: "Masuk", quantity: 150, record_date: new Date("2026-08-12") },
+      { mutation_type: "Masuk", quantity: 150, record_date: RECORD_DATE },
     ]);
 
     const result = await deletePopulationMutation("tenant-1", "user-1", "rec-1", {

@@ -20,6 +20,7 @@ export async function resolveActiveCyclePopulation(
       id: true,
       initial_population: true,
       start_date: true,
+      go_live_date: true,
     },
   });
 
@@ -28,7 +29,10 @@ export async function resolveActiveCyclePopulation(
   const mutations = await prisma.populationMutation.findMany({
     where: {
       cage_id: cageId,
-      record_date: { lte: normalizeBusinessDate(asOfDate) },
+      record_date: {
+        gte: normalizeBusinessDate(cycle.go_live_date ?? cycle.start_date),
+        lte: normalizeBusinessDate(asOfDate),
+      },
     },
     select: {
       mutation_type: true,
@@ -42,6 +46,7 @@ export async function resolveActiveCyclePopulation(
     cycle.initial_population,
     mutations,
     asOfDate,
+    cycle.go_live_date ?? cycle.start_date,
   );
 }
 

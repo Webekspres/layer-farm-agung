@@ -135,8 +135,10 @@ export function buildFieldOverview(
   }));
 
   const hdp7d: FieldOverviewHdpPoint[] = production7d.map((point) => {
+    // Hari tanpa data produksi (eggs = 0) tidak dihitung sebagai nol —
+    // dirender sebagai gap (null) agar Pra-Go-Live / hari kosong tak tampak 0%.
     const hdp =
-      populationTotal > 0
+      populationTotal > 0 && point.eggs > 0
         ? round1((point.eggs / populationTotal) * 100)
         : null;
     return {

@@ -46,7 +46,7 @@ export async function recordPopulationMutation(
       cycle_settings: {
         where: { status: "Active" },
         take: 1,
-        select: { start_date: true, end_date: true },
+        select: { start_date: true, go_live_date: true, end_date: true },
       },
     },
   });
@@ -273,7 +273,7 @@ export async function validatePopulationMutationUpdate(
 
   const cycle = await prisma.cycleSetting.findFirst({
     where: { cage_id: cageId, status: "Active" },
-    select: { initial_population: true },
+    select: { initial_population: true, start_date: true, go_live_date: true },
   });
 
   if (!cycle) {
@@ -297,6 +297,7 @@ export async function validatePopulationMutationUpdate(
     cycle.initial_population,
     mutations,
     recordDate,
+    cycle.go_live_date ?? cycle.start_date,
   );
 
   if (quantity > current) {

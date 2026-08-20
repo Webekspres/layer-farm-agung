@@ -31,12 +31,13 @@ export async function GET(request: NextRequest) {
   if (cageId) {
     const cycle = await prisma.cycleSetting.findFirst({
       where: { cage_id: cageId, status: "Active" },
-      select: { start_date: true, end_date: true },
+      select: { start_date: true, go_live_date: true, end_date: true },
     });
 
     if (cycle) {
       cycleBounds = {
-        minDate: cycle.start_date,
+        // Periode Pra-Go-Live tidak bisa dicatat → batas bawah = go-live (fallback start_date).
+        minDate: cycle.go_live_date ?? cycle.start_date,
         maxDate: cycle.end_date ?? window.maxDate,
       };
     }

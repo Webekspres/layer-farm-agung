@@ -46,7 +46,7 @@ export async function recordDailyProduction(
       cycle_settings: {
         where: { status: "Active" },
         take: 1,
-        select: { id: true, start_date: true, end_date: true },
+        select: { id: true, start_date: true, go_live_date: true, end_date: true },
       },
     },
   });

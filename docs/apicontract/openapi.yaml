@@ -1405,6 +1405,10 @@ components:
         - strainName
         - status
         - hasActiveCycle
+        - activeCyclePopulation
+        - cycleFcr
+        - cycleFeedKg
+        - cycleEggMassKg
       properties:
         id:
           type: string
@@ -1422,6 +1426,19 @@ components:
         activeCyclePopulation:
           type: integer
           nullable: true
+        cycleFcr:
+          type: number
+          format: float
+          nullable: true
+          description: FCR siklus aktif = total pakan (kg) ÷ egg mass (kg). Null bila belum ada data berat telur.
+        cycleFeedKg:
+          type: number
+          format: float
+          description: Total konsumsi pakan (kg) siklus aktif sampai hari ini.
+        cycleEggMassKg:
+          type: number
+          format: float
+          description: Egg mass (kg) = Σ((TB+TR+TP) × berat) ÷ 1000 untuk siklus aktif.
 
     InputWindow:
       type: object
@@ -1432,7 +1449,9 @@ components:
           format: date
           description: |
             Tanggal paling awal yang diizinkan (irisan lookback tenant dengan
-            start_date siklus aktif kandang bila `cageId` diberikan).
+            batas bawah siklus aktif kandang bila `cageId` diberikan). Batas bawah
+            siklus = `go_live_date` (periode Pra-Go-Live tak bisa dicatat), fallback
+            `start_date`.
         maxDate:
           type: string
           format: date
@@ -1850,6 +1869,26 @@ components:
           type: string
           format: date-time
 
+    CageDailyCycle:
+      type: object
+      required:
+        - startDate
+        - goLiveDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+        goLiveDate:
+          type: string
+          format: date
+          nullable: true
+          description: Tanggal mulai pemakaian aplikasi. Null = tidak ada rentang Pra-Go-Live.
+        endDate:
+          type: string
+          format: date
+          nullable: true
+
     CageDailyHistory:
       type: object
       required:
@@ -1857,6 +1896,8 @@ components:
         - cageId
         - cageName
         - locationName
+        - activeCycle
+        - preGoLive
         - productions
         - feed
         - population
@@ -1872,6 +1913,11 @@ components:
           type: string
         locationName:
           type: string
+        activeCycle:
+          $ref: "#/components/schemas/CageDailyCycle"
+        preGoLive:
+          type: boolean
+          description: True saat tanggal ini berada di rentang [start_date, go_live_date) — Pra-Go-Live.
         productions:
           type: array
           items:

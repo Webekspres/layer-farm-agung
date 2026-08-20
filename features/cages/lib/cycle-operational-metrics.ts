@@ -186,6 +186,7 @@ export function computeAverageHdpForPeriod(
   productionRows: DailyProductionLike[],
   startDate: Date,
   endDate: Date,
+  mutationFromDate?: Date,
 ): number | null {
   const start = normalizeBusinessDate(startDate);
   const end = normalizeBusinessDate(endDate);
@@ -196,7 +197,12 @@ export function computeAverageHdpForPeriod(
     const dayProduction = sumProductionOnDate(productionRows, day);
     const totalEggs = dayProduction.tb + dayProduction.tr + dayProduction.tp;
     if (totalEggs > 0) {
-      const population = computeCyclePopulation(initialPopulation, mutations, day);
+      const population = computeCyclePopulation(
+        initialPopulation,
+        mutations,
+        day,
+        mutationFromDate,
+      );
       const hdp = computeHdpPercent(totalEggs, population);
       if (hdp !== null) hdpValues.push(hdp);
     }

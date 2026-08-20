@@ -39,6 +39,35 @@ describe("computeCyclePopulation", () => {
     expect(computeCyclePopulation(5000, mutations, asOf)).toBe(5000);
   });
 
+  test("isolates cycle: ignores mutations before fromDate", () => {
+    const mutations = [
+      {
+        mutation_type: "Mati",
+        quantity: 200,
+        record_date: new Date("2026-07-05"),
+      },
+      {
+        mutation_type: "Mati",
+        quantity: 15,
+        record_date: new Date("2026-07-09"),
+      },
+    ];
+    const fromDate = new Date("2026-07-08");
+    expect(computeCyclePopulation(5000, mutations, asOf, fromDate)).toBe(4985);
+  });
+
+  test("fromDate boundary is inclusive", () => {
+    const mutations = [
+      {
+        mutation_type: "Masuk",
+        quantity: 10,
+        record_date: new Date("2026-07-08"),
+      },
+    ];
+    const fromDate = new Date("2026-07-08");
+    expect(computeCyclePopulation(5000, mutations, asOf, fromDate)).toBe(5010);
+  });
+
   test("floors at zero", () => {
     const mutations = [
       {

@@ -60,6 +60,7 @@ export type CycleOperationalSummary = {
 export type CycleRowInput = {
   id: string;
   start_date: Date;
+  go_live_date: Date | null;
   end_date: Date | null;
   initial_population: number;
   status: string;
@@ -89,21 +90,27 @@ export function buildCycleOperationalSummary(
       ? normalizeBusinessDate(cycle.end_date)
       : normalizeBusinessDate(asOfDate);
 
+  // Efektif mulai siklus utk akumulasi data: go-live (null → start_date).
+  const effectiveStart = normalizeBusinessDate(
+    cycle.go_live_date ?? cycle.start_date,
+  );
+
   const currentPopulation = computeCyclePopulation(
     cycle.initial_population,
     raw.mutations,
     periodEnd,
+    effectiveStart,
   );
 
   const mutationTotals = aggregateMutationTotals(
     raw.mutations,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
   );
 
   const cumulative = sumProductionInPeriod(
     raw.production,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
   );
 
@@ -123,7 +130,7 @@ export function buildCycleOperationalSummary(
 
   const feedInPeriod = raw.feed.filter((row) => {
     const ts = normalizeBusinessDate(row.record_date).getTime();
-    const start = normalizeBusinessDate(cycle.start_date).getTime();
+    const start = effectiveStart.getTime();
     const end = periodEnd.getTime();
     return ts >= start && ts <= end;
   });
@@ -131,7 +138,7 @@ export function buildCycleOperationalSummary(
 
   const medicalInPeriod = filterMedicalInPeriod(
     raw.medical,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
   );
 
@@ -139,8 +146,9 @@ export function buildCycleOperationalSummary(
     cycle.initial_population,
     raw.mutations,
     raw.production,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
+    effectiveStart,
   );
 
   return {
@@ -169,7 +177,7 @@ export function buildCycleOperationalSummary(
       totalQuantity: totalFeed,
       fcr: computeFcr(
         totalFeed,
-        sumEggMassKgInPeriod(raw.production, cycle.start_date, periodEnd),
+        sumEggMassKgInPeriod(raw.production, effectiveStart, periodEnd),
       ),
     },
     medical: {

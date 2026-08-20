@@ -87,22 +87,31 @@ export function validateDateInLookbackWindow(
  * Cek tanggal terhadap rentang siklus aktif kandang.
  * `cycle` boleh null saat kandang tidak punya siklus aktif — validasi
  * keberadaan siklus tetap dilakukan di service masing-masing.
+ * Batas bawah memakai `go_live_date` bila ada (periode Pra-Go-Live tak bisa dicatat).
  */
 export function validateDateInCycle(
   recordDate: Date,
-  cycle: { start_date: Date; end_date: Date | null } | null,
+  cycle: {
+    start_date: Date;
+    go_live_date?: Date | null;
+    end_date: Date | null;
+  } | null,
 ): InputWindowValidationResult {
   if (!cycle) {
     return { ok: true };
   }
 
   const date = normalizeBusinessDate(recordDate);
-  const start = normalizeBusinessDate(cycle.start_date);
+  const start = normalizeBusinessDate(
+    cycle.go_live_date ?? cycle.start_date,
+  );
 
   if (date.getTime() < start.getTime()) {
     return {
       ok: false,
-      error: "Tanggal sebelum dimulainya siklus (start_date) tidak dapat dicatat.",
+      error: cycle.go_live_date
+        ? "Tanggal sebelum go-live (Pra-Go-Live) tidak dapat dicatat."
+        : "Tanggal sebelum dimulainya siklus (start_date) tidak dapat dicatat.",
     };
   }
 
@@ -128,7 +137,11 @@ export async function validateOperationalInputDate(params: {
   tenantId: string;
   roleName: string;
   recordDate: Date;
-  cycle: { start_date: Date; end_date: Date | null } | null;
+  cycle: {
+    start_date: Date;
+    go_live_date?: Date | null;
+    end_date: Date | null;
+  } | null;
   now?: Date;
 }): Promise<InputWindowValidationResult> {
   const window = await resolveInputWindow(

@@ -572,11 +572,13 @@ export async function getDashboardExecutive(
   }));
 
   // --- HDP vs target (daily total telur / current active population) ---
+  // Hari tanpa catatan produksi (eggs = 0) → null (gap), bukan 0% —
+  // hari Pra-Go-Live / hari kosong tidak dihitung sebagai nol.
   const hdpVsTarget30d = production30d.map((point) => {
     const hdp =
-      activePopulationTotal > 0
+      activePopulationTotal > 0 && point.eggs > 0
         ? Number(((point.eggs / activePopulationTotal) * 100).toFixed(1))
-        : 0;
+        : null;
     return {
       date: point.date,
       label: point.label,
@@ -747,7 +749,11 @@ export async function getDashboardExecutive(
   const timeline = timelineDraft.slice(0, MAX_TIMELINE);
 
   const eggSpark = sparkFromSeries(production30d.map((p) => p.eggs));
-  const hdpSpark = sparkFromSeries(hdpVsTarget30d.map((p) => p.hdp));
+  const hdpSpark = sparkFromSeries(
+    hdpVsTarget30d
+      .map((p) => p.hdp)
+      .filter((value): value is number => value != null),
+  );
   const salesSpark = sparkFromSeries(sales7d.map((p) => p.amount));
   const fcrSpark =
     fcrToday != null ? [fcrYesterday ?? fcrToday, fcrToday] : [];

@@ -57,7 +57,7 @@ export async function updateMedicalRecord(
           cycle_settings: {
             where: { status: "Active" },
             take: 1,
-            select: { start_date: true, end_date: true },
+            select: { start_date: true, go_live_date: true, end_date: true },
           },
         },
       },
