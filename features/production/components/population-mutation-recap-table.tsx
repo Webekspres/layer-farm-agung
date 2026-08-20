@@ -37,6 +37,7 @@ export function PopulationMutationRecapTable({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">No</TableHead>
             <TableHead>Kandang</TableHead>
             <TableHead>Lokasi</TableHead>
             <TableHead>Jenis Mutasi</TableHead>
@@ -47,8 +48,11 @@ export function PopulationMutationRecapTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <TableRow key={row.id}>
+              <TableCell className="text-muted-foreground tabular-nums">
+                {index + 1}
+              </TableCell>
               <TableCell className="font-medium">{row.cageName}</TableCell>
               <TableCell>{row.locationName}</TableCell>
               <TableCell>{row.mutationType}</TableCell>

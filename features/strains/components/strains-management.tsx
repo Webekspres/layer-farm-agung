@@ -155,6 +155,7 @@ export function StrainsManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead className="hidden md:table-cell">Deskripsi</TableHead>
                 <TableHead>Target Performa</TableHead>
@@ -163,8 +164,11 @@ export function StrainsManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {strains.map((strain) => (
+              {strains.map((strain, index) => (
                 <TableRow key={strain.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">{strain.name}</TableCell>
                   <TableCell className="hidden max-w-xs truncate text-muted-foreground md:table-cell">
                     {strain.description ?? "—"}
@@ -322,6 +326,7 @@ export function StrainsManagement({
                   <Table>
                     <TableHeader className="bg-muted/40">
                       <TableRow>
+                        <TableHead className="w-12">No</TableHead>
                         <TableHead>Umur</TableHead>
                         <TableHead>Target HDP (%)</TableHead>
                         <TableHead>Target FCR</TableHead>
@@ -329,8 +334,11 @@ export function StrainsManagement({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {targets.map((t) => (
+                      {targets.map((t, index) => (
                         <TableRow key={t.id}>
+                          <TableCell className="text-muted-foreground tabular-nums">
+                            {index + 1}
+                          </TableCell>
                           <TableCell>
                             <form id={`target-update-${t.id}`} action={updateTargetAction}>
                               <input type="hidden" name="id" value={t.id} />
@@ -501,14 +509,18 @@ export function StrainsManagement({
                 <Table>
                   <TableHeader className="bg-muted/40">
                     <TableRow>
+                      <TableHead className="w-12">No</TableHead>
                       <TableHead>Umur</TableHead>
                       <TableHead>Target HDP (%)</TableHead>
                       <TableHead>Target FCR</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {targets.map((t) => (
+                    {targets.map((t, index) => (
                       <TableRow key={t.id}>
+                        <TableCell className="text-muted-foreground tabular-nums">
+                          {index + 1}
+                        </TableCell>
                         <TableCell className="font-semibold">{t.age_in_weeks} Minggu</TableCell>
                         <TableCell>{t.target_hdp}%</TableCell>
                         <TableCell>{t.target_fcr}</TableCell>

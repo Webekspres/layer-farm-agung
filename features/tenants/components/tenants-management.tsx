@@ -88,6 +88,7 @@ export function TenantsManagement({
           <Table containerClassName="overflow-x-auto overscroll-x-contain">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead className="hidden sm:table-cell">Slug</TableHead>
                 <TableHead>Pengguna</TableHead>
@@ -96,8 +97,11 @@ export function TenantsManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tenants.map((tenant) => (
+              {tenants.map((tenant, index) => (
                 <TableRow key={tenant.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">{tenant.name}</TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {tenant.slug}

@@ -63,6 +63,7 @@ export function StockMutationsManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead>Jenis</TableHead>
@@ -70,8 +71,11 @@ export function StockMutationsManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mutations.map((m) => (
+              {mutations.map((m, index) => (
                 <TableRow key={m.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell>{formatDate(m.mutationDate)}</TableCell>
                   <TableCell className="font-medium">
                     <Link

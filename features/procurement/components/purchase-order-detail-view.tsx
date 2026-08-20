@@ -147,6 +147,7 @@ export function PurchaseOrderDetailView({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Item</TableHead>
                 <TableHead className="text-right">Dipesan</TableHead>
                 <TableHead className="text-right">Diterima</TableHead>
@@ -156,8 +157,11 @@ export function PurchaseOrderDetailView({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {order.items.map((line) => (
+              {order.items.map((line, index) => (
                 <TableRow key={line.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {index + 1}
+                  </TableCell>
                   <TableCell>
                     {line.itemName}{" "}
                     <span className="text-muted-foreground">

@@ -95,6 +95,7 @@ export function EggGradesManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead className="hidden sm:table-cell">Kode</TableHead>
                 <TableHead className="hidden md:table-cell">Deskripsi</TableHead>
@@ -103,8 +104,11 @@ export function EggGradesManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {grades.map((grade) => (
+              {grades.map((grade, index) => (
                 <TableRow key={grade.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">{grade.name}</TableCell>
                   <TableCell className="hidden font-mono text-xs sm:table-cell">
                     {grade.code ?? "—"}

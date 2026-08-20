@@ -394,6 +394,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
           <Table containerClassName="overflow-x-auto border border-border rounded-lg">
             <TableHeader className="bg-muted/40">
               <TableRow>
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Periode Siklus</TableHead>
                 <TableHead className="text-right">Awal</TableHead>
                 <TableHead className="text-right">Akhir</TableHead>
@@ -405,10 +406,13 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cage.history.map((h) => {
+              {cage.history.map((h, index) => {
                 const loss = h.summary.mutations.mati + h.summary.mutations.afkir;
                 return (
                   <TableRow key={h.id} className="hover:bg-muted/10">
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </TableCell>
                     <TableCell className="font-medium text-foreground">
                       {formatBusinessDateFromDb(h.startDate)} —{" "}
                       {h.endDate ? formatBusinessDateFromDb(h.endDate) : "-"}

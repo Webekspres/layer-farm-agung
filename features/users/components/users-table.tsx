@@ -75,6 +75,7 @@ export function UsersTable({
         <Table containerClassName="overflow-x-auto overscroll-x-contain">
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="w-12">No</TableHead>
               <TableHead>Nama</TableHead>
               <TableHead>Username</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
@@ -88,10 +89,13 @@ export function UsersTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => {
+            {users.map((user, index) => {
               const isSelf = user.id === currentUserId;
               return (
                 <TableRow key={user.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium text-foreground">
                     {user.fullName}
                   </TableCell>

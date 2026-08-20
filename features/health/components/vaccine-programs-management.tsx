@@ -213,6 +213,7 @@ export function VaccineProgramsManagement({
       <Table containerClassName="overflow-x-auto rounded-lg border border-border">
         <TableHeader className="bg-muted/40">
           <TableRow>
+            <TableHead className="w-12">No</TableHead>
             <TableHead>Nama</TableHead>
             <TableHead>Strain</TableHead>
             <TableHead className="text-right">Langkah</TableHead>
@@ -224,15 +225,18 @@ export function VaccineProgramsManagement({
           {programs.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={5}
+                colSpan={6}
                 className="py-10 text-center text-sm text-muted-foreground"
               >
                 Belum ada program vaksin.
               </TableCell>
             </TableRow>
           ) : (
-            programs.map((program) => (
+            programs.map((program, index) => (
               <TableRow key={program.id}>
+                <TableCell className="text-muted-foreground tabular-nums">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-medium">{program.name}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {program.strainName ?? "Default (semua strain)"}

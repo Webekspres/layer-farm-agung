@@ -177,6 +177,12 @@ Follow **[DESIGN.md](./DESIGN.md)** for tokens, typography, and brand copy.
 - Use semantic classes: `bg-primary`, `text-muted-foreground`, `border-border`, `bg-sidebar`, etc.
 - Dark mode: `.dark` class via `next-themes`.
 
+**Tables (numbering)**
+
+- Setiap tabel data di web dashboard **wajib** memiliki kolom penomoran pertama: `<TableHead className="w-12">No</TableHead>` + cell `<TableCell className="text-muted-foreground tabular-nums">`.
+- Penomoran **berlanjut antar halaman** untuk tabel berpaginasi (punya `PaginationMeta`): `(page - 1) * pageSize + index + 1`. Tanpa paginasi cukup `index + 1`.
+- Sinkronkan `colSpan` pada baris kosong/empty-state dengan jumlah kolom baru.
+
 **Toasts (CRUD)**
 
 - Root: `@/components/ui/sonner` in `app/layout.tsx`.

@@ -40,6 +40,7 @@ export function DailyProductionRecapTable({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">No</TableHead>
             <TableHead>Kandang</TableHead>
             <TableHead>Lokasi</TableHead>
             <TableHead className="text-right">TB</TableHead>
@@ -52,7 +53,7 @@ export function DailyProductionRecapTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const total = row.tb + row.tr + row.tp;
             const defectWarning = crackRatioExceedsThreshold(
               row.tb,
@@ -66,6 +67,9 @@ export function DailyProductionRecapTable({
 
             return (
               <TableRow key={row.id}>
+                <TableCell className="text-muted-foreground tabular-nums">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-medium">{row.cageName}</TableCell>
                 <TableCell>{row.locationName}</TableCell>
                 <TableCell className="text-right tabular-nums">

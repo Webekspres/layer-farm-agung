@@ -38,6 +38,7 @@ export function MedicalRecordRecapTable({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">No</TableHead>
             <TableHead>Kandang</TableHead>
             <TableHead>Lokasi</TableHead>
             <TableHead>Indikasi</TableHead>
@@ -52,11 +53,14 @@ export function MedicalRecordRecapTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const noneReport = isMedicalNoneReport(row);
 
             return (
               <TableRow key={row.id}>
+                <TableCell className="text-muted-foreground tabular-nums">
+                  {index + 1}
+                </TableCell>
                 <TableCell className="font-medium">{row.cageName}</TableCell>
                 <TableCell>{row.locationName}</TableCell>
                 {noneReport ? (

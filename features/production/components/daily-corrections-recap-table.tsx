@@ -50,6 +50,7 @@ export function DailyCorrectionsRecapTable({
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">No</TableHead>
             <TableHead>Waktu</TableHead>
             <TableHead>Kandang</TableHead>
             <TableHead>Pelaku</TableHead>
@@ -58,8 +59,11 @@ export function DailyCorrectionsRecapTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <TableRow key={row.id}>
+              <TableCell className="text-muted-foreground tabular-nums">
+                {index + 1}
+              </TableCell>
               <TableCell className="text-muted-foreground whitespace-nowrap">
                 {formatTime(row.createdAt)}
               </TableCell>
