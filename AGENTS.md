@@ -209,6 +209,28 @@ See `.cursor/rules/testing-standards.mdc`.
 
 ---
 
+## 📦 Application Versioning & Release Rules
+
+Semua pembaruan versi repositori **Web Backend/API** ini (`package.json`) wajib mengikuti kaidah **Semantic Versioning (SemVer 2.0.0)** dan selaras dengan versi Mobile (lihat [`../layer-farm-agung-mobile/AGENTS.md`](../layer-farm-agung-mobile/AGENTS.md)).
+
+### 1. Format Penomoran
+* **Web API / Dashboard:** `vMAJOR.MINOR.PATCH` (contoh: `v1.0.5`) — disimpan di `package.json → version` (tanpa prefix `v`).
+
+### 2. Rumus Kenaikan Versi (Version Bump Decision Matrix)
+
+| Tipe Perubahan | Komponen yang Diubah | Kapan Digunakan? | Contoh Transisi |
+| :--- | :--- | :--- | :--- |
+| **MAJOR (`X.0.0`)** | `X += 1, Y = 0, Z = 0` | Perombakan arsitektur besar, *breaking changes* pada API publik/mobile sync, atau rilis perdana sistem. | `1.0.5` → `2.0.0` |
+| **MINOR (`1.X.0`)** | `Y += 1, Z = 0` | Penambahan fitur baru yang *backward-compatible* (misal: modul master grade telur, tab inventory per grade). | `1.0.5` → `1.1.0` |
+| **PATCH (`1.0.X`)** | `Z += 1` | Perbaikan *bug*, penyesuaian validasi tanggal/lookback, refaktor internal tanpa fitur baru, perbaikan formula kalkulasi. | `1.0.5` → `1.0.6` |
+
+### 3. Aturan Sinkronisasi Saat Rilis Fitur / Fix
+1. **Penyelarasan Web & Mobile:** Jika perubahan melibatkan kontrak API antara backend dan mobile (misal: penambahan kartu FCR, penyesuaian `go_live_date`, perubahan payload `/api/v1/*`), naikkan nomor `MINOR` atau `PATCH` pada **kedua** repositori ke angka yang sama.
+2. **OpenAPI & UAT:** Perubahan kontrak `/api/v1/*` → update `docs/apicontract/openapi.yaml` dan cantumkan nomor versi aktif pada header dokumen pembuktian UAT / changelog rilis.
+3. **Satu sumber kebenaran:** angka versi hanya di `package.json` — jangan duplikasi di konstanta lain tanpa sinkron.
+
+---
+
 ## Common commands
 
 ```bash

@@ -28,6 +28,7 @@ import {
   type UpdateTenantBrandingState,
 } from "@/features/profile/actions/update-tenant-branding";
 import type { ServerSession } from "@/features/auth/lib/session";
+import { version as APP_VERSION } from "../../../package.json";
 
 const initialState: ChangeOwnPasswordState = {};
 const initialBrandState: UpdateTenantBrandingState = {};
@@ -176,7 +177,7 @@ export function ProfilePanel({ session, tenantBranding = null }: ProfilePanelPro
             <Row label="Username" value={session.user.username} />
             <Row label="Email" value={session.user.email ?? "—"} />
             <Row label="Peran" value={session.user.roleName} />
-            <Row label="Versi web" value="AAPM Web v0.1.0" />
+            <Row label="Versi web" value={`AAPM Web v${APP_VERSION}`} />
             <Row
               label="Cabang aktif"
               value={activeTenant ? "Tenant terikat" : "Global"}
