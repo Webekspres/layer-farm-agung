@@ -4,6 +4,7 @@ import {
   shortDateLabel,
   toDateKeyMap,
 } from "@/features/dashboard/lib/dashboard-series";
+import { computeFcr } from "@/features/cages/lib/cycle-operational-metrics";
 import { computeHdpPercent } from "@/features/production/lib/compute-hdp";
 import {
   formatBusinessDate,
@@ -41,6 +42,10 @@ export type FieldOverview = {
   targetHdpAvg: number | null;
   pendingVaccineCount: number;
   overdueVaccineCount: number;
+  /** FCR siklus aktif (kg pakan ÷ egg mass kg); null jika data belum lengkap. */
+  cycleFcr: number | null;
+  cycleFeedKg: number;
+  cycleEggMassKg: number;
   production7d: FieldOverviewPoint[];
   hdp7d: FieldOverviewHdpPoint[];
   incompleteCages: FieldOverviewIncompleteCage[];
@@ -62,6 +67,10 @@ export type FieldOverviewBuildInput = {
   todayTp: number;
   pendingVaccineCount: number;
   overdueVaccineCount: number;
+  /** Total pakan (kg) seluruh siklus aktif dalam lingkup — utk FCR. Default 0. */
+  cycleFeedKg?: number;
+  /** Total egg mass (kg) seluruh siklus aktif dalam lingkup — utk FCR. Default 0. */
+  cycleEggMassKg?: number;
   /** Daily total telur (seluruh grade) keyed by business date string (YYYY-MM-DD). */
   eggsByDate: Map<string, number>;
 };
@@ -96,6 +105,9 @@ export function emptyFieldOverview(recordDate: Date): FieldOverview {
     targetHdpAvg: null,
     pendingVaccineCount: 0,
     overdueVaccineCount: 0,
+    cycleFcr: null,
+    cycleFeedKg: 0,
+    cycleEggMassKg: 0,
     production7d,
     hdp7d,
     incompleteCages: [],
@@ -165,6 +177,9 @@ export function buildFieldOverview(
     targetHdpAvg,
     pendingVaccineCount: input.pendingVaccineCount,
     overdueVaccineCount: input.overdueVaccineCount,
+    cycleFcr: computeFcr(input.cycleFeedKg ?? 0, input.cycleEggMassKg ?? 0),
+    cycleFeedKg: input.cycleFeedKg ?? 0,
+    cycleEggMassKg: input.cycleEggMassKg ?? 0,
     production7d,
     hdp7d,
     incompleteCages,

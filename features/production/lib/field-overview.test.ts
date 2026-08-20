@@ -131,4 +131,57 @@ describe("buildFieldOverview", () => {
     );
     expect(result.targetHdpAvg).toBeNull();
   });
+
+  test("computes cycle FCR from feed kg and egg mass kg", () => {
+    const result = buildFieldOverview({
+      recordDate: TODAY,
+      cages: [
+        {
+          id: "c1",
+          name: "A1",
+          population: 1000,
+          recordedToday: true,
+          targetHdp: 90,
+        },
+      ],
+      todayTb: 100,
+      todayTr: 0,
+      todayTp: 0,
+      pendingVaccineCount: 0,
+      overdueVaccineCount: 0,
+      cycleFeedKg: 500,
+      cycleEggMassKg: 40,
+      eggsByDate: new Map([["2026-08-03", 100]]),
+    });
+
+    expect(result.cycleFeedKg).toBe(500);
+    expect(result.cycleEggMassKg).toBe(40);
+    expect(result.cycleFcr).toBeCloseTo(12.5, 5);
+  });
+
+  test("cycle FCR is null until both feed and egg mass exist", () => {
+    const result = buildFieldOverview({
+      recordDate: TODAY,
+      cages: [
+        {
+          id: "c1",
+          name: "A1",
+          population: 1000,
+          recordedToday: false,
+          targetHdp: null,
+        },
+      ],
+      todayTb: 0,
+      todayTr: 0,
+      todayTp: 0,
+      pendingVaccineCount: 0,
+      overdueVaccineCount: 0,
+      cycleFeedKg: 500,
+      cycleEggMassKg: 0,
+      eggsByDate: new Map(),
+    });
+
+    expect(result.cycleFcr).toBeNull();
+    expect(emptyFieldOverview(TODAY).cycleFcr).toBeNull();
+  });
 });

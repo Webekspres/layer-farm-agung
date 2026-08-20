@@ -15,6 +15,7 @@ import {
 } from "@/features/production/lib/field-overview";
 import {
   formatBusinessDate,
+  normalizeBusinessDate,
   shiftBusinessDate,
   startOfTodayBusiness,
 } from "@/lib/business-date";
@@ -84,7 +85,12 @@ export async function getFieldOverview(
         where: { status: "Active" },
         take: 1,
         orderBy: { start_date: "desc" },
-        select: { start_date: true },
+        select: {
+          id: true,
+          start_date: true,
+          go_live_date: true,
+          end_date: true,
+        },
       },
       daily_productions: {
         where: {
@@ -149,6 +155,94 @@ export async function getFieldOverview(
     }
   }
 
+  // FCR siklus aktif (kg pakan ÷ egg mass kg) untuk lingkup kandang terpilih.
+  const activeCycles = cages
+    .map((cage) => ({
+      cageId: cage.id,
+      cycle: cage.cycle_settings[0],
+    }))
+    .filter(
+      (
+        entry,
+      ): entry is {
+        cageId: string;
+        cycle: {
+          id: string;
+          start_date: Date;
+          go_live_date: Date | null;
+          end_date: Date | null;
+        };
+      } => entry.cycle != null,
+    );
+
+  let cycleFeedKg = 0;
+  let cycleEggMassKg = 0;
+
+  if (activeCycles.length > 0) {
+    const minEffectiveStart = activeCycles.reduce<number | null>(
+      (min, entry) => {
+        const eff = normalizeBusinessDate(
+          entry.cycle.go_live_date ?? entry.cycle.start_date,
+        ).getTime();
+        return min === null || eff < min ? eff : min;
+      },
+      null,
+    );
+
+    const [cycleFeedRows, cycleProductionRows] = await Promise.all([
+      deps.prisma.feedConsumption.findMany({
+        where: {
+          tenant_id: tenantId,
+          cage_id: { in: cageIds },
+          record_date: { gte: new Date(minEffectiveStart!) },
+        },
+        select: { cage_id: true, record_date: true, quantity: true },
+      }),
+      deps.prisma.dailyProduction.findMany({
+        where: {
+          tenant_id: tenantId,
+          cage_id: { in: cageIds },
+          record_date: { gte: new Date(minEffectiveStart!) },
+        },
+        select: {
+          cage_id: true,
+          record_date: true,
+          tb: true,
+          tr: true,
+          tp: true,
+          weight: true,
+        },
+      }),
+    ]);
+
+    const periodEndMs = normalizeBusinessDate(recordDate).getTime();
+
+    for (const entry of activeCycles) {
+      const startMs = normalizeBusinessDate(
+        entry.cycle.go_live_date ?? entry.cycle.start_date,
+      ).getTime();
+      const endMs = entry.cycle.end_date
+        ? normalizeBusinessDate(entry.cycle.end_date).getTime()
+        : periodEndMs;
+
+      for (const row of cycleFeedRows) {
+        const ts = normalizeBusinessDate(row.record_date).getTime();
+        if (row.cage_id === entry.cageId && ts >= startMs && ts <= endMs) {
+          cycleFeedKg += row.quantity;
+        }
+      }
+
+      for (const row of cycleProductionRows) {
+        if (row.cage_id !== entry.cageId) continue;
+        const ts = normalizeBusinessDate(row.record_date).getTime();
+        if (ts < startMs || ts > endMs) continue;
+        if (!row.weight || row.weight <= 0) continue;
+        const totalEggs = row.tb + row.tr + row.tp;
+        cycleEggMassKg += (totalEggs * row.weight) / 1000;
+      }
+    }
+  }
+
   const cageInputs = await Promise.all(
     cages.map(async (cage, index) => {
       const activeCycle = cage.cycle_settings[0];
@@ -184,6 +278,8 @@ export async function getFieldOverview(
     todayTp: todayAgg._sum.tp ?? 0,
     pendingVaccineCount,
     overdueVaccineCount,
+    cycleFeedKg,
+    cycleEggMassKg,
     eggsByDate,
   });
 }
