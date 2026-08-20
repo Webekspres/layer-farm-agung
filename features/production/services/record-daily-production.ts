@@ -1,6 +1,9 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
-import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
-import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import {
+  applyEggStockMutation as defaultApplyEggStockMutation,
+  type ApplyEggStockMutation,
+} from "@/features/eggs/services/apply-egg-stock-mutation";
+import { EggMovementType } from "@/features/eggs/lib/egg-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
 import { resolveProductionBuckets } from "@/features/production/lib/production-grade-mapping";
 import {
@@ -10,11 +13,18 @@ import {
 import type { DailyProductionInput } from "@/features/production/schemas/daily-production";
 import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
-import prisma from "@/lib/prisma";
+import defaultPrisma from "@/lib/prisma";
 
 export type RecordDailyProductionResult =
   | { ok: true; idempotent: boolean; recordId: string }
   | { ok: false; error: string };
+
+export type RecordDailyProductionOptions = {
+  deps?: {
+    prisma?: typeof defaultPrisma;
+    applyEggStockMutation?: ApplyEggStockMutation;
+  };
+};
 
 class StockError extends Error {}
 
@@ -22,7 +32,11 @@ export async function recordDailyProduction(
   tenantId: string,
   userId: string,
   input: DailyProductionInput,
+  options: RecordDailyProductionOptions = {},
 ): Promise<RecordDailyProductionResult> {
+  const prisma = options.deps?.prisma ?? defaultPrisma;
+  const applyStockMutation = options.deps?.applyEggStockMutation ?? defaultApplyEggStockMutation;
+
   if (input.clientMutationId) {
     const existing = await prisma.dailyProduction.findUnique({
       where: { client_mutation_id: input.clientMutationId },
@@ -108,15 +122,6 @@ export async function recordDailyProduction(
   const isSynced = !input.fromSync;
   const { tb, tr, tp } = resolved.buckets;
 
-  // Stok jual telur hanya dari bucket TB (Telur Bagus) — grade lain dicatat di produksi saja.
-  const eggItem =
-    tb > 0
-      ? await prisma.item.findFirst({
-          where: { tenant_id: tenantId, type: "Egg" },
-          select: { id: true },
-        })
-      : null;
-
   try {
     const recordId = await prisma.$transaction(async (tx) => {
       const production = await tx.dailyProduction.create({
@@ -141,12 +146,14 @@ export async function recordDailyProduction(
         select: { id: true },
       });
 
-      if (eggItem && tb > 0) {
+      // Stok jual telur masuk per grade panen (IN_HARVEST) ke lokasi kandang.
+      for (const entry of input.entries) {
         const stock = await applyStockMutation(tx, {
-          itemId: eggItem.id,
+          tenantId,
+          eggGradeId: entry.eggGradeId,
           locationId: cage.location_id,
-          mutationType: StockMutationType.IN_HARVEST,
-          quantity: tb,
+          mutationType: EggMovementType.IN_HARVEST,
+          quantity: entry.quantity,
           referenceId: production.id,
         });
 

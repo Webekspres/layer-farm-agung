@@ -55,6 +55,8 @@ model Tenant {
   alert_logs            AlertLog[]
   vaccine_programs      VaccineProgram[]
   production_settings   TenantProductionSetting?
+  egg_stocks            EggStock[]
+  egg_movements         EggMovement[]
 }
 
 /** Kebijakan pengendalian input per tenant (poin 2 laporan penyelarasan). */
@@ -193,6 +195,8 @@ model Location {
   cages            Cage[]
   inventory_stocks InventoryStock[]
   sales_orders     SalesOrder[]
+  egg_stocks       EggStock[]
+  egg_movements    EggMovement[]
 }
 
 model Cage {
@@ -283,9 +287,11 @@ model EggGrade {
   is_active   Boolean  @default(true)
   sort_order  Int      @default(0)
 
-  // Katalog opsional (label harga); stok jual = Item Egg dari panen TB, bukan grade
+  // Stok jual telur dilacak per grade di EggStock/EggMovement (panen → IN_HARVEST, jual → OUT_SALES).
   sales_order_items SalesOrderItem[]
   production_items  DailyProductionItem[]
+  egg_stocks        EggStock[]
+  egg_movements     EggMovement[]
 }
 
 model Vendor {
@@ -427,6 +433,44 @@ model DailyProductionItem {
 
   @@index([production_id])
   @@index([egg_grade_id])
+}
+
+/** Saldo stok telur jual per (grade × lokasi gudang), terisolasi per tenant. */
+model EggStock {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenant_id    String   @db.Uuid
+  egg_grade_id Int
+  location_id  String   @db.Uuid
+  quantity     Float    @default(0)
+  last_updated DateTime @default(now()) @updatedAt
+
+  // Relations
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  egg_grade EggGrade  @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+  location  Location  @relation(fields: [location_id], references: [id], onDelete: Cascade)
+
+  @@unique([egg_grade_id, location_id])
+  @@index([tenant_id])
+}
+
+/** Kartu stok telur per grade (IN_HARVEST / OUT_SALES / OUT_ADJUSTMENT), terisolasi per tenant. */
+model EggMovement {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenant_id     String   @db.Uuid
+  egg_grade_id  Int
+  location_id   String   @db.Uuid
+  mutation_type String
+  quantity      Float
+  /** Id sumber: DailyProduction (panen/koreksi) atau SalesOrder (penjualan). */
+  reference_id  String?  @db.Uuid
+  mutation_date DateTime @default(now())
+
+  // Relations
+  tenant    Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  egg_grade EggGrade  @relation(fields: [egg_grade_id], references: [id], onDelete: Restrict)
+  location  Location  @relation(fields: [location_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, egg_grade_id, location_id, mutation_date])
 }
 
 model FeedConsumption {

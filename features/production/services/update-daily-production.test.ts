@@ -29,7 +29,6 @@ const findGrades = mock(() =>
     [] as Array<{ id: number; code: string | null; is_active: boolean }>,
   ),
 );
-const findEggItem = mock(() => Promise.resolve(null as null | { id: string }));
 const updateProduction = mock(() => Promise.resolve({}));
 const deleteItems = mock(() => Promise.resolve({ count: 0 }));
 const createItems = mock(() => Promise.resolve({ count: 0 }));
@@ -54,7 +53,6 @@ mock.module("@/lib/prisma", () => ({
     tenantProductionSetting: { findUnique: findProductionSetting },
     dailyProduction: { findFirst: findProduction },
     eggGrade: { findMany: findGrades },
-    item: { findFirst: findEggItem },
     $transaction: transaction,
   },
 }));
@@ -64,9 +62,10 @@ mock.module("@/features/cages/services/is-user-assigned-to-cage", () => ({
   isUserAssignedToCage: isAssigned,
 }));
 
-mock.module("@/features/inventory/services/apply-stock-mutation", () => ({
-  applyStockMutation: mock(() => Promise.resolve({ ok: true })),
-}));
+const applyEggStock = mock(() =>
+  Promise.resolve({ ok: true as const, newQuantity: 0 }),
+);
+const deps = { applyEggStockMutation: applyEggStock };
 
 type CorrectionArgs = {
   tenantId: string;
@@ -126,13 +125,13 @@ describe("updateDailyProduction", () => {
     findProductionSetting.mockReset();
     findProduction.mockReset();
     findGrades.mockReset();
-    findEggItem.mockReset();
     transaction.mockReset();
     isAssigned.mockReset();
     recordCorrection.mockReset();
     updateProduction.mockReset();
     deleteItems.mockReset();
     createItems.mockReset();
+    applyEggStock.mockReset();
 
     findCorrection.mockResolvedValue(null);
     findUser.mockResolvedValue({ role: { name: "staff" } });
@@ -141,7 +140,7 @@ describe("updateDailyProduction", () => {
       admin_lookback_days: 30,
     });
     isAssigned.mockResolvedValue(true);
-    findEggItem.mockResolvedValue(null);
+    applyEggStock.mockResolvedValue({ ok: true, newQuantity: 0 });
     transaction.mockImplementation(
       async (fn: (tx: {
         dailyProduction: { update: typeof updateProduction };
@@ -177,6 +176,7 @@ describe("updateDailyProduction", () => {
         reason: "Salah hitung",
         clientMutationId: "550e8400-e29b-41d4-a716-446655440000",
       },
+      { deps },
     );
 
     expect(result).toEqual({
@@ -194,14 +194,14 @@ describe("updateDailyProduction", () => {
     const noChange = await updateDailyProduction("tenant-1", "user-1", "rec-1", {
       entries: [{ eggGradeId: 1, quantity: 10 }],
       reason: "Salah hitung",
-    });
+    }, { deps });
     expect(noChange.ok).toBe(false);
 
     const result = await updateDailyProduction("tenant-1", "user-1", "rec-1", {
       entries: [{ eggGradeId: 1, quantity: 12 }],
       weight: 62,
       reason: "Salah hitung",
-    });
+    }, { deps });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -236,6 +236,41 @@ describe("updateDailyProduction", () => {
     expect(createItems).toHaveBeenCalledWith({
       data: [{ production_id: "rec-1", egg_grade_id: 1, quantity: 12 }],
     });
+
+    // Selisih naik 10 → 12 = +2 IN_HARVEST per grade.
+    expect(applyEggStock).toHaveBeenCalledTimes(1);
+    expect(applyEggStock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        eggGradeId: 1,
+        locationId: "loc-1",
+        quantity: 2,
+        allowNegative: false,
+      }),
+    );
+  });
+
+  test("applies per-grade OUT_ADJUSTMENT when a grade quantity drops", async () => {
+    findProduction.mockResolvedValue(existingRecord);
+    findGrades.mockResolvedValue([TB_GRADE]);
+
+    const result = await updateDailyProduction("tenant-1", "user-1", "rec-1", {
+      entries: [{ eggGradeId: 1, quantity: 4 }],
+      reason: "Salah hitung",
+    }, { deps });
+
+    expect(result.ok).toBe(true);
+    expect(applyEggStock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        eggGradeId: 1,
+        locationId: "loc-1",
+        quantity: 6,
+        allowNegative: true,
+      }),
+    );
   });
 
   test("rejects inactive grade in entries", async () => {
@@ -245,7 +280,7 @@ describe("updateDailyProduction", () => {
     const result = await updateDailyProduction("tenant-1", "user-1", "rec-1", {
       entries: [{ eggGradeId: 2, quantity: 5 }],
       reason: "Koreksi retak",
-    });
+    }, { deps });
 
     expect(result.ok).toBe(false);
     if (result.ok) return;

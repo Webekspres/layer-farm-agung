@@ -420,7 +420,7 @@ async function main() {
     });
   }
 
-  // Master item lintas tipe: obat, vitamin, telur (auto dari panen), dan lainnya (solar).
+  // Master item lintas tipe: obat, vitamin, dan lainnya (solar).
   const sampleItems = [
     {
       id: "00000000-0000-4000-8000-000000000201",
@@ -437,14 +437,6 @@ async function main() {
       unit: "ml",
       min_stock_alert: 300,
       initialStock: 1000,
-    },
-    {
-      id: "00000000-0000-4000-8000-000000000203",
-      name: "Telur (persediaan)",
-      type: ItemType.Egg,
-      unit: "butir",
-      min_stock_alert: null,
-      initialStock: 0,
     },
     {
       id: "00000000-0000-4000-8000-000000000204",

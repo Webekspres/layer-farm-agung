@@ -3,8 +3,8 @@ import {
   createSalesOrder,
   type CreateSalesOrderOptions,
 } from "./create-sales-order";
-import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
-import type { ApplyStockMutationParams } from "@/features/inventory/services/apply-stock-mutation";
+import { EggMovementType } from "@/features/eggs/lib/egg-mutation-types";
+import type { ApplyEggStockMutationParams } from "@/features/eggs/services/apply-egg-stock-mutation";
 import type { CreateSalesOrderInput } from "@/features/finance/schemas/sales-order";
 import { parseBusinessDate } from "@/lib/business-date";
 
@@ -12,17 +12,16 @@ import { parseBusinessDate } from "@/lib/business-date";
  * These tests inject fakes via `options.deps` rather than `mock.module`,
  * because Bun's `mock.module` replaces a module for the whole test run (no
  * per-file restore) and would otherwise break every other test importing the
- * real `@/lib/prisma` / `apply-stock-mutation`.
+ * real `@/lib/prisma` / `apply-egg-stock-mutation`.
  */
 
-type StockMutationResult =
-  | { ok: true; newQuantity: number; lowStock: boolean; minStockAlert: number | null }
+type EggStockMutationResult =
+  | { ok: true; newQuantity: number }
   | { ok: false; error: string };
 
 const TENANT = "00000000-0000-4000-8000-000000000001";
 const CUSTOMER = "00000000-0000-4000-8000-000000000010";
 const LOCATION = "00000000-0000-4000-8000-000000000020";
-const EGG_ITEM = "00000000-0000-4000-8000-000000000030";
 const SALE_ID = "00000000-0000-4000-8000-000000000040";
 
 const findFirstCustomer = mock(() =>
@@ -35,10 +34,10 @@ const findFirstLocation = mock(() =>
   Promise.resolve({ id: LOCATION } as { id: string } | null),
 );
 const findManyEggGrade = mock(() =>
-  Promise.resolve([{ id: 1 }] as { id: number }[]),
-);
-const findFirstEggItem = mock(() =>
-  Promise.resolve({ id: EGG_ITEM } as { id: string } | null),
+  Promise.resolve([
+    { id: 1, is_active: true },
+    { id: 2, is_active: true },
+  ] as { id: number; is_active: boolean }[]),
 );
 const salesOrderCreate = mock(() =>
   Promise.resolve({ id: SALE_ID }),
@@ -46,21 +45,15 @@ const salesOrderCreate = mock(() =>
 const deliveryCreate = mock(() => Promise.resolve({}));
 const cashflowCreate = mock(() => Promise.resolve({}));
 
-const applyStockMutation = mock(
-  (): Promise<StockMutationResult> =>
-    Promise.resolve({
-      ok: true,
-      newQuantity: 50,
-      lowStock: false,
-      minStockAlert: null,
-    }),
+const applyEggStockMutation = mock(
+  (): Promise<EggStockMutationResult> =>
+    Promise.resolve({ ok: true, newQuantity: 50 }),
 );
 
 const fakePrisma = {
   customer: { findFirst: findFirstCustomer },
   location: { findFirst: findFirstLocation },
   eggGrade: { findMany: findManyEggGrade },
-  item: { findFirst: findFirstEggItem },
   $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
     fn({
       salesOrder: { create: salesOrderCreate },
@@ -71,7 +64,7 @@ const fakePrisma = {
 
 const deps = {
   prisma: fakePrisma,
-  applyStockMutation,
+  applyEggStockMutation,
 } as unknown as CreateSalesOrderOptions["deps"];
 
 function baseInput(
@@ -81,7 +74,7 @@ function baseInput(
     customerId: CUSTOMER,
     locationId: LOCATION,
     saleDate: parseBusinessDate("2026-07-09"),
-    items: [{ quantity: 100, unitPrice: 2000 }],
+    items: [{ eggGradeId: 1, quantity: 100, unitPrice: 2000 }],
     ...overrides,
   };
 }
@@ -93,49 +86,52 @@ describe("createSalesOrder", () => {
     findFirstLocation.mockReset();
     findFirstLocation.mockResolvedValue({ id: LOCATION });
     findManyEggGrade.mockReset();
-    findManyEggGrade.mockResolvedValue([{ id: 1 }]);
-    findFirstEggItem.mockReset();
-    findFirstEggItem.mockResolvedValue({ id: EGG_ITEM });
+    findManyEggGrade.mockResolvedValue([
+      { id: 1, is_active: true },
+      { id: 2, is_active: true },
+    ]);
     salesOrderCreate.mockReset();
     salesOrderCreate.mockResolvedValue({ id: SALE_ID });
     deliveryCreate.mockReset();
     deliveryCreate.mockResolvedValue({});
     cashflowCreate.mockReset();
     cashflowCreate.mockResolvedValue({});
-    applyStockMutation.mockReset();
-    applyStockMutation.mockResolvedValue({
-      ok: true,
-      newQuantity: 50,
-      lowStock: false,
-      minStockAlert: null,
-    });
+    applyEggStockMutation.mockReset();
+    applyEggStockMutation.mockResolvedValue({ ok: true, newQuantity: 50 });
   });
 
-  test("succeeds with OUT_SALES for total line quantity and creates delivery/cashflow", async () => {
+  test("deducts OUT_SALES per grade line and creates delivery/cashflow", async () => {
     const result = await createSalesOrder(
       TENANT,
       baseInput({
         items: [
-          { quantity: 40, unitPrice: 2000 },
-          { eggGradeId: 1, quantity: 60, weight: 3.5, unitPrice: 2100 },
+          { eggGradeId: 1, quantity: 40, unitPrice: 2000 },
+          { eggGradeId: 2, quantity: 60, weight: 3.5, unitPrice: 2100 },
         ],
       }),
       { deps },
     );
 
     expect(result).toEqual({ ok: true, saleId: SALE_ID });
-    expect(applyStockMutation).toHaveBeenCalledTimes(1);
-    const stockCalls = applyStockMutation.mock.calls as unknown as Array<
-      [unknown, ApplyStockMutationParams]
+    expect(findManyEggGrade).toHaveBeenCalledTimes(1);
+    expect(applyEggStockMutation).toHaveBeenCalledTimes(2);
+    const stockCalls = applyEggStockMutation.mock.calls as unknown as Array<
+      [unknown, ApplyEggStockMutationParams]
     >;
-    const [, params] = stockCalls[0] ?? [];
-    expect(params).toBeDefined();
-    if (!params) return;
-    expect(params).toMatchObject({
-      itemId: EGG_ITEM,
+    const [grade1Params, grade2Params] = stockCalls.map(([, p]) => p);
+    expect(grade1Params).toMatchObject({
+      tenantId: TENANT,
+      eggGradeId: 1,
       locationId: LOCATION,
-      mutationType: StockMutationType.OUT_SALES,
-      quantity: 100,
+      mutationType: EggMovementType.OUT_SALES,
+      quantity: 40,
+      referenceId: SALE_ID,
+    });
+    expect(grade2Params).toMatchObject({
+      tenantId: TENANT,
+      eggGradeId: 2,
+      mutationType: EggMovementType.OUT_SALES,
+      quantity: 60,
       referenceId: SALE_ID,
     });
     expect(deliveryCreate).toHaveBeenCalledTimes(1);
@@ -155,17 +151,27 @@ describe("createSalesOrder", () => {
     expect(cashflowCreate).toHaveBeenCalledTimes(1);
   });
 
-  test("fails when egg stock is insufficient", async () => {
-    applyStockMutation.mockResolvedValue({
+  test("fails when stock is insufficient for one grade", async () => {
+    applyEggStockMutation.mockResolvedValueOnce({ ok: true, newQuantity: 50 });
+    applyEggStockMutation.mockResolvedValueOnce({
       ok: false,
-      error: "Stok tidak mencukupi untuk jumlah yang dimasukkan.",
+      error: "Stok telur tidak mencukupi untuk grade tersebut.",
     });
 
-    const result = await createSalesOrder(TENANT, baseInput(), { deps });
+    const result = await createSalesOrder(
+      TENANT,
+      baseInput({
+        items: [
+          { eggGradeId: 1, quantity: 40, unitPrice: 2000 },
+          { eggGradeId: 2, quantity: 60, unitPrice: 2100 },
+        ],
+      }),
+      { deps },
+    );
 
     expect(result).toEqual({
       ok: false,
-      error: "Stok tidak mencukupi untuk jumlah yang dimasukkan.",
+      error: "Stok telur tidak mencukupi untuk grade tersebut.",
     });
     expect(cashflowCreate).not.toHaveBeenCalled();
   });
@@ -179,18 +185,19 @@ describe("createSalesOrder", () => {
       ok: false,
       error: "Lokasi gudang tidak ditemukan di tenant ini.",
     });
-    expect(applyStockMutation).not.toHaveBeenCalled();
+    expect(applyEggStockMutation).not.toHaveBeenCalled();
   });
 
-  test("fails when egg item is not configured", async () => {
-    findFirstEggItem.mockResolvedValue(null);
+  test("fails when a grade is inactive", async () => {
+    findManyEggGrade.mockResolvedValue([{ id: 1, is_active: false }]);
 
     const result = await createSalesOrder(TENANT, baseInput(), { deps });
 
     expect(result).toEqual({
       ok: false,
-      error: "Item telur belum dikonfigurasi. Hubungi admin inventori.",
+      error: "Satu atau lebih grade telur tidak aktif.",
     });
+    expect(applyEggStockMutation).not.toHaveBeenCalled();
   });
 
   test("fails when customer is missing", async () => {

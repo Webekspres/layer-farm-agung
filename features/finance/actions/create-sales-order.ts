@@ -54,5 +54,7 @@ export async function createSalesOrderAction(
   revalidatePath("/dashboard/finance");
   revalidatePath("/dashboard/inventory");
   revalidatePath("/dashboard/inventory/mutations");
+  revalidatePath("/dashboard/inventory/eggs");
+  revalidatePath("/dashboard/inventory/eggs/[gradeId]", "page");
   return { success: true, saleId: result.saleId };
 }

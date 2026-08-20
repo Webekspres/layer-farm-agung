@@ -9,6 +9,9 @@ import {
   requireManageInventorySession,
 } from "@/features/inventory/lib/access";
 import { InventoryManagement } from "@/features/inventory/components/inventory-management";
+import { InventoryTabs } from "@/features/inventory/components/inventory-tabs";
+import { EggStockManagement } from "@/features/eggs/components/egg-stock-management";
+import { listEggStock } from "@/features/eggs/services/list-egg-stock";
 import { parseInventoryListFilters } from "@/features/inventory/lib/parse-filters";
 import { listItems } from "@/features/inventory/services/list-items";
 import { parsePage, parsePageSize } from "@/lib/pagination";
@@ -17,6 +20,7 @@ type InventoryPageProps = {
   searchParams: Promise<{
     q?: string;
     type?: string;
+    view?: string;
     page?: string;
     pageSize?: string;
   }>;
@@ -28,21 +32,30 @@ export default async function InventoryPage({
   const session = await requireManageInventorySession();
   const { tenantId, needsTenantSelection } = getInventoryTenantScope(session);
   const params = await searchParams;
+  const view = params.view === "eggs" ? "eggs" : "saprodi";
   const filters = parseInventoryListFilters(params);
   const page = parsePage(params.page);
   const pageSize = parsePageSize(params.pageSize);
 
   const hasTenant = Boolean(tenantId && !needsTenantSelection);
   const result = hasTenant
-    ? await listItems(tenantId!, { ...filters, page, pageSize })
+    ? view === "eggs"
+      ? { items: [], total: 0, page: 1, pageSize: 10, totalPages: 1 }
+      : await listItems(tenantId!, { ...filters, page, pageSize })
     : { items: [], total: 0, page: 1, pageSize: 10, totalPages: 1 };
+
+  const eggGrades = hasTenant
+    ? view === "eggs"
+      ? await listEggStock(tenantId!)
+      : []
+    : [];
 
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           title="Inventori"
-          description="Saprodi (pakan, obat, vaksin, vitamin, lainnya) dan stok per lokasi. Stok telur jual dikelola lewat panen & Keuangan — bukan item saprodi."
+          description="Saprodi (pakan, obat, vaksin, vitamin, lainnya) dan stok telur per grade. Stok telur otomatis masuk dari panen & keluar dari penjualan."
         />
         <Button variant="outline" asChild>
           <Link href="/dashboard/inventory/mutations">
@@ -54,17 +67,24 @@ export default async function InventoryPage({
       {needsTenantSelection ? (
         <TenantRequiredPanel />
       ) : (
-        <Suspense fallback={null}>
-          <InventoryManagement
-            items={result.items}
-            pagination={{
-              page: result.page,
-              pageSize: result.pageSize,
-              total: result.total,
-              totalPages: result.totalPages,
-            }}
-          />
-        </Suspense>
+        <>
+          <InventoryTabs active={view} />
+          <Suspense fallback={null}>
+            {view === "eggs" ? (
+              <EggStockManagement grades={eggGrades} />
+            ) : (
+              <InventoryManagement
+                items={result.items}
+                pagination={{
+                  page: result.page,
+                  pageSize: result.pageSize,
+                  total: result.total,
+                  totalPages: result.totalPages,
+                }}
+              />
+            )}
+          </Suspense>
+        </>
       )}
     </>
   );

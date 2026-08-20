@@ -1,6 +1,9 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
-import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
-import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import {
+  applyEggStockMutation as defaultApplyEggStockMutation,
+  type ApplyEggStockMutation,
+} from "@/features/eggs/services/apply-egg-stock-mutation";
+import { EggMovementType } from "@/features/eggs/lib/egg-mutation-types";
 import { resolveProductionBuckets } from "@/features/production/lib/production-grade-mapping";
 import {
   resolveUserRoleName,
@@ -9,18 +12,31 @@ import {
 import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { UpdateDailyProductionInput } from "@/features/production/schemas/update-daily-production";
 import { recordCorrectionEvent } from "@/features/production/services/record-correction-event";
-import prisma from "@/lib/prisma";
+import defaultPrisma from "@/lib/prisma";
 
 export type UpdateDailyProductionResult =
   | { ok: true; correctionId: string; idempotent: boolean }
   | { ok: false; error: string; status: 400 | 403 | 404 };
+
+export type UpdateDailyProductionOptions = {
+  deps?: {
+    prisma?: typeof defaultPrisma;
+    applyEggStockMutation?: ApplyEggStockMutation;
+  };
+};
+
+class StockError extends Error {}
 
 export async function updateDailyProduction(
   tenantId: string,
   userId: string,
   recordId: string,
   input: UpdateDailyProductionInput,
+  options: UpdateDailyProductionOptions = {},
 ): Promise<UpdateDailyProductionResult> {
+  const prisma = options.deps?.prisma ?? defaultPrisma;
+  const applyStockMutation = options.deps?.applyEggStockMutation ?? defaultApplyEggStockMutation;
+
   if (input.clientMutationId) {
     const existingCorrection = await prisma.dailyInputCorrection.findUnique({
       where: { client_mutation_id: input.clientMutationId },
@@ -44,9 +60,6 @@ export async function updateDailyProduction(
       id: true,
       cage_id: true,
       record_date: true,
-      tb: true,
-      tr: true,
-      tp: true,
       weight: true,
       cage: {
         select: {
@@ -148,15 +161,6 @@ export async function updateDailyProduction(
     };
   }
 
-  const tbDelta = tb - existing.tb;
-  const eggItem =
-    tbDelta !== 0
-      ? await prisma.item.findFirst({
-          where: { tenant_id: tenantId, type: "Egg" },
-          select: { id: true },
-        })
-      : null;
-
   try {
     const correctionId = await prisma.$transaction(async (tx) => {
       await tx.dailyProduction.update({
@@ -180,18 +184,31 @@ export async function updateDailyProduction(
         })),
       });
 
-      if (eggItem && tbDelta !== 0) {
-        await applyStockMutation(tx, {
-          itemId: eggItem.id,
+      // Koreksi stok telur per grade: selisih naik → IN_HARVEST, turun → OUT_ADJUSTMENT (rekon).
+      for (const gradeId of allGradeIds) {
+        const before = existingByGradeId.get(gradeId) ?? 0;
+        const after =
+          input.entries.find((entry) => entry.eggGradeId === gradeId)?.quantity ??
+          0;
+        const delta = after - before;
+        if (delta === 0) continue;
+
+        const stock = await applyStockMutation(tx, {
+          tenantId,
+          eggGradeId: gradeId,
           locationId: existing.cage.location_id,
           mutationType:
-            tbDelta > 0
-              ? StockMutationType.IN_HARVEST
-              : StockMutationType.OUT_ADJUSTMENT,
-          quantity: Math.abs(tbDelta),
+            delta > 0
+              ? EggMovementType.IN_HARVEST
+              : EggMovementType.OUT_ADJUSTMENT,
+          quantity: Math.abs(delta),
           referenceId: recordId,
-          allowNegative: tbDelta < 0,
+          allowNegative: delta < 0,
         });
+
+        if (!stock.ok) {
+          throw new StockError(stock.error);
+        }
       }
 
       const recorded = await recordCorrectionEvent(
@@ -215,7 +232,10 @@ export async function updateDailyProduction(
     });
 
     return { ok: true, correctionId, idempotent: false };
-  } catch {
+  } catch (error) {
+    if (error instanceof StockError) {
+      return { ok: false, error: error.message, status: 400 };
+    }
     return {
       ok: false,
       error: "Gagal memperbarui produksi harian.",

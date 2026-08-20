@@ -1,6 +1,9 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
-import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
-import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import {
+  applyEggStockMutation as defaultApplyEggStockMutation,
+  type ApplyEggStockMutation,
+} from "@/features/eggs/services/apply-egg-stock-mutation";
+import { EggMovementType } from "@/features/eggs/lib/egg-mutation-types";
 import {
   resolveUserRoleName,
   validateOperationalInputDate,
@@ -8,11 +11,18 @@ import {
 import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { DeleteRecordInput } from "@/features/production/schemas/delete-record";
 import { recordCorrectionEvent } from "@/features/production/services/record-correction-event";
-import prisma from "@/lib/prisma";
+import defaultPrisma from "@/lib/prisma";
 
 export type DeleteDailyProductionResult =
   | { ok: true; correctionId: string; idempotent: boolean }
   | { ok: false; error: string; status: 400 | 403 | 404 };
+
+export type DeleteDailyProductionOptions = {
+  deps?: {
+    prisma?: typeof defaultPrisma;
+    applyEggStockMutation?: ApplyEggStockMutation;
+  };
+};
 
 class StockError extends Error {}
 
@@ -21,7 +31,11 @@ export async function deleteDailyProduction(
   userId: string,
   recordId: string,
   input: DeleteRecordInput,
+  options: DeleteDailyProductionOptions = {},
 ): Promise<DeleteDailyProductionResult> {
+  const prisma = options.deps?.prisma ?? defaultPrisma;
+  const applyStockMutation = options.deps?.applyEggStockMutation ?? defaultApplyEggStockMutation;
+
   if (input.clientMutationId) {
     const existingCorrection = await prisma.dailyInputCorrection.findUnique({
       where: { client_mutation_id: input.clientMutationId },
@@ -42,7 +56,6 @@ export async function deleteDailyProduction(
       id: true,
       cage_id: true,
       record_date: true,
-      tb: true,
       weight: true,
       cage: {
         select: {
@@ -113,23 +126,18 @@ export async function deleteDailyProduction(
     });
   }
 
-  // Stok telur (IN_HARVEST saat create) dikembalikan via OUT_ADJUSTMENT.
-  const eggItem =
-    existing.tb > 0
-      ? await prisma.item.findFirst({
-          where: { tenant_id: tenantId, type: "Egg" },
-          select: { id: true },
-        })
-      : null;
-
+  // Stok telur (IN_HARVEST saat create) dikembalikan per grade via OUT_ADJUSTMENT.
   try {
     const correctionId = await prisma.$transaction(async (tx) => {
-      if (eggItem && existing.tb > 0) {
+      for (const item of existing.items) {
+        if (item.quantity <= 0) continue;
+
         const stock = await applyStockMutation(tx, {
-          itemId: eggItem.id,
+          tenantId,
+          eggGradeId: item.egg_grade_id,
           locationId: existing.cage.location_id,
-          mutationType: StockMutationType.OUT_ADJUSTMENT,
-          quantity: existing.tb,
+          mutationType: EggMovementType.OUT_ADJUSTMENT,
+          quantity: item.quantity,
           referenceId: recordId,
           allowNegative: true,
         });

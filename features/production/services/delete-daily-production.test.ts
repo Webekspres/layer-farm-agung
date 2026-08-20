@@ -25,10 +25,11 @@ const findProduction = mock(() =>
 const findGrades = mock(() =>
   Promise.resolve([] as Array<{ id: number; code: string | null }>),
 );
-const findEggItem = mock(() => Promise.resolve(null as null | { id: string }));
 const deleteProduction = mock(() => Promise.resolve({}));
 const deleteItems = mock(() => Promise.resolve({ count: 0 }));
-const applyStock = mock(() => Promise.resolve({ ok: true as const }));
+const applyEggStock = mock(() =>
+  Promise.resolve({ ok: true as const, newQuantity: 0 }),
+);
 const transaction = mock(
   async (fn: (tx: {
     dailyProduction: { delete: typeof deleteProduction };
@@ -47,7 +48,6 @@ mock.module("@/lib/prisma", () => ({
     tenantProductionSetting: { findUnique: findProductionSetting },
     dailyProduction: { findFirst: findProduction },
     eggGrade: { findMany: findGrades },
-    item: { findFirst: findEggItem },
     $transaction: transaction,
   },
 }));
@@ -55,10 +55,6 @@ mock.module("@/lib/prisma", () => ({
 const isAssigned = mock(() => Promise.resolve(true));
 mock.module("@/features/cages/services/is-user-assigned-to-cage", () => ({
   isUserAssignedToCage: isAssigned,
-}));
-
-mock.module("@/features/inventory/services/apply-stock-mutation", () => ({
-  applyStockMutation: applyStock,
 }));
 
 type CorrectionArgs = {
@@ -118,10 +114,9 @@ describe("deleteDailyProduction", () => {
     findProductionSetting.mockReset();
     findProduction.mockReset();
     findGrades.mockReset();
-    findEggItem.mockReset();
     deleteProduction.mockReset();
     deleteItems.mockReset();
-    applyStock.mockReset();
+    applyEggStock.mockReset();
     transaction.mockReset();
     isAssigned.mockReset();
     recordCorrection.mockReset();
@@ -134,8 +129,7 @@ describe("deleteDailyProduction", () => {
     });
     isAssigned.mockResolvedValue(true);
     findGrades.mockResolvedValue([{ id: 1, code: "TB" }]);
-    findEggItem.mockResolvedValue({ id: "egg-item" });
-    applyStock.mockResolvedValue({ ok: true });
+    applyEggStock.mockResolvedValue({ ok: true, newQuantity: 0 });
     transaction.mockImplementation(
       async (fn: (tx: {
         dailyProduction: { delete: typeof deleteProduction };
@@ -164,6 +158,7 @@ describe("deleteDailyProduction", () => {
         reason: "Salah input",
         clientMutationId: "550e8400-e29b-41d4-a716-446655440000",
       },
+      { deps: { applyEggStockMutation: applyEggStock } },
     );
 
     expect(result).toEqual({
@@ -179,7 +174,7 @@ describe("deleteDailyProduction", () => {
 
     const result = await deleteDailyProduction("tenant-1", "user-1", "rec-1", {
       reason: "Salah input",
-    });
+    }, { deps: { applyEggStockMutation: applyEggStock } });
 
     expect(result).toEqual({
       ok: false,
@@ -189,21 +184,24 @@ describe("deleteDailyProduction", () => {
     expect(transaction).not.toHaveBeenCalled();
   });
 
-  test("reverses egg stock, deletes row + items, records correction audit", async () => {
+  test("reverses egg stock per grade, deletes row + items, records correction audit", async () => {
     findProduction.mockResolvedValue(existingRecord);
 
     const result = await deleteDailyProduction("tenant-1", "user-1", "rec-1", {
       reason: "Salah input",
-    });
+    }, { deps: { applyEggStockMutation: applyEggStock } });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.idempotent).toBe(false);
 
-    expect(applyStock).toHaveBeenCalledWith(
+    // Reversal per DailyProductionItem: grade 1 (10 butir) reversed; grade 2 (0) skipped.
+    expect(applyEggStock).toHaveBeenCalledTimes(1);
+    expect(applyEggStock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        itemId: "egg-item",
+        tenantId: "tenant-1",
+        eggGradeId: 1,
         locationId: "loc-1",
         quantity: 10,
         allowNegative: true,
@@ -233,14 +231,21 @@ describe("deleteDailyProduction", () => {
     });
   });
 
-  test("skips stock reversal when tb is 0", async () => {
-    findProduction.mockResolvedValue({ ...existingRecord, tb: 0, weight: null });
+  test("skips stock reversal for zero-quantity items", async () => {
+    findProduction.mockResolvedValue({
+      ...existingRecord,
+      weight: null,
+      items: [
+        { egg_grade_id: 1, quantity: 0 },
+        { egg_grade_id: 2, quantity: 0 },
+      ],
+    });
 
     const result = await deleteDailyProduction("tenant-1", "user-1", "rec-1", {
       reason: "Salah input",
-    });
+    }, { deps: { applyEggStockMutation: applyEggStock } });
 
     expect(result.ok).toBe(true);
-    expect(applyStock).not.toHaveBeenCalled();
+    expect(applyEggStock).not.toHaveBeenCalled();
   });
 });

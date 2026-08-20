@@ -1,7 +1,7 @@
 import {
-  applyStockMutation as defaultApplyStockMutation,
-} from "@/features/inventory/services/apply-stock-mutation";
-import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+  applyEggStockMutation as defaultApplyEggStockMutation,
+} from "@/features/eggs/services/apply-egg-stock-mutation";
+import { EggMovementType } from "@/features/eggs/lib/egg-mutation-types";
 import type { CreateSalesOrderInput } from "@/features/finance/schemas/sales-order";
 import { computeSalesOrderTotal } from "@/features/finance/lib/compute-sales-total";
 import { normalizeBusinessDate } from "@/lib/business-date";
@@ -17,12 +17,12 @@ export type CreateSalesOrderOptions = {
   /**
    * Test-only seams. Bun's `mock.module` replaces a module for the whole
    * process (no per-file restore), which would otherwise break unrelated
-   * tests importing the real `@/lib/prisma` / `apply-stock-mutation`. Inject
+   * tests importing the real `@/lib/prisma` / `apply-egg-stock-mutation`. Inject
    * fakes here instead; production callers never set these.
    */
   deps?: {
     prisma?: typeof defaultPrisma;
-    applyStockMutation?: typeof defaultApplyStockMutation;
+    applyEggStockMutation?: typeof defaultApplyEggStockMutation;
   };
 };
 
@@ -32,8 +32,8 @@ export async function createSalesOrder(
   options: CreateSalesOrderOptions = {},
 ): Promise<CreateSalesOrderResult> {
   const prisma = options.deps?.prisma ?? defaultPrisma;
-  const applyStockMutation =
-    options.deps?.applyStockMutation ?? defaultApplyStockMutation;
+  const applyEggStockMutation =
+    options.deps?.applyEggStockMutation ?? defaultApplyEggStockMutation;
 
   const customer = await prisma.customer.findFirst({
     where: { id: input.customerId, tenant_id: tenantId },
@@ -54,34 +54,23 @@ export async function createSalesOrder(
   }
 
   const eggGradeIds = [
-    ...new Set(
-      input.items
-        .map((i) => i.eggGradeId)
-        .filter((id): id is number => id != null),
-    ),
+    ...new Set(input.items.map((i) => i.eggGradeId)),
   ];
 
-  if (eggGradeIds.length > 0) {
-    const eggGrades = await prisma.eggGrade.findMany({
-      where: { id: { in: eggGradeIds } },
-      select: { id: true },
-    });
-
-    if (eggGrades.length !== eggGradeIds.length) {
-      return { ok: false, error: "Satu atau lebih grade telur tidak ditemukan." };
-    }
-  }
-
-  const eggItem = await prisma.item.findFirst({
-    where: { tenant_id: tenantId, type: "Egg" },
-    select: { id: true },
+  const eggGrades = await prisma.eggGrade.findMany({
+    where: { id: { in: eggGradeIds } },
+    select: { id: true, is_active: true },
   });
 
-  if (!eggItem) {
-    return {
-      ok: false,
-      error: "Item telur belum dikonfigurasi. Hubungi admin inventori.",
-    };
+  const gradeById = new Map(eggGrades.map((g) => [g.id, g]));
+  for (const gradeId of eggGradeIds) {
+    const grade = gradeById.get(gradeId);
+    if (!grade) {
+      return { ok: false, error: "Satu atau lebih grade telur tidak ditemukan." };
+    }
+    if (!grade.is_active) {
+      return { ok: false, error: "Satu atau lebih grade telur tidak aktif." };
+    }
   }
 
   const totalEggs = input.items.reduce((sum, line) => sum + line.quantity, 0);
@@ -104,7 +93,7 @@ export async function createSalesOrder(
           total_amount: totalAmount,
           sales_order_items: {
             create: input.items.map((line) => ({
-              egg_grade_id: line.eggGradeId ?? null,
+              egg_grade_id: line.eggGradeId,
               quantity: line.quantity,
               weight: line.weight ?? null,
               unit_price: line.unitPrice,
@@ -126,16 +115,20 @@ export async function createSalesOrder(
         },
       });
 
-      const stock = await applyStockMutation(tx, {
-        itemId: eggItem.id,
-        locationId: input.locationId,
-        mutationType: StockMutationType.OUT_SALES,
-        quantity: totalEggs,
-        referenceId: order.id,
-      });
+      // Pengurangan stok telur per grade (OUT_SALES) — guard stok per grade.
+      for (const line of input.items) {
+        const stock = await applyEggStockMutation(tx, {
+          tenantId,
+          eggGradeId: line.eggGradeId,
+          locationId: input.locationId,
+          mutationType: EggMovementType.OUT_SALES,
+          quantity: line.quantity,
+          referenceId: order.id,
+        });
 
-      if (!stock.ok) {
-        throw new StockError(stock.error);
+        if (!stock.ok) {
+          throw new StockError(stock.error);
+        }
       }
 
       await tx.cashflowTransaction.create({

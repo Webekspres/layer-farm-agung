@@ -42,7 +42,7 @@ If runtime-only: **Verification / Retest Required** (do not guess).
 | GAP-010 | Close/open cycle during pilot | Readiness; Follow-up | Baseline excludes multi-cycle | Must not activate | **6** | Pilot Limit / Operational Workaround | Restrict | Hide/disable or SOP: no close/start 2nd cycle | Web / Docs-Ops | Pilot guide states disabled | GAP-003 | P0 limit |
 | GAP-011 | Cold-start offline (reopen app offline → work) | Follow-up §7; UAT; Ringkasan #2 | Offline | Open; not pilot path | **2** + **6** | Post-Pilot Capability Gate (+ Pilot Limit) | Internet-first pilot | Do not promise; fix post-pilot | Mobile | Follow-up §7 two tests | — | P0 gate |
 | GAP-012 | QR / deep-link opens assigned cage reliably | Follow-up §8; UAT | QR | No progress 9 Aug | **6** (+ residual **2**) | Post-Pilot Capability Gate (+ Pilot Limit) | Manual cage pick | Disable as primary path; fix before enable | Both | Follow-up §8 three cases | — | P0 gate |
-| GAP-013 | Production TB → sellable egg stock → sales | Follow-up §9; UAT; Readiness | Telur jual | Outside pilot baseline; code path **exists** (`IN_HARVEST` + sales) | **6** (activation gate; not missing) | Pilot Limit + Post-Pilot Capability Gate | Do not promise/activate | Onboarding guide + retest before enable | Web / API / Docs | Follow-up §9 | Config vs defect unclear without guided setup | P1 gate |
+| GAP-013 | Production (per grade) → sellable egg stock → sales | Follow-up §9; UAT #14; Readiness; 2026-08-20 | Telur jual | **Implemented 2026-08-20** — per-grade `EggStock`/`EggMovement` (tenant-isolated); grade **wajib** di baris penjualan; tab **Stok Telur**; migrasi histori dari `DailyProductionItem`−`SalesOrderItem`; item `Egg` legacy dihapus | **3** (verification) | Pilot Limit + Post-Pilot Capability Gate | Keep egg sales as pilot gate (do not promise w/o onboarding guide) | Retest end-to-end per [smoke-egg-sales.md](./smoke-egg-sales.md) | Web / API / Docs | Follow-up §9 | Resolved — no longer config vs defect | P1 gate |
 | GAP-014 | HDP/FCR used as decision KPIs without official formula / labels | Follow-up; Readiness; UAT Dashboard | HDP/FCR | Must not be decision metrics in pilot | **3** / **6** | Pilot Limit (+ Product Decision on official formula) | De-emphasize / label temporary | Phase 1: label or hide as decision KPI | Web | See Phase 1 F / KPI | GAP-003 for trusted numbers | P0 |
 | GAP-015 | Customer-readable release / version identity | Follow-up paket mitra | Versi web + APK | Missing in UI | **1** | Pilot Blocker (Docs-Ops / small UI) | Required for retest package | Expose version web + mobile Profile; document build | Both / Docs-Ops | Version visible on Profile/about | — | P0 |
 | GAP-016 | Pilot guide v1 + basic backup + on-call contact | Follow-up; Readiness | Paket mitra; gate layanan | Missing as customer pack | **1** | Pilot Blocker | Required before pilot | Write guide + backup note + contact | Docs-Ops | Docs delivered | GAP-010–014 limits listed | P0 |
@@ -126,7 +126,7 @@ Recorded **2026-08-11** (pilot):
 | GAP-019 | Unit conversion model |
 | GAP-022 | PO credit / approval in scope? |
 | GAP-025 | Formal export required for pilot or later? |
-| GAP-013 | Is missing sellable stock config vs product defect when Egg item absent? |
+| ~~GAP-013~~ | **Resolved 2026-08-20** — dedicated per-grade stock tables; legacy Egg item removed; no item config needed |
 
 ### 5. Verification / Retest Required (runtime)
 
@@ -138,7 +138,7 @@ Recorded **2026-08-11** (pilot):
 | GAP-006 | Focus/cache race after PATCH |
 | GAP-026 | Confirm “0% siklus aktif” still reproduces |
 | GAP-027 | Confirm feed/medical allowed without Active cycle in UI flows |
-| GAP-013 | Guided farm setup may make sales work — config vs defect |
+| GAP-013 | End-to-end per-grade stock→sales retest (production, sales, corrections, kartu stok) |
 
 ### 6. Out of Scope (do not build for pilot)
 
@@ -300,7 +300,7 @@ And HDP/FCR are not treated as official decision metrics (per PH1-F)
 1. ~~Staff dashboard finance/revenue visibility (GAP-008/009)~~ — **decided 2026-08-11** (Web login kept; finance/revenue hidden from nav **and** dashboard KPIs).  
 2. **Official HDP/FCR definition** (GAP-014) — formulas exist (`kg/butir`) but not ratified.  
 3. **Correction audit strictness** (GAP-007) — quality finding vs pilot “koreksi dasar”.  
-4. **Egg stock zero after TB** (GAP-013) — code can create stock if Egg item exists; may be **configuration** vs defect — needs guided setup attempt before classifying final.  
+4. ~~Egg stock zero after TB~~ (GAP-013) — **resolved 2026-08-20**: per-grade `EggStock`/`EggMovement`, migration from `DailyProductionItem`−`SalesOrderItem`, legacy Egg item removed. Remaining ask is end-to-end retest (see Verification).  
 5. **Partial multi-component save** (GAP-017) — product/UX rule.  
 6. All **Verification** rows — need runtime retest on agreed build.
 

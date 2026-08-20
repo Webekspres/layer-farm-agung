@@ -48,7 +48,7 @@ export default async function StockMutationsPage({
     <>
       <PageHeader
         title="Mutasi stok"
-        description="Ledger bersama: saprodi (pakan/obat/vaksin) serta panen/penjualan telur (IN_HARVEST / OUT_SALES). Katalog item inventori tetap saprodi saja."
+        description="Ledger saprodi (pakan/obat/vaksin/vitamin). Kartu stok telur per grade ada di tab Stok Telur."
       />
       {needsTenantSelection ? (
         <TenantRequiredPanel />
