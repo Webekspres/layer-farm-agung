@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { DashboardOverview } from "@/features/dashboard/components/dashboard-overview";
+import { CriticalNotificationBanner } from "@/features/notifications/components/critical-notification-banner";
 import { getDashboardExecutive } from "@/features/dashboard/services/get-dashboard-executive";
 import { requirePermission } from "@/features/auth/lib/require-permission";
 import { getActiveTenantId } from "@/features/auth/lib/session";
@@ -68,14 +69,17 @@ export default async function DashboardPage({
   );
 
   return (
-    <Suspense fallback={null}>
-      <DashboardOverview
-        session={session}
-        data={data}
-        cageOptions={cageOptions}
-        selectedCageId={selectedCageId}
-        scopeError={scopeError}
-      />
-    </Suspense>
+    <>
+      <CriticalNotificationBanner userId={session.user.id} />
+      <Suspense fallback={null}>
+        <DashboardOverview
+          session={session}
+          data={data}
+          cageOptions={cageOptions}
+          selectedCageId={selectedCageId}
+          scopeError={scopeError}
+        />
+      </Suspense>
+    </>
   );
 }

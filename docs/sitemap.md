@@ -257,6 +257,7 @@ Backend di repo ini menyediakan:
 - [x] D4 dasar: penjualan + cashflow
 - [x] D4 lanjutan: delivery/surat jalan otomatis dari sales
 - [x] Alert log in-app untuk early warning persistent
+- [x] Modul 14: notifikasi pengguna (bell web + push mobile) — vaksin terjadwal/terlambat, input harian belum lapor, stok rendah, ringkasan harian; cron `scripts/notification-jobs.ts`
 - [ ] D4 lanjutan: harga jual harian formal
 
 ## 9. Backlog mobile (Expo)

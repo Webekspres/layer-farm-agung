@@ -29,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { TenantSwitcher } from "@/components/layout/tenant-switcher";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
+import { NotificationBell } from "@/features/notifications/components/notification-bell";
 import { signOutAction } from "@/features/auth/actions/sign-out";
 import { notifyActionResult } from "@/components/shared/action-feedback";
 import { switchActiveTenantAction } from "@/features/tenants/actions/switch-active-tenant";
@@ -196,6 +197,7 @@ export function DashboardHeader({
             {activeTenantName}
           </Badge>
         ) : null}
+        <NotificationBell />
         <ThemeSwitcher />
         <Separator orientation="vertical" className="hidden h-4 sm:block" />
         <DropdownMenu>

@@ -237,6 +237,9 @@ paths:
                   targetHdpAvg: 90
                   pendingVaccineCount: 3
                   overdueVaccineCount: 1
+                  cycleFcr: 2.1
+                  cycleFeedKg: 120.5
+                  cycleEggMassKg: 57.4
                   production7d:
                     - date: "2026-08-03"
                       label: "3 Agu"
@@ -1105,6 +1108,217 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: Daftar notifikasi pengguna (bell + push)
+      description: |
+        Notifikasi in-app per pengguna untuk staff & admin (vaksin, input harian,
+        stok rendah, ringkasan harian). Hanya butuh session (semua role).
+      operationId: listNotifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["1", "true"]
+          description: Hanya kembalikan notifikasi belum dibaca.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor ID notifikasi untuk halaman berikutnya.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NotificationList"
+              example:
+                success: true
+                message: Daftar notifikasi berhasil dimuat.
+                data:
+                  items:
+                    - id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                      type: VACCINE_OVERDUE
+                      title: Vaksin terlambat
+                      body: "Kandang A: vaksin ND terjadwal 2026-08-19 belum dikerjakan."
+                      data:
+                        cageId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                        cageName: Kandang A
+                        referenceDate: "2026-08-19"
+                        critical: true
+                      isRead: false
+                      createdAt: "2026-08-20T01:00:00.000Z"
+                      critical: true
+                  nextCursor: null
+                  hasMore: false
+                  unreadCount: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Notifications]
+      summary: Tandai semua notifikasi sudah dibaca
+      operationId: markAllNotificationsRead
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: integer
+              example:
+                success: true
+                message: Semua notifikasi ditandai sudah dibaca.
+                data:
+                  updated: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Tandai satu notifikasi sudah dibaca
+      operationId: markNotificationRead
+      parameters:
+        - $ref: "#/components/parameters/NotificationId"
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          read:
+                            type: boolean
+              example:
+                success: true
+                message: Notifikasi ditandai sudah dibaca.
+                data:
+                  read: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/push-tokens:
+    post:
+      tags: [Notifications]
+      summary: Daftarkan perangkat untuk push (Expo push token)
+      description: |
+        Panggil setelah aplikasi mobile mendapatkan Expo push token
+        (`expo-notifications`). Token lama milik pengguna lain akan di-reassign.
+      operationId: registerPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: Expo push token (ExponentPushToken[...]).
+                platform:
+                  type: string
+                  enum: [android, ios]
+                  default: android
+            example:
+              token: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+              platform: android
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          registered:
+                            type: boolean
+              example:
+                success: true
+                message: Perangkat terdaftar untuk notifikasi.
+                data:
+                  registered: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Notifications]
+      summary: Hapus pendaftaran perangkat push (logout)
+      operationId: unregisterPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+            example:
+              token: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          unregistered:
+                            type: boolean
+              example:
+                success: true
+                message: Perangkat dihapus dari notifikasi.
+                data:
+                  unregistered: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -1124,6 +1338,14 @@ components:
         type: string
         format: uuid
       description: UUID kandang (`Cage.id`)
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID notifikasi (`AppNotification.id`)
 
   responses:
     Unauthorized:
@@ -1346,6 +1568,9 @@ components:
         - targetHdpAvg
         - pendingVaccineCount
         - overdueVaccineCount
+        - cycleFcr
+        - cycleFeedKg
+        - cycleEggMassKg
         - production7d
         - hdp7d
         - incompleteCages
@@ -1382,6 +1607,16 @@ components:
           minimum: 0
         overdueVaccineCount:
           type: integer
+          minimum: 0
+        cycleFcr:
+          type: number
+          nullable: true
+          description: FCR siklus aktif (kg pakan ÷ egg mass kg); null saat data pakan/berat belum lengkap.
+        cycleFeedKg:
+          type: number
+          minimum: 0
+        cycleEggMassKg:
+          type: number
           minimum: 0
         production7d:
           type: array
@@ -2212,3 +2447,51 @@ components:
           format: float
           nullable: true
           description: Ambang batas stok rendah (null bila tidak diatur).
+
+    NotificationList:
+      type: object
+      required: [items, nextCursor, hasMore, unreadCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppNotification"
+        nextCursor:
+          type: string
+          format: uuid
+          nullable: true
+          description: Cursor untuk halaman berikutnya (null = habis).
+        hasMore:
+          type: boolean
+        unreadCount:
+          type: integer
+          description: Total notifikasi belum dibaca.
+
+    AppNotification:
+      type: object
+      required: [id, type, title, body, isRead, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [VACCINE_SCHEDULED, VACCINE_OVERDUE, INPUT_REMINDER, LOW_STOCK, DAILY_SUMMARY]
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+          nullable: true
+          description: |
+            Payload kontekstual. Umumnya: `cageId`, `cageName`, `itemId`,
+            `itemName`, `referenceDate` (YYYY-MM-DD), `critical`.
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        critical:
+          type: boolean
+          description: true untuk tipe kritis (vaksin terlambat, stok rendah).

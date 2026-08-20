@@ -57,6 +57,7 @@ model Tenant {
   production_settings   TenantProductionSetting?
   egg_stocks            EggStock[]
   egg_movements         EggMovement[]
+  notifications         AppNotification[]
 }
 
 /** Kebijakan pengendalian input per tenant (poin 2 laporan penyelarasan). */
@@ -129,6 +130,8 @@ model User {
   sessions               Session[]
   accounts               Account[]
   cage_staff_assignments CageStaffAssignment[]
+  notifications          AppNotification[]
+  push_device_tokens     PushDeviceToken[]
 }
 
 model Session {
@@ -771,4 +774,49 @@ model AlertLog {
   @@unique([tenant_id, alert_key])
   @@index([tenant_id, is_read, created_at])
   @@index([tenant_id, type, record_date])
+}
+
+// ==========================================
+// DOMAIN 6: NOTIFIKASI PENGGUNA (BELL + PUSH)
+// ==========================================
+
+/** Notifikasi per-pengguna (sumber bell web + push mobile). */
+model AppNotification {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenant_id  String    @db.Uuid
+  user_id    String    @db.Uuid
+  /** Jenis notifikasi: VACCINE_SCHEDULED | VACCINE_OVERDUE | INPUT_REMINDER | LOW_STOCK | DAILY_SUMMARY */
+  type       String
+  title      String
+  body       String
+  /** JSON: { cageId?, itemId?, locationId?, eggGradeId?, referenceDate?, critical?, ... } */
+  data       Json?
+  /** Kunci idempotensi generator (mis. `vaccine:${scheduleId}:${userId}`) — mencegah duplikasi saat job dijalankan ulang. */
+  dedupe_key String?
+  is_read    Boolean   @default(false)
+  created_at DateTime  @default(now())
+  read_at    DateTime?
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read, created_at])
+  @@index([tenant_id, type])
+  @@unique([user_id, dedupe_key])
+  @@map("app_notification")
+}
+
+/** Token push Expo per perangkat pengguna (mobile). */
+model PushDeviceToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  token      String   @unique
+  platform   String   @default("android")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("push_device_token")
 }
