@@ -44,9 +44,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (sessionCookie && isAuthPage(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // NOTE: TIDAK redirect /login → /dashboard hanya karena cookie ADA.
+  // Cookie bisa basi (mis. setelah pergantian BETTER_AUTH_SECRET) — kalau
+  // dipaksa redirect, layout dashboard akan memantulkan ke /login dan terjadi
+  // infinite redirect loop. Pengarahan user yang benar-benar logged-in
+  // ditangani oleh halaman /login itu sendiri (server component).
 
   return NextResponse.next();
 }
