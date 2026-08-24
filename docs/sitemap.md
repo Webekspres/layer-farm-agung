@@ -103,18 +103,19 @@ Backend di repo ini menyediakan:
 |------|------|--------|-----------------|
 | `/dashboard` | Dashboard | 🟡 | KPI dasar ✅; HDP warning ✅; FCR 7 hari + mortalitas + kas minggu (Fase 6b) ✅; portal buyer 🔲 |
 | `/dashboard/production` | **Input harian** | 🟡 | Grid status kandang ✅; 4 tab rekap data nyata ✅; kolom HDP % ✅; date toolbar WIB ✅ |
-| `/dashboard/inventory` | Inventori | ✅ | Saprodi only (Egg Ledger terpisah — [`egg-ledger-architecture.md`](./egg-ledger-architecture.md)) |
-| `/dashboard/inventory/mutations` | Mutasi stok | ✅ | Ledger global `StockMutation` + filter |
+| `/dashboard/inventory` | Inventori | ✅ | Tab **Pakan & Saprodi** (saprodi only) + tab **Stok Telur** (per grade) |
+| `/dashboard/inventory/mutations` | Mutasi stok | ✅ | Ledger `StockMutation` saprodi + filter |
 | `/dashboard/inventory/[itemId]` | Detail item | ✅ | Stok per lokasi, kartu stok (mutasi), penyesuaian stok |
+| `/dashboard/inventory/eggs/[gradeId]` | Kartu stok telur | ✅ | `EggStock` per lokasi + ledger `EggMovement` per grade |
 | `/dashboard/purchase-orders` | Pesanan pembelian | ✅ | PO minimal: buat + terima → `IN_PURCHASE` |
 | `/dashboard/purchase-orders/[poId]` | Detail PO | ✅ | Terima barang ke lokasi |
-| `/dashboard/finance` | Keuangan | ✅ | Tabs arus kas / penjualan / pelanggan; penjualan potong stok Egg (`OUT_SALES`) — lihat [`egg-sales-stock.md`](./egg-sales-stock.md) |
+| `/dashboard/finance` | Keuangan | ✅ | Tabs arus kas / penjualan / pelanggan; penjualan potong stok telur per grade (`OUT_SALES`) — lihat [`egg-sales-stock.md`](./egg-sales-stock.md) |
 | `/dashboard/profile` | Profil | ✅ | Password, branding tenant |
 | `/dashboard/locations` | Lokasi | ✅ | `Location` |
 | `/dashboard/cages` | Kandang | ✅ | `Cage`, QR, siklus on-create |
 | `/dashboard/cages/[id]` | Detail kandang | 🟡 | Staff assignment ✅; metrik siklus ✅; generate jadwal vaksin dari program ✅; riwayat siklus enriched ✅ |
 | `/dashboard/strains` | Strain | ✅ | `Strain` + `ProductionTarget` (HDP/FCR per umur) |
-| `/dashboard/egg-grades` | Grade telur | ✅ | `EggGrade` katalog opsional (label harga); stok jual = TB → Item Egg — [`egg-sales-stock.md`](./egg-sales-stock.md) |
+| `/dashboard/egg-grades` | Grade telur | ✅ | `EggGrade` katalog + dimensi stok per grade — [`egg-sales-stock.md`](./egg-sales-stock.md) |
 | `/dashboard/vendors` | Vendor | ✅ | `Vendor` |
 | `/dashboard/tenants` | Tenant | ✅ | `Tenant` |
 | `/dashboard/users` | Pengguna | ✅ | `User` |
@@ -256,6 +257,7 @@ Backend di repo ini menyediakan:
 - [x] D4 dasar: penjualan + cashflow
 - [x] D4 lanjutan: delivery/surat jalan otomatis dari sales
 - [x] Alert log in-app untuk early warning persistent
+- [x] Modul 14: notifikasi pengguna (bell web + push mobile) — vaksin terjadwal/terlambat, input harian belum lapor, stok rendah, ringkasan harian; cron `scripts/notification-jobs.ts`
 - [ ] D4 lanjutan: harga jual harian formal
 
 ## 9. Backlog mobile (Expo)

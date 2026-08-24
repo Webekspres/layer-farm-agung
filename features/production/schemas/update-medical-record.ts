@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { APPLICATION_METHODS } from "@/features/production/schemas/medical-record";
+import { correctionMetaFields } from "@/features/production/schemas/correction-meta";
 
 export const updateMedicalRecordSchema = z.object({
   indication: z
@@ -34,17 +35,15 @@ export const updateMedicalRecordSchema = z.object({
     (v) => (v === "" || v === null ? undefined : v),
     z.string().max(1000, "Catatan maksimal 1000 karakter.").optional(),
   ),
-  // Only meaningful when the original record has an item linked; the service
-  // rejects this if the record has no item_id. The linked item itself is not
-  // editable — only how much of it was used.
   quantityUsed: z.preprocess(
     (v) => (v === "" || v === null ? undefined : v),
     z.coerce
       .number({ message: "Jumlah pemakaian harus berupa angka." })
-      .positive("Jumlah pemakaian harus lebih dari 0.")
+      .min(0, "Jumlah pemakaian tidak boleh negatif.")
       .max(100_000, "Jumlah pemakaian melebihi batas wajar.")
       .optional(),
   ),
+  ...correctionMetaFields,
 });
 
 export type UpdateMedicalRecordInput = z.infer<

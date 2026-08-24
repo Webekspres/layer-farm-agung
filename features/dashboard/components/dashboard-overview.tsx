@@ -22,9 +22,12 @@ import {
 } from "@/components/ui/card";
 import { markDashboardAlertsReadAction } from "@/features/dashboard/actions/mark-alerts-read";
 import type { ServerSession } from "@/features/auth/lib/session";
+import { hasPermission } from "@/features/auth/lib/session";
 import { DashboardCharts } from "@/features/dashboard/components/dashboard-charts";
+import { DashboardContextSelector } from "@/features/dashboard/components/dashboard-context-selector";
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import type { DashboardExecutive } from "@/features/dashboard/lib/dashboard-executive-types";
+import type { DashboardCageOption } from "@/features/dashboard/lib/resolve-dashboard-cage-scope";
 import { formatCount } from "@/features/dashboard/lib/dashboard-format";
 import { MORTALITY_WEEK_WARNING_THRESHOLD } from "@/features/dashboard/lib/dashboard-lite-metrics";
 import { cn } from "@/lib/utils";
@@ -32,6 +35,9 @@ import { cn } from "@/lib/utils";
 type DashboardOverviewProps = {
   session: ServerSession;
   data: DashboardExecutive | null;
+  cageOptions?: DashboardCageOption[];
+  selectedCageId?: string | null;
+  scopeError?: string | null;
 };
 
 const timelineIcon = {
@@ -54,8 +60,25 @@ function alertHref(source: string | null, sourceId: string | null) {
   return "/dashboard";
 }
 
-export function DashboardOverview({ session, data }: DashboardOverviewProps) {
+export function DashboardOverview({
+  session,
+  data,
+  cageOptions = [],
+  selectedCageId = null,
+  scopeError = null,
+}: DashboardOverviewProps) {
   const displayName = session.user.fullName ?? session.user.name ?? "Pengguna";
+  const canViewFinance = hasPermission(session, "view_cashflow");
+  const visibleKpis = data
+    ? canViewFinance
+      ? data.kpis
+      : data.kpis.filter((kpi) => kpi.id !== "revenue")
+    : [];
+  const visibleTimeline = data
+    ? canViewFinance
+      ? data.timeline
+      : data.timeline.filter((item) => item.kind !== "purchase_order")
+    : [];
 
   if (!data) {
     return (
@@ -74,19 +97,41 @@ export function DashboardOverview({ session, data }: DashboardOverviewProps) {
     );
   }
 
+  const contextHint =
+    selectedCageId != null
+      ? cageOptions.find((c) => c.id === selectedCageId)?.name ??
+        "Kandang terpilih"
+      : null;
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <PageHeader
           title={`Selamat datang, ${displayName}`}
-          description="Ringkasan kesehatan operasional farm — produksi, stok, dan keuangan hari ini."
+          description={
+            contextHint
+              ? `Menampilkan data: ${contextHint}. ${
+                  canViewFinance
+                    ? "Ringkasan operasional dan keuangan."
+                    : "Ringkasan operasional farm."
+                }`
+              : canViewFinance
+                ? "Ringkasan kesehatan operasional farm — produksi, stok, dan keuangan hari ini."
+                : "Ringkasan operasional farm — produksi, populasi, dan stok saprodi."
+          }
+        />
+        <DashboardContextSelector
+          cages={cageOptions}
+          selectedCageId={selectedCageId}
+          roleName={session.user.roleName ?? ""}
+          scopeError={scopeError}
         />
       </div>
 
       <section className="space-y-3">
         <h2 className="sr-only">Ringkasan KPI</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-          {data.kpis.map((kpi) => (
+          {visibleKpis.map((kpi) => (
             <KpiCard key={kpi.id} kpi={kpi} />
           ))}
         </div>
@@ -194,7 +239,7 @@ export function DashboardOverview({ session, data }: DashboardOverviewProps) {
         </CardContent>
       </Card>
 
-      <DashboardCharts data={data} />
+      <DashboardCharts data={data} showFinance={canViewFinance} />
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <Card className="border-border/70 bg-card/80 shadow-sm">
@@ -275,23 +320,25 @@ export function DashboardOverview({ session, data }: DashboardOverviewProps) {
               Timeline operasional
             </CardTitle>
             <CardDescription>
-              Aktivitas terbaru: produksi, vaksinasi, PO, dan mutasi stok.
+              {canViewFinance
+                ? "Aktivitas terbaru: produksi, vaksinasi, PO, dan mutasi stok."
+                : "Aktivitas terbaru: produksi, vaksinasi, dan mutasi stok."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {data.timeline.length === 0 ? (
+            {visibleTimeline.length === 0 ? (
               <p className="rounded-lg border border-dashed border-border/80 px-3 py-8 text-center text-sm text-muted-foreground">
                 Belum ada aktivitas operasional terbaru.
               </p>
             ) : (
               <ol className="relative space-y-0 border-l border-border/80 pl-4">
-                {data.timeline.map((item, index) => {
+                {visibleTimeline.map((item, index) => {
                   const Icon = timelineIcon[item.kind];
                   const content = (
                     <div
                       className={cn(
                         "relative pb-5 last:pb-0",
-                        index === data.timeline.length - 1 && "pb-0",
+                        index === visibleTimeline.length - 1 && "pb-0",
                       )}
                     >
                       <span className="absolute left-[-1.4rem] flex size-6 items-center justify-center rounded-full border border-border bg-card text-primary">

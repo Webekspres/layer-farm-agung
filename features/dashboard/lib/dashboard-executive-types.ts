@@ -32,7 +32,8 @@ export type ProductionPoint = DatePoint & {
 };
 
 export type HdpPoint = DatePoint & {
-  hdp: number;
+  /** Null saat tidak ada catatan produksi pada hari tsb (gap, bukan nol). */
+  hdp: number | null;
   target: number;
 };
 

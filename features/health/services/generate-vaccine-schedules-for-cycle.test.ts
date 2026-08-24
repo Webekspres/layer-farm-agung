@@ -158,7 +158,7 @@ describe("generateVaccineSchedulesForCycle", () => {
       expect(result.skipped).toBe(0);
     }
     expect(createMany).toHaveBeenCalledTimes(1);
-    const firstCall = createMany.mock.calls[0] as
+    const firstCall = createMany.mock.calls[0] as unknown as
       | [{ data: Array<{
           scheduled_date: Date;
           source: string;
@@ -204,7 +204,7 @@ describe("generateVaccineSchedulesForCycle", () => {
       expect(result.created).toBe(1);
       expect(result.skipped).toBe(1);
     }
-    const firstCall = createMany.mock.calls[0] as
+    const firstCall = createMany.mock.calls[0] as unknown as
       | [{ data: Array<{ program_step_id: string }> }]
       | undefined;
     expect(firstCall).toBeDefined();

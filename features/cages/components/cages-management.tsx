@@ -8,6 +8,7 @@ import { masterDataEmptyMessage } from "@/features/master-data/lib/empty-table-m
 import { listFiltersAreActive } from "@/features/master-data/lib/url-list-params";
 import { useActionFeedback } from "@/components/shared/action-feedback";
 import { CagesToolbar } from "@/features/cages/components/cages-toolbar";
+import { CageQrPrintButton } from "@/features/cages/components/cage-qr-print-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -287,6 +288,7 @@ export function CagesManagement({
           <Table containerClassName="overflow-x-auto overscroll-x-contain">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Kandang</TableHead>
                 <TableHead>Lokasi</TableHead>
                 <TableHead>Strain</TableHead>
@@ -297,8 +299,11 @@ export function CagesManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cages.map((cage) => (
+              {cages.map((cage, index) => (
                 <TableRow key={cage.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     <Link
                       href={`/dashboard/cages/${cage.id}`}
@@ -345,21 +350,31 @@ export function CagesManagement({
                   {/* 🔴 Data Status Di-bypass dari Cell View agar Tetap Berjalan di Belakang Layar */}
 
                   <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => {
-                        setEditing(cage);
-                        setEditLocationId(cage.locationId);
-                        setEditStrainId(String(cage.strainId));
-                        setEditStatus(cage.status);
-                        setEditOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
+                    <div className="inline-flex items-center justify-end gap-1">
+                      <CageQrPrintButton
+                        cageName={cage.name}
+                        qrCode={cage.qrCode}
+                        iconOnly
+                        variant="ghost"
+                        size="icon-sm"
+                        label={`Cetak QR ${cage.name}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setEditing(cage);
+                          setEditLocationId(cage.locationId);
+                          setEditStrainId(String(cage.strainId));
+                          setEditStatus(cage.status);
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="size-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

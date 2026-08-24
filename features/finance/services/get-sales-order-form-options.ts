@@ -5,29 +5,25 @@ import type { SalesOrderFormOptions } from "@/features/finance/types";
 export async function getSalesOrderFormOptions(
   tenantId: string,
 ): Promise<SalesOrderFormOptions> {
-  const eggItem = await prisma.item.findFirst({
-    where: { tenant_id: tenantId, type: "Egg" },
-    select: { id: true },
-  });
-
   const [customers, eggGrades, locations] = await Promise.all([
     listCustomers(tenantId),
     prisma.eggGrade.findMany({
+      where: { is_active: true },
       select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      orderBy: [{ sort_order: "asc" }, { name: "asc" }],
     }),
     prisma.location.findMany({
       where: { tenant_id: tenantId },
       select: {
         id: true,
         name: true,
-        inventory_stocks: eggItem
-          ? {
-              where: { item_id: eggItem.id },
-              select: { quantity: true },
-              take: 1,
-            }
-          : false,
+        egg_stocks: {
+          select: {
+            egg_grade_id: true,
+            quantity: true,
+            egg_grade: { select: { name: true } },
+          },
+        },
       },
       orderBy: { name: "asc" },
     }),
@@ -39,10 +35,11 @@ export async function getSalesOrderFormOptions(
     locations: locations.map((loc) => ({
       id: loc.id,
       name: loc.name,
-      eggStock:
-        "inventory_stocks" in loc && Array.isArray(loc.inventory_stocks)
-          ? (loc.inventory_stocks[0]?.quantity ?? 0)
-          : 0,
+      eggStockByGrade: loc.egg_stocks.map((stock) => ({
+        gradeId: stock.egg_grade_id,
+        gradeName: stock.egg_grade.name,
+        quantity: stock.quantity,
+      })),
     })),
   };
 }

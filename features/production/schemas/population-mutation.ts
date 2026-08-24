@@ -20,7 +20,7 @@ export const populationMutationSchema = z
     quantity: z.coerce
       .number({ message: "Jumlah harus berupa angka." })
       .int("Jumlah harus bilangan bulat.")
-      .positive("Jumlah mutasi harus lebih dari 0.")
+      .min(0, "Jumlah mutasi tidak boleh negatif.")
       .max(100_000, "Jumlah mutasi melebihi batas wajar."),
     notes: z.preprocess(
       (v) => (v === "" || v === null ? undefined : v),
@@ -46,6 +46,14 @@ export const populationMutationSchema = z
     {
       message: "Kandang tujuan harus berbeda dari kandang asal.",
       path: ["targetCageId"],
+    },
+  )
+  .refine(
+    (data) => data.quantity > 0 || data.mutationType === "Mati",
+    {
+      message:
+        "Jumlah mutasi harus lebih dari 0 (kecuali Mati = 0 untuk dilaporkan).",
+      path: ["quantity"],
     },
   );
 

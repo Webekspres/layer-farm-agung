@@ -7,6 +7,8 @@ import {
   computeCycleAgeParts,
   computeFcr,
   filterMedicalInPeriod,
+  productionTotal,
+  sumEggMassKgInPeriod,
   sumProductionInPeriod,
   sumProductionOnDate,
   type DailyProductionLike,
@@ -58,6 +60,7 @@ export type CycleOperationalSummary = {
 export type CycleRowInput = {
   id: string;
   start_date: Date;
+  go_live_date: Date | null;
   end_date: Date | null;
   initial_population: number;
   status: string;
@@ -87,21 +90,27 @@ export function buildCycleOperationalSummary(
       ? normalizeBusinessDate(cycle.end_date)
       : normalizeBusinessDate(asOfDate);
 
+  // Efektif mulai siklus utk akumulasi data: go-live (null → start_date).
+  const effectiveStart = normalizeBusinessDate(
+    cycle.go_live_date ?? cycle.start_date,
+  );
+
   const currentPopulation = computeCyclePopulation(
     cycle.initial_population,
     raw.mutations,
     periodEnd,
+    effectiveStart,
   );
 
   const mutationTotals = aggregateMutationTotals(
     raw.mutations,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
   );
 
   const cumulative = sumProductionInPeriod(
     raw.production,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
   );
 
@@ -111,7 +120,7 @@ export function buildCycleOperationalSummary(
     : { tb: 0, tr: 0, tp: 0 };
 
   const todayHdp = isActive
-    ? computeHdpPercent(todayProduction.tb, currentPopulation)
+    ? computeHdpPercent(productionTotal(todayProduction), currentPopulation)
     : null;
 
   const { ageDaysRemainder, ageWeeksFloor } = computeCycleAgeParts(
@@ -121,7 +130,7 @@ export function buildCycleOperationalSummary(
 
   const feedInPeriod = raw.feed.filter((row) => {
     const ts = normalizeBusinessDate(row.record_date).getTime();
-    const start = normalizeBusinessDate(cycle.start_date).getTime();
+    const start = effectiveStart.getTime();
     const end = periodEnd.getTime();
     return ts >= start && ts <= end;
   });
@@ -129,7 +138,7 @@ export function buildCycleOperationalSummary(
 
   const medicalInPeriod = filterMedicalInPeriod(
     raw.medical,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
   );
 
@@ -137,8 +146,9 @@ export function buildCycleOperationalSummary(
     cycle.initial_population,
     raw.mutations,
     raw.production,
-    cycle.start_date,
+    effectiveStart,
     periodEnd,
+    effectiveStart,
   );
 
   return {
@@ -165,7 +175,10 @@ export function buildCycleOperationalSummary(
     },
     feed: {
       totalQuantity: totalFeed,
-      fcr: computeFcr(totalFeed, cumulative.tb),
+      fcr: computeFcr(
+        totalFeed,
+        sumEggMassKgInPeriod(raw.production, effectiveStart, periodEnd),
+      ),
     },
     medical: {
       eventCount: medicalInPeriod.length,
@@ -201,6 +214,7 @@ export async function loadCageCycleRawData(
         tb: true,
         tr: true,
         tp: true,
+        weight: true,
       },
     }),
     prisma.feedConsumption.findMany({

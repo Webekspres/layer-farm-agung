@@ -170,6 +170,7 @@ export function VaccineSchedulesManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Kandang</TableHead>
                 <TableHead>Vaksin</TableHead>
                 <TableHead>Tanggal jadwal</TableHead>
@@ -179,8 +180,11 @@ export function VaccineSchedulesManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {schedules.map((schedule) => (
+              {schedules.map((schedule, index) => (
                 <TableRow key={schedule.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     {schedule.cageName}
                     <div className="text-xs text-muted-foreground">

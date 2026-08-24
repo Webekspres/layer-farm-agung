@@ -110,14 +110,18 @@ export function LocationsManagement({
           <Table containerClassName="overflow-x-auto overscroll-x-contain">
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead>Kandang</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {locations.map((location) => (
+              {locations.map((location, index) => (
                 <TableRow key={location.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">{location.name}</TableCell>
                   <TableCell>{location.cageCount}</TableCell>
                   <TableCell className="text-right">

@@ -26,12 +26,21 @@ export async function recordDailyProductionAction(
     };
   }
 
+  // Entri per grade aktif: field form bernama `grade_<eggGradeId>` (nilai = butir).
+  const entries: { eggGradeId: number; quantity: number }[] = [];
+  for (const [key, value] of formData.entries()) {
+    const match = /^grade_(\d+)$/.exec(key);
+    if (!match) continue;
+    const quantity = Number(value);
+    if (Number.isFinite(quantity) && quantity > 0) {
+      entries.push({ eggGradeId: Number(match[1]), quantity });
+    }
+  }
+
   const parsed = dailyProductionSchema.safeParse({
     cageId: formData.get("cageId"),
     recordDate: formData.get("recordDate"),
-    tb: formData.get("tb") ?? "0",
-    tr: formData.get("tr") ?? "0",
-    tp: formData.get("tp") ?? "0",
+    entries,
     weight: formData.get("weight"),
   });
 

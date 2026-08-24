@@ -76,6 +76,7 @@ export function CustomersManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead>Telepon</TableHead>
                 <TableHead>Alamat</TableHead>
@@ -83,8 +84,11 @@ export function CustomersManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customers.map((customer) => (
+              {customers.map((customer, index) => (
                 <TableRow key={customer.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.phone ?? "—"}</TableCell>
                   <TableCell className="max-w-xs truncate">

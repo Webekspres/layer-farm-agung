@@ -4,6 +4,7 @@ import {
   type ReceivePurchaseOrderOptions,
 } from "./receive-purchase-order";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import type { ApplyStockMutationParams } from "@/features/inventory/services/apply-stock-mutation";
 import type { ReceivePurchaseOrderInput } from "@/features/procurement/schemas/purchase-order";
 
 /**
@@ -166,20 +167,37 @@ describe("receivePurchaseOrder", () => {
     expect(result.status).toBe("Received");
 
     expect(applyStockMutation).toHaveBeenCalledTimes(2);
-    const [, firstParams] = applyStockMutation.mock.calls[0];
+    const stockCalls = applyStockMutation.mock.calls as unknown as Array<
+      [unknown, ApplyStockMutationParams]
+    >;
+    const [, firstParams] = stockCalls[0] ?? [];
+    expect(firstParams).toBeDefined();
+    if (!firstParams) return;
     expect(firstParams.itemId).toBe("item-1");
     expect(firstParams.quantity).toBe(100);
     expect(firstParams.mutationType).toBe(StockMutationType.IN_PURCHASE);
-    const [, secondParams] = applyStockMutation.mock.calls[1];
+    const [, secondParams] = stockCalls[1] ?? [];
+    expect(secondParams).toBeDefined();
+    if (!secondParams) return;
     expect(secondParams.itemId).toBe("item-2");
     expect(secondParams.quantity).toBe(50);
 
     expect(itemUpdate).toHaveBeenCalledTimes(2);
     expect(poUpdateMany).toHaveBeenCalledTimes(1);
-    const [poUpdateArgs] = poUpdateMany.mock.calls[0];
+    const poUpdateCalls = poUpdateMany.mock.calls as unknown as Array<
+      [{ data: { status: string } }]
+    >;
+    const [poUpdateArgs] = poUpdateCalls[0] ?? [];
+    expect(poUpdateArgs).toBeDefined();
+    if (!poUpdateArgs) return;
     expect(poUpdateArgs.data.status).toBe("Received");
     expect(cashflowCreate).toHaveBeenCalledTimes(1);
-    const [cashflowArgs] = cashflowCreate.mock.calls[0];
+    const cashflowCalls = cashflowCreate.mock.calls as unknown as Array<
+      [{ data: { type: string; reference_id: string } }]
+    >;
+    const [cashflowArgs] = cashflowCalls[0] ?? [];
+    expect(cashflowArgs).toBeDefined();
+    if (!cashflowArgs) return;
     expect(cashflowArgs.data.type).toBe("Expense");
     expect(cashflowArgs.data.reference_id).toBe("po-1");
   });
@@ -201,12 +219,22 @@ describe("receivePurchaseOrder", () => {
     expect(result.status).toBe("PartiallyReceived");
 
     expect(applyStockMutation).toHaveBeenCalledTimes(1);
-    const [, params] = applyStockMutation.mock.calls[0];
+    const stockCalls = applyStockMutation.mock.calls as unknown as Array<
+      [unknown, ApplyStockMutationParams]
+    >;
+    const [, params] = stockCalls[0] ?? [];
+    expect(params).toBeDefined();
+    if (!params) return;
     expect(params.itemId).toBe("item-1");
     expect(params.quantity).toBe(40);
 
     expect(itemUpdate).toHaveBeenCalledTimes(1);
-    const [updateArgs] = itemUpdate.mock.calls[0];
+    const itemUpdateCalls = itemUpdate.mock.calls as unknown as Array<
+      [{ where: { id: string }; data: { quantity_received: { increment: number } } }]
+    >;
+    const [updateArgs] = itemUpdateCalls[0] ?? [];
+    expect(updateArgs).toBeDefined();
+    if (!updateArgs) return;
     expect(updateArgs.where.id).toBe("line-1");
     expect(updateArgs.data.quantity_received.increment).toBe(40);
     expect(cashflowCreate).not.toHaveBeenCalled();
@@ -239,7 +267,12 @@ describe("receivePurchaseOrder", () => {
     if (!result.ok) return;
     expect(result.status).toBe("Received");
     expect(applyStockMutation).toHaveBeenCalledTimes(1);
-    const [, params] = applyStockMutation.mock.calls[0];
+    const stockCalls = applyStockMutation.mock.calls as unknown as Array<
+      [unknown, ApplyStockMutationParams]
+    >;
+    const [, params] = stockCalls[0] ?? [];
+    expect(params).toBeDefined();
+    if (!params) return;
     expect(params.quantity).toBe(60);
     expect(cashflowCreate).toHaveBeenCalledTimes(1);
   });

@@ -8,6 +8,7 @@ import { DailyProductionRecapTable } from "@/features/production/components/dail
 import { FeedConsumptionRecapTable } from "@/features/production/components/feed-consumption-recap-table";
 import { PopulationMutationRecapTable } from "@/features/production/components/population-mutation-recap-table";
 import { MedicalRecordRecapTable } from "@/features/production/components/medical-record-recap-table";
+import { DailyCorrectionsRecapTable } from "@/features/production/components/daily-corrections-recap-table";
 import { DailyInputRecapEmptyPanel } from "@/features/production/components/daily-input-recap-empty-panel";
 import { CageStatusGrid } from "@/features/production/components/cage-status-grid";
 import { ProductionDateToolbar } from "@/features/production/components/production-date-toolbar";
@@ -24,6 +25,7 @@ import { listDailyProductionRecap } from "@/features/production/services/list-da
 import { listFeedConsumptionRecap } from "@/features/production/services/list-feed-consumption-recap";
 import { listPopulationMutationRecap } from "@/features/production/services/list-population-mutation-recap";
 import { listMedicalRecordRecap } from "@/features/production/services/list-medical-record-recap";
+import { listDailyCorrectionsRecap } from "@/features/production/services/list-daily-corrections-recap";
 import { listAdminCagesStatus } from "@/features/production/services/list-admin-cages-status";
 
 type ProductionPageProps = {
@@ -70,6 +72,15 @@ export default async function ProductionPage({ searchParams }: ProductionPagePro
   const medicalRows = hasTenant && activeTab === "medical"
     ? await listMedicalRecordRecap(tenantId, recordDate)
     : [];
+
+  const correctionRows =
+    hasTenant && activeTab === "corrections"
+      ? await listDailyCorrectionsRecap(
+          tenantId,
+          recordDate,
+          selectedCageId,
+        )
+      : [];
 
   const filteredProductionRows = selectedCageId
     ? productionRows.filter((row) => row.cageId === selectedCageId)
@@ -145,6 +156,13 @@ export default async function ProductionPage({ searchParams }: ProductionPagePro
               {activeTab === "medical" ? (
                 <MedicalRecordRecapTable
                   rows={filteredMedicalRows}
+                  recordDateLabel={recordDateLabel}
+                />
+              ) : null}
+
+              {activeTab === "corrections" ? (
+                <DailyCorrectionsRecapTable
+                  rows={correctionRows}
                   recordDateLabel={recordDateLabel}
                 />
               ) : null}

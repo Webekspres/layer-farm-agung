@@ -65,14 +65,22 @@ const gradeConfig = {
 
 type DashboardChartsProps = {
   data: DashboardExecutive;
+  /** When false, hide penjualan/cashflow/laba (staff without view_cashflow). */
+  showFinance?: boolean;
 };
 
-export function DashboardCharts({ data }: DashboardChartsProps) {
+export function DashboardCharts({
+  data,
+  showFinance = true,
+}: DashboardChartsProps) {
   const hasProduction = seriesHasSignal(
     data.production30d.map((p) => ({ value: p.eggs })),
   );
   const hasHdp =
-    hasProduction && data.hdpVsTarget30d.some((p) => p.hdp > 0 || p.target > 0);
+    hasProduction &&
+    data.hdpVsTarget30d.some(
+      (p) => (p.hdp != null && p.hdp > 0) || p.target > 0,
+    );
   const hasGrades = data.eggGradeDistribution.length > 0;
   const hasFeed = data.feedPerCage.length > 0;
   const hasMortality = seriesHasSignal(
@@ -352,6 +360,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
       </section>
 
+      {showFinance ? (
       <section className="space-y-3">
         <SectionHeading
           title="Ringkasan keuangan"
@@ -486,6 +495,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
           </Card>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }

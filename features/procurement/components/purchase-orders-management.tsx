@@ -199,6 +199,7 @@ export function PurchaseOrdersManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>Status</TableHead>
@@ -208,8 +209,11 @@ export function PurchaseOrdersManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {orders.map((order, index) => (
                 <TableRow key={order.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell>{formatDate(order.orderDate)}</TableCell>
                   <TableCell>{order.vendorName}</TableCell>
                   <TableCell>{statusBadge(order.status)}</TableCell>

@@ -167,6 +167,7 @@ export function InventoryManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead>Tipe</TableHead>
                 <TableHead>Satuan</TableHead>
@@ -175,8 +176,11 @@ export function InventoryManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <TableRow key={item.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">
                     <Link
                       href={`/dashboard/inventory/${item.id}`}

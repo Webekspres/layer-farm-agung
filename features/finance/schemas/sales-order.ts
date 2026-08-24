@@ -1,13 +1,12 @@
 import { z } from "zod";
 import { businessDateNotFutureSchema } from "@/lib/business-date";
 
-const optionalPositiveInt = z.preprocess(
+const requiredPositiveInt = z.preprocess(
   (v) => (v === "" || v === null || v === undefined ? undefined : v),
   z.coerce
-    .number({ message: "Grade telur tidak valid." })
-    .int()
-    .positive("Grade telur tidak valid.")
-    .optional(),
+    .number({ message: "Grade telur wajib dipilih." })
+    .int("Grade telur tidak valid.")
+    .positive("Grade telur wajib dipilih."),
 );
 
 const optionalNonNegativeNumber = z.preprocess(
@@ -19,7 +18,8 @@ const optionalNonNegativeNumber = z.preprocess(
 );
 
 const lineItemSchema = z.object({
-  eggGradeId: optionalPositiveInt,
+  /** Wajib: stok telur dipotong per grade penjualan. */
+  eggGradeId: requiredPositiveInt,
   quantity: z.coerce
     .number({ message: "Jumlah harus berupa angka." })
     .int("Jumlah harus bilangan bulat.")

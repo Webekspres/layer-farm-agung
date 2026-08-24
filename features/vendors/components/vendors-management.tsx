@@ -178,6 +178,7 @@ export function VendorsManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead>Kategori</TableHead>
                 <TableHead>PIC / Telepon</TableHead>
@@ -186,8 +187,11 @@ export function VendorsManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {vendors.map((vendor) => (
+              {vendors.map((vendor, index) => (
                 <TableRow key={vendor.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{vendor.category}</Badge>

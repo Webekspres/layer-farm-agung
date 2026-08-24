@@ -2,7 +2,12 @@ import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned
 import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
 import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { MedicalRecordInput } from "@/features/production/schemas/medical-record";
+import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
@@ -45,7 +50,16 @@ export async function recordMedicalRecord(
       id: input.cageId,
       location: { tenant_id: tenantId },
     },
-    select: { id: true, status: true, location_id: true },
+    select: {
+      id: true,
+      status: true,
+      location_id: true,
+      cycle_settings: {
+        where: { status: "Active" },
+        take: 1,
+        select: { start_date: true, go_live_date: true, end_date: true },
+      },
+    },
   });
 
   if (!cage) {
@@ -78,6 +92,17 @@ export async function recordMedicalRecord(
     return { ok: false, error: dateCheck.error };
   }
 
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: dateCheck.date,
+    cycle: cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error };
+  }
+
   const treatmentDate = dateCheck.date;
   const isSynced = !input.fromSync;
 
@@ -103,7 +128,7 @@ export async function recordMedicalRecord(
         select: { id: true },
       });
 
-      if (input.itemId && input.quantityUsed != null) {
+      if (input.itemId && input.quantityUsed != null && input.quantityUsed > 0) {
         const stock = await applyStockMutation(tx, {
           itemId: input.itemId,
           locationId: cage.location_id,
@@ -116,12 +141,16 @@ export async function recordMedicalRecord(
           throw new StockError(stock.error);
         }
 
+        await ensureDailyReport(tenantId, input.cageId, treatmentDate, tx);
+
         return {
           recordId: record.id,
           lowStock: stock.lowStock,
           remainingStock: stock.newQuantity,
         };
       }
+
+      await ensureDailyReport(tenantId, input.cageId, treatmentDate, tx);
 
       return {
         recordId: record.id,

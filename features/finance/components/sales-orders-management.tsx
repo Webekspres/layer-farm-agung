@@ -47,7 +47,6 @@ import {
 import type { PaginationMeta } from "@/lib/pagination";
 
 const formInitial: SalesOrderFormState = {};
-const NO_GRADE = "__none__";
 
 type LineDraft = {
   eggGradeId: string;
@@ -81,7 +80,7 @@ function formatDate(iso: string) {
 
 function emptyLine(): LineDraft {
   return {
-    eggGradeId: NO_GRADE,
+    eggGradeId: "",
     quantity: "",
     weight: "",
     unitPrice: "",
@@ -157,7 +156,7 @@ export function SalesOrdersManagement({
           quantity: Number(l.quantity),
           unitPrice: Number(l.unitPrice),
         };
-        if (l.eggGradeId && l.eggGradeId !== NO_GRADE) {
+        if (l.eggGradeId) {
           row.eggGradeId = Number(l.eggGradeId);
         }
         if (l.weight !== "") {
@@ -179,7 +178,7 @@ export function SalesOrdersManagement({
       {!canCreate ? (
         <p className="text-sm text-muted-foreground">
           Tambahkan pelanggan dan pastikan ada lokasi gudang sebelum mencatat
-          penjualan dari stok telur panen (TB).
+          penjualan dari stok telur panen.
         </p>
       ) : null}
 
@@ -192,6 +191,7 @@ export function SalesOrdersManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Status</TableHead>
@@ -201,8 +201,11 @@ export function SalesOrdersManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {orders.map((order, index) => (
                 <TableRow key={order.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell>{formatDate(order.saleDate)}</TableCell>
                   <TableCell>{order.customerName}</TableCell>
                   <TableCell>
@@ -242,7 +245,7 @@ export function SalesOrdersManagement({
           <DialogHeader className="dialog-header-padding">
             <DialogTitle>Catat penjualan telur</DialogTitle>
             <DialogDescription>
-              Keluar stok telur bagus (TB) dari gudang lokasi yang dipilih.
+              Keluar stok telur per grade dari gudang lokasi yang dipilih.
             </DialogDescription>
           </DialogHeader>
 
@@ -291,13 +294,22 @@ export function SalesOrdersManagement({
                   </Select>
                   <input type="hidden" name="locationId" value={locationId} />
                   {selectedLocation ? (
-                    <p className="text-xs text-muted-foreground">
-                      Stok telur tersedia:{" "}
-                      <span className="font-medium tabular-nums text-foreground">
-                        {selectedLocation.eggStock.toLocaleString("id-ID")}
-                      </span>{" "}
-                      butir
-                    </p>
+                    <div className="text-xs text-muted-foreground">
+                      <p className="mb-1">Stok telur per grade di lokasi ini:</p>
+                      <ul className="grid grid-cols-2 gap-x-4 gap-y-1">
+                        {selectedLocation.eggStockByGrade.map((grade) => (
+                          <li key={grade.gradeId}>
+                            <span className="font-medium text-foreground">
+                              {grade.gradeName}:
+                            </span>{" "}
+                            <span className="tabular-nums">
+                              {grade.quantity.toLocaleString("id-ID")}
+                            </span>{" "}
+                            butir
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ) : null}
                 </Field>
                 <Field>
@@ -332,21 +344,19 @@ export function SalesOrdersManagement({
                         <div className="mb-3 flex items-start gap-2">
                           <Field className="min-w-0 flex-1">
                             <FieldLabel className="text-xs text-muted-foreground">
-                              Grade (opsional)
+                              Grade (wajib)
                             </FieldLabel>
                             <Select
                               value={line.eggGradeId}
                               onValueChange={(v) =>
                                 updateLine(index, { eggGradeId: v })
                               }
+                              required
                             >
                               <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Tanpa grade" />
+                                <SelectValue placeholder="Pilih grade" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value={NO_GRADE}>
-                                  Tanpa grade
-                                </SelectItem>
                                 {formOptions.eggGrades.map((grade) => (
                                   <SelectItem
                                     key={grade.id}
@@ -357,6 +367,9 @@ export function SalesOrdersManagement({
                                 ))}
                               </SelectContent>
                             </Select>
+                            <p className="text-xs text-muted-foreground">
+                              Stok dipotong dari grade yang dipilih.
+                            </p>
                           </Field>
                           <Button
                             type="button"

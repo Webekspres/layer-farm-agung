@@ -5,7 +5,12 @@ import {
   isPopulationDecreaseType,
 } from "@/features/cages/lib/compute-cycle-population";
 import { isPrismaUniqueViolation } from "@/features/production/lib/client-mutation-id";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
 import type { PopulationMutationInput } from "@/features/production/schemas/population-mutation";
+import { ensureDailyReport } from "@/features/production/services/ensure-daily-report";
 import { validateOperationalBusinessDate, normalizeBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
@@ -34,7 +39,16 @@ export async function recordPopulationMutation(
       id: input.cageId,
       location: { tenant_id: tenantId },
     },
-    select: { id: true, name: true, status: true },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      cycle_settings: {
+        where: { status: "Active" },
+        take: 1,
+        select: { start_date: true, go_live_date: true, end_date: true },
+      },
+    },
   });
 
   if (!cage) {
@@ -53,6 +67,17 @@ export async function recordPopulationMutation(
   const dateCheck = validateOperationalBusinessDate(input.recordDate);
   if (!dateCheck.ok) {
     return { ok: false, error: dateCheck.error };
+  }
+
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: dateCheck.date,
+    cycle: cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error };
   }
 
   const recordDate = dateCheck.date;
@@ -75,7 +100,7 @@ export async function recordPopulationMutation(
     targetCage = targetValidation.targetCage;
   }
 
-  if (isPopulationDecreaseType(input.mutationType)) {
+  if (input.quantity > 0 && isPopulationDecreaseType(input.mutationType)) {
     const current = await resolveActiveCyclePopulation(
       input.cageId,
       recordDate,
@@ -110,7 +135,7 @@ export async function recordPopulationMutation(
         select: { id: true },
       });
 
-      if (isPindah && targetCage) {
+      if (isPindah && targetCage && input.quantity > 0) {
         await tx.populationMutation.create({
           data: {
             cage_id: targetCage.id,
@@ -123,6 +148,8 @@ export async function recordPopulationMutation(
           },
         });
       }
+
+      await ensureDailyReport(tenantId, input.cageId, recordDate, tx);
 
       return created;
     });
@@ -246,7 +273,7 @@ export async function validatePopulationMutationUpdate(
 
   const cycle = await prisma.cycleSetting.findFirst({
     where: { cage_id: cageId, status: "Active" },
-    select: { initial_population: true },
+    select: { initial_population: true, start_date: true, go_live_date: true },
   });
 
   if (!cycle) {
@@ -270,6 +297,7 @@ export async function validatePopulationMutationUpdate(
     cycle.initial_population,
     mutations,
     recordDate,
+    cycle.go_live_date ?? cycle.start_date,
   );
 
   if (quantity > current) {

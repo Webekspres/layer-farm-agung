@@ -197,8 +197,19 @@ paths:
       summary: Ringkasan dasbor lapangan staff
       description: |
         Agregat KPI + tren 7 hari untuk **kandang yang ditugaskan** ke user session.
+        Query opsional `cageId` mempersempit ke satu kandang yang diizinkan.
         Tidak mencakup penjualan, cashflow, atau inventori tenant-wide.
       operationId: getFieldOverview
+      parameters:
+        - name: cageId
+          in: query
+          required: false
+          description: |
+            UUID kandang yang ditugaskan. Jika diisi, ringkasan hanya untuk kandang itu.
+            Kandang di luar penugasan → 403.
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Berhasil
@@ -226,6 +237,9 @@ paths:
                   targetHdpAvg: 90
                   pendingVaccineCount: 3
                   overdueVaccineCount: 1
+                  cycleFcr: 2.1
+                  cycleFeedKg: 120.5
+                  cycleEggMassKg: 57.4
                   production7d:
                     - date: "2026-08-03"
                       label: "3 Agu"
@@ -390,6 +404,82 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/cages/{cageId}/daily-report:
+    get:
+      tags: [Cages]
+      summary: Detail Daily Report (nilai terkini)
+      description: |
+        Soft parent cage+date: nilai terkini per komponen, status
+        reported/unreported (kosong ≠ 0), dan jumlah koreksi.
+      operationId: getCageDailyReport
+      parameters:
+        - $ref: "#/components/parameters/CageId"
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Tanggal laporan (default hari ini)
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/CageDailyReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/cages/{cageId}/daily-corrections:
+    get:
+      tags: [Cages]
+      summary: Riwayat koreksi input harian
+      description: |
+        Timeline immutable koreksi untuk cage+date (reason, actor, before→after).
+        Tidak ada approval workflow.
+      operationId: getCageDailyCorrections
+      parameters:
+        - $ref: "#/components/parameters/CageId"
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Tanggal laporan (default hari ini)
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [corrections]
+                        properties:
+                          corrections:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/DailyCorrectionEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/cages/{cageId}/vaccine-schedules:
     get:
       tags: [Vaccination]
@@ -474,15 +564,60 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/input-window:
+    get:
+      tags: [Production]
+      summary: Batas tanggal input & koreksi (lookback)
+      description: |
+        Mengembalikan rentang tanggal yang diizinkan untuk input/koreksi data
+        harian, berdasarkan kebijakan lookback tenant dan role user pemanggil
+        (staff vs admin). Opsional `cageId` menyertakan batas siklus aktif kandang.
+        Dipakai Mobile untuk date picker backfill.
+      operationId: getInputWindow
+      parameters:
+        - name: cageId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Kandang untuk menyertakan batas start_date / end_date siklus aktif.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/InputWindow"
+              example:
+                success: true
+                message: Batas input berhasil dimuat.
+                data:
+                  minDate: "2026-08-12"
+                  maxDate: "2026-08-18"
+                  lookbackDays: 7
+                  hasActiveCycle: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
   /api/v1/production:
     post:
       tags: [Production]
       summary: Catat produksi telur harian
       description: |
-        Catat satu entri panen harian dengan bucket TB (telur bagus), TR (telur retak), TP (telur pecah).
-        Boleh lebih dari satu entri per kandang per hari (mis. pagi/sore).
-        Validasi bisnis: kandang aktif, siklus aktif, total `tb + tr + tp >= 1`,
-        maksimal 10.000 butir per field.
+        Catat satu entri panen harian sebagai daftar **klasifikasi per grade aktif**
+        (dari master `EggGrade`, mis. TB/TR/TP). Boleh lebih dari satu entri per
+        kandang per hari (mis. pagi/sore).
+        Validasi bisnis: grade harus ada dan aktif, kandang aktif, siklus aktif,
+        total butir >= 1, maksimal 10.000 butir per baris, maksimal 20 baris.
+        `weight` = berat rata-rata telur (gram), opsional — dipakai utk Egg Mass pada FCR.
       operationId: recordDailyProduction
       requestBody:
         required: true
@@ -493,10 +628,14 @@ paths:
             example:
               cageId: 3fa85f64-5717-4562-b3fc-2c963f66afa6
               recordDate: "2026-06-04"
-              tb: 1200
-              tr: 30
-              tp: 15
-              weight: 72.5
+              entries:
+                - eggGradeId: 4
+                  quantity: 1200
+                - eggGradeId: 5
+                  quantity: 30
+                - eggGradeId: 6
+                  quantity: 15
+              weight: 62.5
       responses:
         "201":
           description: Produksi tercatat
@@ -526,8 +665,9 @@ paths:
       tags: [Production]
       summary: Perbarui entri produksi harian
       description: |
-        Edit satu baris multi-record (Opsi B). Staff harus ditugaskan ke kandang
-        terkait. Body hanya TB/TR/TP.
+        Koreksi in-place + audit event (GAP-007). Body memakai `entries` per grade
+        aktif (sama seperti POST) plus `weight` dan `reason` wajib.
+        Opsional `clientMutationId` untuk idempotency. Staff harus ditugaskan.
       operationId: updateDailyProduction
       parameters:
         - name: recordId
@@ -553,11 +693,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          updated:
-                            type: boolean
-                            const: true
+                        $ref: "#/components/schemas/UpdateWithCorrectionResult"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -617,10 +753,8 @@ paths:
       tags: [Feed]
       summary: Perbarui entri konsumsi pakan
       description: |
-        Edit jumlah/catatan konsumsi pakan. Staff harus ditugaskan ke kandang
-        terkait. Item pakan yang dipakai tidak dapat diubah — hanya jumlah dan
-        catatan. Selisih jumlah direkonsiliasi ke `InventoryStock` (menambah
-        stok bila jumlah dikurangi, memotong lagi bila jumlah dinaikkan).
+        Koreksi in-place + audit event. Wajib `reason`. Selisih stok
+        direkonsiliasi. Item pakan tidak dapat diubah.
       operationId: updateFeedConsumption
       parameters:
         - name: recordId
@@ -646,11 +780,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          updated:
-                            type: boolean
-                            const: true
+                        $ref: "#/components/schemas/UpdateWithCorrectionResult"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -712,8 +842,8 @@ paths:
       tags: [Production]
       summary: Perbarui entri mutasi populasi
       description: |
-        Edit jenis mutasi, jumlah, dan catatan. Staff harus ditugaskan ke
-        kandang terkait. Tidak menyentuh inventori.
+        Koreksi in-place + audit event. Wajib `reason`. Quantity 0 diizinkan
+        (reported zero ≠ unreported). Tidak menyentuh inventori.
       operationId: updatePopulationMutation
       parameters:
         - name: recordId
@@ -739,11 +869,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          updated:
-                            type: boolean
-                            const: true
+                        $ref: "#/components/schemas/UpdateWithCorrectionResult"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -809,11 +935,8 @@ paths:
       tags: [Production]
       summary: Perbarui catatan pengobatan
       description: |
-        Edit indikasi, populasi sakit/mati, obat, dosis, metode, dan catatan.
-        Staff harus ditugaskan ke kandang terkait. Item obat/vitamin yang
-        ditautkan tidak dapat diubah — hanya jumlah pemakaian (`quantityUsed`),
-        bila catatan aslinya terkait item. Selisih jumlah direkonsiliasi ke
-        `InventoryStock`.
+        Koreksi in-place + audit event. Wajib `reason`. Selisih stok obat
+        direkonsiliasi bila ada item inventori.
       operationId: updateMedicalRecord
       parameters:
         - name: recordId
@@ -839,11 +962,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: object
-                        properties:
-                          updated:
-                            type: boolean
-                            const: true
+                        $ref: "#/components/schemas/UpdateWithCorrectionResult"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -989,6 +1108,217 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: Daftar notifikasi pengguna (bell + push)
+      description: |
+        Notifikasi in-app per pengguna untuk staff & admin (vaksin, input harian,
+        stok rendah, ringkasan harian). Hanya butuh session (semua role).
+      operationId: listNotifications
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["1", "true"]
+          description: Hanya kembalikan notifikasi belum dibaca.
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Cursor ID notifikasi untuk halaman berikutnya.
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/NotificationList"
+              example:
+                success: true
+                message: Daftar notifikasi berhasil dimuat.
+                data:
+                  items:
+                    - id: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                      type: VACCINE_OVERDUE
+                      title: Vaksin terlambat
+                      body: "Kandang A: vaksin ND terjadwal 2026-08-19 belum dikerjakan."
+                      data:
+                        cageId: 4fa85f64-5717-4562-b3fc-2c963f66afa6
+                        cageName: Kandang A
+                        referenceDate: "2026-08-19"
+                        critical: true
+                      isRead: false
+                      createdAt: "2026-08-20T01:00:00.000Z"
+                      critical: true
+                  nextCursor: null
+                  hasMore: false
+                  unreadCount: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Notifications]
+      summary: Tandai semua notifikasi sudah dibaca
+      operationId: markAllNotificationsRead
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          updated:
+                            type: integer
+              example:
+                success: true
+                message: Semua notifikasi ditandai sudah dibaca.
+                data:
+                  updated: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      summary: Tandai satu notifikasi sudah dibaca
+      operationId: markNotificationRead
+      parameters:
+        - $ref: "#/components/parameters/NotificationId"
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          read:
+                            type: boolean
+              example:
+                success: true
+                message: Notifikasi ditandai sudah dibaca.
+                data:
+                  read: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/push-tokens:
+    post:
+      tags: [Notifications]
+      summary: Daftarkan perangkat untuk push (Expo push token)
+      description: |
+        Panggil setelah aplikasi mobile mendapatkan Expo push token
+        (`expo-notifications`). Token lama milik pengguna lain akan di-reassign.
+      operationId: registerPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: Expo push token (ExponentPushToken[...]).
+                platform:
+                  type: string
+                  enum: [android, ios]
+                  default: android
+            example:
+              token: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+              platform: android
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          registered:
+                            type: boolean
+              example:
+                success: true
+                message: Perangkat terdaftar untuk notifikasi.
+                data:
+                  registered: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    delete:
+      tags: [Notifications]
+      summary: Hapus pendaftaran perangkat push (logout)
+      operationId: unregisterPushToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+            example:
+              token: ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
+      responses:
+        "200":
+          description: Berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiSuccess"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          unregistered:
+                            type: boolean
+              example:
+                success: true
+                message: Perangkat dihapus dari notifikasi.
+                data:
+                  unregistered: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     cookieAuth:
@@ -1008,6 +1338,14 @@ components:
         type: string
         format: uuid
       description: UUID kandang (`Cage.id`)
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID notifikasi (`AppNotification.id`)
 
   responses:
     Unauthorized:
@@ -1045,7 +1383,7 @@ components:
             $ref: "#/components/schemas/ApiError"
           example:
             success: false
-            error: Isi jumlah telur layak atau telur pecah minimal 1 butir.
+            error: Isi minimal satu klasifikasi telur dengan jumlah lebih dari 0.
 
   schemas:
     ApiSuccess:
@@ -1230,6 +1568,9 @@ components:
         - targetHdpAvg
         - pendingVaccineCount
         - overdueVaccineCount
+        - cycleFcr
+        - cycleFeedKg
+        - cycleEggMassKg
         - production7d
         - hdp7d
         - incompleteCages
@@ -1267,6 +1608,16 @@ components:
         overdueVaccineCount:
           type: integer
           minimum: 0
+        cycleFcr:
+          type: number
+          nullable: true
+          description: FCR siklus aktif (kg pakan ÷ egg mass kg); null saat data pakan/berat belum lengkap.
+        cycleFeedKg:
+          type: number
+          minimum: 0
+        cycleEggMassKg:
+          type: number
+          minimum: 0
         production7d:
           type: array
           items:
@@ -1289,6 +1640,10 @@ components:
         - strainName
         - status
         - hasActiveCycle
+        - activeCyclePopulation
+        - cycleFcr
+        - cycleFeedKg
+        - cycleEggMassKg
       properties:
         id:
           type: string
@@ -1306,19 +1661,76 @@ components:
         activeCyclePopulation:
           type: integer
           nullable: true
+        cycleFcr:
+          type: number
+          format: float
+          nullable: true
+          description: FCR siklus aktif = total pakan (kg) ÷ egg mass (kg). Null bila belum ada data berat telur.
+        cycleFeedKg:
+          type: number
+          format: float
+          description: Total konsumsi pakan (kg) siklus aktif sampai hari ini.
+        cycleEggMassKg:
+          type: number
+          format: float
+          description: Egg mass (kg) = Σ((TB+TR+TP) × berat) ÷ 1000 untuk siklus aktif.
+
+    InputWindow:
+      type: object
+      required: [minDate, maxDate, lookbackDays, hasActiveCycle]
+      properties:
+        minDate:
+          type: string
+          format: date
+          description: |
+            Tanggal paling awal yang diizinkan (irisan lookback tenant dengan
+            batas bawah siklus aktif kandang bila `cageId` diberikan). Batas bawah
+            siklus = `go_live_date` (periode Pra-Go-Live tak bisa dicatat), fallback
+            `start_date`.
+        maxDate:
+          type: string
+          format: date
+          description: Tanggal paling akhir yang diizinkan (hari ini, atau end_date siklus aktif).
+        lookbackDays:
+          type: integer
+          minimum: 0
+          description: Jumlah hari lookback yang berlaku untuk role pemanggil.
+        hasActiveCycle:
+          type: boolean
+          description: false bila kandang (bila diisi) tidak punya siklus aktif.
 
     EggGradeOption:
       type: object
-      required: [id, name]
+      required: [id, name, code, isActive]
       properties:
         id:
           type: integer
         name:
           type: string
+        code:
+          type: string
+          nullable: true
+          description: Kode stabil (TB/TR/TP); null utk grade non-produksi (label harga).
+        isActive:
+          type: boolean
+          description: Hanya grade aktif yang boleh dipakai input produksi baru.
+
+    DailyProductionEntry:
+      type: object
+      required: [eggGradeId, quantity]
+      properties:
+        eggGradeId:
+          type: integer
+          description: ID grade dari `GET /api/v1/egg-grades` (harus aktif).
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Jumlah butir telur untuk grade tersebut.
 
     DailyProductionInput:
       type: object
-      required: [cageId, recordDate]
+      required: [cageId, recordDate, entries]
       properties:
         cageId:
           type: string
@@ -1327,29 +1739,17 @@ components:
           type: string
           format: date
           description: Tanggal panen (ISO 8601 date)
-        tb:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          default: 0
-          description: Telur bagus (butir)
-        tr:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          default: 0
-          description: Telur retak (butir)
-        tp:
-          type: integer
-          minimum: 0
-          maximum: 10000
-          default: 0
-          description: Telur pecah (butir)
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/DailyProductionEntry"
         weight:
           type: number
           format: float
           minimum: 0
-          description: Total berat telur (kg), opsional
+          description: Berat rata-rata telur (gram), opsional — utk Egg Mass pada FCR.
         clientMutationId:
           type: string
           format: uuid
@@ -1385,48 +1785,72 @@ components:
 
     UpdateDailyProductionInput:
       type: object
+      required: [entries, reason]
       properties:
-        tb:
-          type: integer
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/DailyProductionEntry"
+        weight:
+          type: number
+          format: float
           minimum: 0
-          maximum: 10000
-        tr:
-          type: integer
-          minimum: 0
-          maximum: 10000
-        tp:
-          type: integer
-          minimum: 0
-          maximum: 10000
+          description: Berat rata-rata telur (gram), opsional.
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+          description: Alasan koreksi (wajib).
+        clientMutationId:
+          type: string
+          format: uuid
+          description: Kunci idempotency koreksi (opsional).
 
     UpdateFeedConsumptionInput:
       type: object
-      required: [quantity]
+      required: [quantity, reason]
       properties:
         quantity:
           type: number
           format: float
-          minimum: 0.01
+          minimum: 0
           maximum: 100000
           description: Jumlah pakan terkoreksi (kg). Item pakan tidak dapat diubah.
         notes:
           type: string
           maxLength: 500
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
 
     UpdatePopulationMutationInput:
       type: object
-      required: [mutationType, quantity]
+      required: [mutationType, quantity, reason]
       properties:
         mutationType:
           type: string
           enum: [Mati, Afkir, Masuk, Pindah]
         quantity:
           type: integer
-          minimum: 1
+          minimum: 0
           maximum: 100000
+          description: 0 diizinkan (reported zero ≠ unreported).
         notes:
           type: string
           maxLength: 500
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
 
     UpdateMedicalRecordInput:
       type: object
@@ -1435,6 +1859,7 @@ components:
         - medicineName
         - dosageAndDuration
         - applicationMethod
+        - reason
       properties:
         indication:
           type: string
@@ -1463,11 +1888,98 @@ components:
         quantityUsed:
           type: number
           format: float
-          minimum: 0.01
+          minimum: 0
           maximum: 100000
           description: |
             Jumlah pemakaian terkoreksi. Hanya berlaku bila catatan aslinya
             tertaut ke item inventori (`itemId` tidak dapat diubah lewat endpoint ini).
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+        clientMutationId:
+          type: string
+          format: uuid
+
+    UpdateWithCorrectionResult:
+      type: object
+      required: [updated, correctionId, idempotent]
+      properties:
+        updated:
+          type: boolean
+          const: true
+        correctionId:
+          type: string
+          format: uuid
+        idempotent:
+          type: boolean
+          description: true bila clientMutationId sudah pernah diproses.
+
+    CageDailyReport:
+      allOf:
+        - $ref: "#/components/schemas/CageDailyHistory"
+        - type: object
+          required: [reportId, correctionCount, status]
+          properties:
+            reportId:
+              type: string
+              format: uuid
+              nullable: true
+            correctionCount:
+              type: integer
+              minimum: 0
+            status:
+              type: object
+              required: [production, feed, population, medical]
+              properties:
+                production:
+                  type: string
+                  enum: [reported, unreported]
+                feed:
+                  type: string
+                  enum: [reported, unreported]
+                population:
+                  type: string
+                  enum: [reported, unreported]
+                medical:
+                  type: string
+                  enum: [reported, unreported]
+
+    DailyCorrectionChange:
+      type: object
+      required: [component, recordId, field, before, after]
+      properties:
+        component:
+          type: string
+          enum: [production, feed, population, medical]
+        recordId:
+          type: string
+          format: uuid
+        field:
+          type: string
+        before:
+          nullable: true
+        after:
+          nullable: true
+
+    DailyCorrectionEvent:
+      type: object
+      required: [id, reason, actorName, createdAt, changes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        actorName:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/DailyCorrectionChange"
 
     CageProductionHistoryItem:
       type: object
@@ -1482,6 +1994,11 @@ components:
           type: integer
         tp:
           type: integer
+        weight:
+          type: number
+          format: float
+          nullable: true
+          description: Berat rata-rata telur (gram) saat entri dibuat.
         total:
           type: integer
         recordedBy:
@@ -1587,6 +2104,26 @@ components:
           type: string
           format: date-time
 
+    CageDailyCycle:
+      type: object
+      required:
+        - startDate
+        - goLiveDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+        goLiveDate:
+          type: string
+          format: date
+          nullable: true
+          description: Tanggal mulai pemakaian aplikasi. Null = tidak ada rentang Pra-Go-Live.
+        endDate:
+          type: string
+          format: date
+          nullable: true
+
     CageDailyHistory:
       type: object
       required:
@@ -1594,6 +2131,8 @@ components:
         - cageId
         - cageName
         - locationName
+        - activeCycle
+        - preGoLive
         - productions
         - feed
         - population
@@ -1609,6 +2148,11 @@ components:
           type: string
         locationName:
           type: string
+        activeCycle:
+          $ref: "#/components/schemas/CageDailyCycle"
+        preGoLive:
+          type: boolean
+          description: True saat tanggal ini berada di rentang [start_date, go_live_date) — Pra-Go-Live.
         productions:
           type: array
           items:
@@ -1722,11 +2266,19 @@ components:
 
     MedicalRecordInput:
       type: object
-      required: [cageId, indication, sickPopulation, mortalityCount, medicineName, dosageAndDuration, applicationMethod, treatmentDate]
+      description: |
+        Full treatment payload, or `{ noneReported: true, cageId, treatmentDate }`
+        to record explicit "no treatment today" (GAP-017).
+      required: [cageId, treatmentDate]
       properties:
         cageId:
           type: string
           format: uuid
+        noneReported:
+          type: boolean
+          description: |
+            Bila true, server menyimpan sentinel "Tidak ada pengobatan"
+            (tanpa potong stok). Field obat/gejala tidak wajib.
         indication:
           type: string
           minLength: 3
@@ -1895,3 +2447,51 @@ components:
           format: float
           nullable: true
           description: Ambang batas stok rendah (null bila tidak diatur).
+
+    NotificationList:
+      type: object
+      required: [items, nextCursor, hasMore, unreadCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppNotification"
+        nextCursor:
+          type: string
+          format: uuid
+          nullable: true
+          description: Cursor untuk halaman berikutnya (null = habis).
+        hasMore:
+          type: boolean
+        unreadCount:
+          type: integer
+          description: Total notifikasi belum dibaca.
+
+    AppNotification:
+      type: object
+      required: [id, type, title, body, isRead, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [VACCINE_SCHEDULED, VACCINE_OVERDUE, INPUT_REMINDER, LOW_STOCK, DAILY_SUMMARY]
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+          nullable: true
+          description: |
+            Payload kontekstual. Umumnya: `cageId`, `cageName`, `itemId`,
+            `itemName`, `referenceDate` (YYYY-MM-DD), `critical`.
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        critical:
+          type: boolean
+          description: true untuk tipe kritis (vaksin terlambat, stok rendah).

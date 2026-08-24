@@ -1,5 +1,6 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
 import { startOfTodayUtc } from "@/features/production/lib/parse-production-date";
+import { normalizeBusinessDate } from "@/lib/business-date";
 import prisma from "@/lib/prisma";
 
 export type CageProductionHistoryItem = {
@@ -8,6 +9,8 @@ export type CageProductionHistoryItem = {
   tr: number;
   tp: number;
   total: number;
+  /** Berat rata-rata telur (gram) saat entri dibuat, opsional. */
+  weight: number | null;
   recordedBy: string;
   createdAt: Date;
 };
@@ -52,6 +55,14 @@ export type CageDailyHistory = {
   cageId: string;
   cageName: string;
   locationName: string;
+  /** Siklus aktif kandang saat tanggal yang ditanyakan (untuk konteks go-live). */
+  activeCycle: {
+    startDate: Date;
+    goLiveDate: Date | null;
+    endDate: Date | null;
+  } | null;
+  /** True saat recordDate berada di rentang [start_date, go_live_date) — Pra-Go-Live. */
+  preGoLive: boolean;
   productions: CageProductionHistoryItem[];
   feed: CageFeedHistoryItem[];
   population: CagePopulationHistoryItem[];
@@ -86,7 +97,7 @@ export async function listCageDailyHistory(
     return null;
   }
 
-  const [productions, feedRows, populationRows, medicalRows] =
+  const [productions, feedRows, populationRows, medicalRows, activeCycle] =
     await Promise.all([
       prisma.dailyProduction.findMany({
         where: {
@@ -132,19 +143,40 @@ export async function listCageDailyHistory(
         },
         orderBy: { created_at: "asc" },
       }),
+      prisma.cycleSetting.findFirst({
+        where: { cage_id: cageId, status: "Active" },
+        orderBy: { start_date: "desc" },
+        select: { start_date: true, go_live_date: true, end_date: true },
+      }),
     ]);
+
+  const recordTs = normalizeBusinessDate(recordDate).getTime();
+  const preGoLive =
+    activeCycle !== null &&
+    activeCycle.go_live_date !== null &&
+    recordTs >= normalizeBusinessDate(activeCycle.start_date).getTime() &&
+    recordTs < normalizeBusinessDate(activeCycle.go_live_date).getTime();
 
   return {
     recordDate,
     cageId: cage.id,
     cageName: cage.name,
     locationName: cage.location.name,
+    activeCycle: activeCycle
+      ? {
+          startDate: activeCycle.start_date,
+          goLiveDate: activeCycle.go_live_date,
+          endDate: activeCycle.end_date,
+        }
+      : null,
+    preGoLive,
     productions: productions.map((row) => ({
       id: row.id,
       tb: row.tb,
       tr: row.tr,
       tp: row.tp,
       total: row.tb + row.tr + row.tp,
+      weight: row.weight,
       recordedBy: row.user.full_name || row.user.username,
       createdAt: row.created_at,
     })),

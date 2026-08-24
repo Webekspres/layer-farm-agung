@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { updateMedicalRecordSchema } from "./update-medical-record";
 
+const reason = "Salah catat indikasi";
+
 describe("updateMedicalRecordSchema", () => {
   test("accepts a valid update without an item", () => {
     const result = updateMedicalRecordSchema.safeParse({
@@ -11,6 +13,7 @@ describe("updateMedicalRecordSchema", () => {
       dosageAndDuration: "2ml per liter air minum selama 3 hari",
       applicationMethod: "Minum",
       treatmentNotes: "Dipantau perkembangannya",
+      reason,
     });
     expect(result.success).toBe(true);
   });
@@ -22,11 +25,22 @@ describe("updateMedicalRecordSchema", () => {
       dosageAndDuration: "3 hari",
       applicationMethod: "Minum",
       quantityUsed: "25",
+      reason,
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.quantityUsed).toBe(25);
     }
+  });
+
+  test("rejects missing reason", () => {
+    const result = updateMedicalRecordSchema.safeParse({
+      indication: "Lemas",
+      medicineName: "Vitamin",
+      dosageAndDuration: "1 hari",
+      applicationMethod: "Minum",
+    });
+    expect(result.success).toBe(false);
   });
 
   test("rejects invalid application method", () => {
@@ -35,6 +49,7 @@ describe("updateMedicalRecordSchema", () => {
       medicineName: "Vitamin",
       dosageAndDuration: "1 hari",
       applicationMethod: "Makan",
+      reason,
     });
     expect(result.success).toBe(false);
   });

@@ -90,7 +90,12 @@ describe("cancelPurchaseOrder", () => {
 
     expect(result.ok).toBe(true);
     expect(updateMany).toHaveBeenCalledTimes(1);
-    const [args] = updateMany.mock.calls[0];
+    const calls = updateMany.mock.calls as unknown as Array<
+      [{ where: { id: string; status: string }; data: { status: string } }]
+    >;
+    const [args] = calls[0] ?? [];
+    expect(args).toBeDefined();
+    if (!args) return;
     expect(args.where).toEqual({ id: "po-1", status: "Pending" });
     expect(args.data.status).toBe("Cancelled");
   });

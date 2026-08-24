@@ -41,7 +41,7 @@ export default function LoginSplitScreen() {
       >
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/image/login-bg-img.jpg')" }}
+          style={{ backgroundImage: "url('/image/login-bg-img.webp')" }}
         />
         {/* Fixed dark overlay — not theme foreground (would wash out in dark mode) */}
         <div className="absolute inset-0 bg-linear-to-b from-black/25 via-black/45 to-black/75" />

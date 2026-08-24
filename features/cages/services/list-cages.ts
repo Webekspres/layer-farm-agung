@@ -90,6 +90,7 @@ export async function listCages(
       items: rows.map((row) => ({
         id: row.id,
         name: row.name,
+        qrCode: row.qr_code,
         locationId: row.location.id,
         locationName: row.location.name,
         strainId: row.strain.id,
@@ -118,6 +119,7 @@ export async function listCages(
   const mapped = rows.map((row) => ({
     id: row.id,
     name: row.name,
+    qrCode: row.qr_code,
     locationId: row.location.id,
     locationName: row.location.name,
     strainId: row.strain.id,

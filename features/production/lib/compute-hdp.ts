@@ -1,15 +1,18 @@
 /**
- * Hen Day Production (HDP) % = (TB / populasi layer aktif) × 100
+ * Hen Day Production (HDP) % = (Total seluruh telur tercatat / populasi layer aktif) × 100
+ *
+ * Pembilang memakai TOTAL semua kategori grade yang tercatat pada tanggal
+ * tersebut (laporan penyelarasan revisi 1 §4) — bukan hanya TB.
  */
 export function computeHdpPercent(
-  tb: number,
+  eggs: number,
   population: number,
 ): number | null {
-  if (population <= 0 || tb < 0) {
+  if (population <= 0 || eggs < 0) {
     return null;
   }
 
-  return (tb / population) * 100;
+  return (eggs / population) * 100;
 }
 
 export function formatHdpPercent(value: number | null): string {

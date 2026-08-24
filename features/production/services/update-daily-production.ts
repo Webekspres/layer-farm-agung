@@ -1,19 +1,56 @@
 import { isUserAssignedToCage } from "@/features/cages/services/is-user-assigned-to-cage";
-import { applyStockMutation } from "@/features/inventory/services/apply-stock-mutation";
-import { StockMutationType } from "@/features/inventory/lib/stock-mutation-types";
+import {
+  applyEggStockMutation as defaultApplyEggStockMutation,
+  type ApplyEggStockMutation,
+} from "@/features/eggs/services/apply-egg-stock-mutation";
+import { EggMovementType } from "@/features/eggs/lib/egg-mutation-types";
+import { resolveProductionBuckets } from "@/features/production/lib/production-grade-mapping";
+import {
+  resolveUserRoleName,
+  validateOperationalInputDate,
+} from "@/features/production/lib/input-window";
+import type { CorrectionChange } from "@/features/production/schemas/correction-meta";
 import type { UpdateDailyProductionInput } from "@/features/production/schemas/update-daily-production";
-import prisma from "@/lib/prisma";
+import { recordCorrectionEvent } from "@/features/production/services/record-correction-event";
+import defaultPrisma from "@/lib/prisma";
 
 export type UpdateDailyProductionResult =
-  | { ok: true }
+  | { ok: true; correctionId: string; idempotent: boolean }
   | { ok: false; error: string; status: 400 | 403 | 404 };
+
+export type UpdateDailyProductionOptions = {
+  deps?: {
+    prisma?: typeof defaultPrisma;
+    applyEggStockMutation?: ApplyEggStockMutation;
+  };
+};
+
+class StockError extends Error {}
 
 export async function updateDailyProduction(
   tenantId: string,
   userId: string,
   recordId: string,
   input: UpdateDailyProductionInput,
+  options: UpdateDailyProductionOptions = {},
 ): Promise<UpdateDailyProductionResult> {
+  const prisma = options.deps?.prisma ?? defaultPrisma;
+  const applyStockMutation = options.deps?.applyEggStockMutation ?? defaultApplyEggStockMutation;
+
+  if (input.clientMutationId) {
+    const existingCorrection = await prisma.dailyInputCorrection.findUnique({
+      where: { client_mutation_id: input.clientMutationId },
+      select: { id: true },
+    });
+    if (existingCorrection) {
+      return {
+        ok: true,
+        correctionId: existingCorrection.id,
+        idempotent: true,
+      };
+    }
+  }
+
   const existing = await prisma.dailyProduction.findFirst({
     where: {
       id: recordId,
@@ -22,8 +59,19 @@ export async function updateDailyProduction(
     select: {
       id: true,
       cage_id: true,
-      tb: true,
-      cage: { select: { location_id: true } },
+      record_date: true,
+      weight: true,
+      cage: {
+        select: {
+          location_id: true,
+          cycle_settings: {
+            where: { status: "Active" },
+            take: 1,
+            select: { start_date: true, go_live_date: true, end_date: true },
+          },
+        },
+      },
+      items: { select: { egg_grade_id: true, quantity: true } },
     },
   });
 
@@ -45,51 +93,153 @@ export async function updateDailyProduction(
     };
   }
 
-  // Reconcile egg stock so it stays consistent with the edited TB count.
-  const tbDelta = input.tb - existing.tb;
-  const eggItem =
-    tbDelta !== 0
-      ? await prisma.item.findFirst({
-          where: { tenant_id: tenantId, type: "Egg" },
-          select: { id: true },
-        })
-      : null;
+  const roleName = await resolveUserRoleName(userId);
+  const windowCheck = await validateOperationalInputDate({
+    tenantId,
+    roleName,
+    recordDate: existing.record_date,
+    cycle: existing.cage.cycle_settings[0] ?? null,
+  });
+  if (!windowCheck.ok) {
+    return { ok: false, error: windowCheck.error, status: 400 };
+  }
+
+  const grades = await prisma.eggGrade.findMany({
+    where: { id: { in: input.entries.map((entry) => entry.eggGradeId) } },
+    select: { id: true, code: true, is_active: true },
+  });
+
+  const resolved = resolveProductionBuckets(input.entries, grades);
+  if (!resolved.ok) {
+    return { ok: false, error: resolved.error, status: 400 };
+  }
+
+  const { tb, tr, tp } = resolved.buckets;
+
+  const existingByGradeId = new Map(
+    existing.items.map((item) => [item.egg_grade_id, item.quantity]),
+  );
+  const changes: CorrectionChange[] = [];
+  const allGradeIds = new Set<number>([
+    ...existingByGradeId.keys(),
+    ...input.entries.map((entry) => entry.eggGradeId),
+  ]);
+
+  const gradeLabelById = new Map(grades.map((g) => [g.id, g.code ?? `grade-${g.id}`]));
+
+  for (const gradeId of allGradeIds) {
+    const before = existingByGradeId.get(gradeId) ?? 0;
+    const after =
+      input.entries.find((entry) => entry.eggGradeId === gradeId)?.quantity ?? 0;
+    if (before !== after) {
+      changes.push({
+        component: "production",
+        recordId,
+        field: gradeLabelById.get(gradeId) ?? `grade-${gradeId}`,
+        before,
+        after,
+      });
+    }
+  }
+
+  const nextWeight = input.weight ?? null;
+  if ((existing.weight ?? null) !== nextWeight) {
+    changes.push({
+      component: "production",
+      recordId,
+      field: "weight",
+      before: existing.weight ?? null,
+      after: nextWeight,
+    });
+  }
+
+  if (changes.length === 0) {
+    return {
+      ok: false,
+      error: "Tidak ada perubahan nilai untuk dikoreksi.",
+      status: 400,
+    };
+  }
 
   try {
-    await prisma.$transaction(async (tx) => {
+    const correctionId = await prisma.$transaction(async (tx) => {
       await tx.dailyProduction.update({
         where: { id: recordId },
         data: {
-          tb: input.tb,
-          tr: input.tr,
-          tp: input.tp,
+          tb,
+          tr,
+          tp,
+          weight: input.weight ?? null,
         },
       });
 
-      if (eggItem && tbDelta !== 0) {
-        await applyStockMutation(tx, {
-          itemId: eggItem.id,
+      await tx.dailyProductionItem.deleteMany({
+        where: { production_id: recordId },
+      });
+      await tx.dailyProductionItem.createMany({
+        data: input.entries.map((entry) => ({
+          production_id: recordId,
+          egg_grade_id: entry.eggGradeId,
+          quantity: entry.quantity,
+        })),
+      });
+
+      // Koreksi stok telur per grade: selisih naik → IN_HARVEST, turun → OUT_ADJUSTMENT (rekon).
+      for (const gradeId of allGradeIds) {
+        const before = existingByGradeId.get(gradeId) ?? 0;
+        const after =
+          input.entries.find((entry) => entry.eggGradeId === gradeId)?.quantity ??
+          0;
+        const delta = after - before;
+        if (delta === 0) continue;
+
+        const stock = await applyStockMutation(tx, {
+          tenantId,
+          eggGradeId: gradeId,
           locationId: existing.cage.location_id,
-          // Positive delta = extra harvest; negative delta = correction down.
           mutationType:
-            tbDelta > 0
-              ? StockMutationType.IN_HARVEST
-              : StockMutationType.OUT_ADJUSTMENT,
-          quantity: Math.abs(tbDelta),
+            delta > 0
+              ? EggMovementType.IN_HARVEST
+              : EggMovementType.OUT_ADJUSTMENT,
+          quantity: Math.abs(delta),
           referenceId: recordId,
-          // Correcting a prior IN — allow the balance to drop even if other
-          // movements have since reduced it.
-          allowNegative: tbDelta < 0,
+          allowNegative: delta < 0,
         });
+
+        if (!stock.ok) {
+          throw new StockError(stock.error);
+        }
       }
+
+      const recorded = await recordCorrectionEvent(
+        {
+          tenantId,
+          cageId: existing.cage_id,
+          recordDate: existing.record_date,
+          actorUserId: userId,
+          reason: input.reason,
+          changes,
+          clientMutationId: input.clientMutationId,
+        },
+        tx,
+      );
+
+      if (!recorded.ok) {
+        throw new Error(recorded.error);
+      }
+
+      return recorded.correctionId;
     });
-  } catch {
+
+    return { ok: true, correctionId, idempotent: false };
+  } catch (error) {
+    if (error instanceof StockError) {
+      return { ok: false, error: error.message, status: 400 };
+    }
     return {
       ok: false,
       error: "Gagal memperbarui produksi harian.",
       status: 400,
     };
   }
-
-  return { ok: true };
 }

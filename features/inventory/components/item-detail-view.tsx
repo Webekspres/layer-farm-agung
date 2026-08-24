@@ -144,13 +144,17 @@ export function ItemDetailView({ item, locations }: ItemDetailViewProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="w-12">No</TableHead>
                   <TableHead>Lokasi</TableHead>
                   <TableHead className="text-right">Jumlah</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {item.stockByLocation.map((s) => (
+                {item.stockByLocation.map((s, index) => (
                   <TableRow key={s.locationId}>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>{s.locationName}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {s.quantity.toLocaleString("id-ID")} {item.unit}
@@ -176,14 +180,18 @@ export function ItemDetailView({ item, locations }: ItemDetailViewProps) {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="w-12">No</TableHead>
                   <TableHead>Tanggal</TableHead>
                   <TableHead>Jenis</TableHead>
                   <TableHead className="text-right">Jumlah</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {item.mutations.map((m) => (
+                {item.mutations.map((m, index) => (
                   <TableRow key={m.id}>
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </TableCell>
                     <TableCell>{formatDate(m.mutationDate)}</TableCell>
                     <TableCell>
                       <span className="flex items-center gap-2">

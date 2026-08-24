@@ -6,17 +6,27 @@ const CUSTOMER_ID = "00000000-0000-4000-8000-000000000010";
 const LOCATION_ID = "00000000-0000-4000-8000-000000000020";
 
 describe("createSalesOrderSchema", () => {
-  test("accepts a valid sales order with location and no grade", () => {
+  test("accepts a valid sales order with location and grade", () => {
+    const result = createSalesOrderSchema.safeParse({
+      customerId: CUSTOMER_ID,
+      locationId: LOCATION_ID,
+      saleDate: "2026-07-09",
+      items: [{ eggGradeId: 1, quantity: 100, unitPrice: 2000 }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test("rejects a line without a grade", () => {
     const result = createSalesOrderSchema.safeParse({
       customerId: CUSTOMER_ID,
       locationId: LOCATION_ID,
       saleDate: "2026-07-09",
       items: [{ quantity: 100, unitPrice: 2000 }],
     });
-    expect(result.success).toBe(true);
+    expect(result.success).toBe(false);
   });
 
-  test("accepts optional grade and weight", () => {
+  test("accepts grade and optional weight", () => {
     const result = createSalesOrderSchema.safeParse({
       customerId: CUSTOMER_ID,
       locationId: LOCATION_ID,

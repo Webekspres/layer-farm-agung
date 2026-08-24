@@ -349,13 +349,15 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
               </form>
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-end">
               <Button
                 variant="destructive"
                 onClick={() => setCloseOpen(true)}
               >
                 Tutup Siklus Kandang
               </Button>
+              </div>
             </div>
           </div>
         ) : (
@@ -392,6 +394,7 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
           <Table containerClassName="overflow-x-auto border border-border rounded-lg">
             <TableHeader className="bg-muted/40">
               <TableRow>
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Periode Siklus</TableHead>
                 <TableHead className="text-right">Awal</TableHead>
                 <TableHead className="text-right">Akhir</TableHead>
@@ -403,10 +406,13 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cage.history.map((h) => {
+              {cage.history.map((h, index) => {
                 const loss = h.summary.mutations.mati + h.summary.mutations.afkir;
                 return (
                   <TableRow key={h.id} className="hover:bg-muted/10">
+                    <TableCell className="text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </TableCell>
                     <TableCell className="font-medium text-foreground">
                       {formatBusinessDateFromDb(h.startDate)} —{" "}
                       {h.endDate ? formatBusinessDateFromDb(h.endDate) : "-"}
@@ -459,6 +465,23 @@ export function CageDetailView({ cage, staffOptions }: CageDetailViewProps) {
                   defaultValue={todayString}
                   required
                 />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="go-live-date">
+                  Tanggal Go-Live (Mulai Pakai Aplikasi)
+                </FieldLabel>
+                <Input
+                  id="go-live-date"
+                  name="goLiveDate"
+                  type="date"
+                  max={todayString}
+                  defaultValue={todayString}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Kosongkan bila sama dengan tanggal mulai. Periode sebelum
+                  go-live akan berlabel &ldquo;Pra-Go-Live&rdquo; dan tidak
+                  dihitung sebagai nol.
+                </p>
               </Field>
               <Field>
                 <FieldLabel htmlFor="initial-population">

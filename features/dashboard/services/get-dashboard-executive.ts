@@ -1,6 +1,7 @@
 import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
 import { cycleAgeInWeeks } from "@/features/cages/lib/cycle-age-weeks";
 import { computeHdpPercent } from "@/features/production/lib/compute-hdp";
+import { sumEggMassKgInPeriod } from "@/features/cages/lib/cycle-operational-metrics";
 import {
   buildCashWeekBalance,
   buildFcrSnapshot,
@@ -50,12 +51,18 @@ function sparkFromSeries(values: number[], take = 7): number[] {
 export async function getDashboardExecutive(
   tenantId: string,
   recordDate = startOfTodayBusiness(),
+  /** When set, all cage-scoped KPIs/series use only these cages (auth already resolved). */
+  cageIds?: string[],
 ): Promise<DashboardExecutive> {
   const yesterday = shiftBusinessDate(recordDate, -1);
   const weekStart = shiftBusinessDate(recordDate, -6);
   const range30Start = shiftBusinessDate(recordDate, -29);
   const dates30 = enumerateBusinessDates(recordDate, 30);
   const dates7 = enumerateBusinessDates(recordDate, 7);
+
+  const scoped = cageIds !== undefined;
+  const cageIdFilter = scoped ? { cage_id: { in: cageIds } } : {};
+  const emptyScope = scoped && cageIds.length === 0;
 
   const [
     prodToday,
@@ -83,19 +90,49 @@ export async function getDashboardExecutive(
     recentPurchaseOrders,
     recentStockMutations,
   ] = await Promise.all([
-    prisma.dailyProduction.aggregate({
-      where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { tb: true },
-    }),
-    prisma.dailyProduction.aggregate({
-      where: { tenant_id: tenantId, record_date: yesterday },
-      _sum: { tb: true },
-    }),
-    prisma.dailyProduction.groupBy({
-      by: ["cage_id"],
-      where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { tb: true },
-    }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
+          where: {
+            tenant_id: tenantId,
+            record_date: recordDate,
+            ...cageIdFilter,
+          },
+          select: {
+            record_date: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            weight: true,
+          },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
+          where: {
+            tenant_id: tenantId,
+            record_date: yesterday,
+            ...cageIdFilter,
+          },
+          select: {
+            record_date: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            weight: true,
+          },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.groupBy({
+          by: ["cage_id"],
+          where: {
+            tenant_id: tenantId,
+            record_date: recordDate,
+            ...cageIdFilter,
+          },
+          _sum: { tb: true, tr: true, tp: true },
+        }),
     prisma.item.findMany({
       where: { tenant_id: tenantId, type: { not: "Egg" } },
       select: {
@@ -113,6 +150,7 @@ export async function getDashboardExecutive(
         status: "Active",
         location: { tenant_id: tenantId },
         cycle_settings: { some: { status: "Active" } },
+        ...(scoped ? { id: { in: cageIds } } : {}),
       },
       select: {
         id: true,
@@ -126,28 +164,52 @@ export async function getDashboardExecutive(
         },
       },
     }),
-    prisma.feedConsumption.aggregate({
-      where: { tenant_id: tenantId, record_date: recordDate },
-      _sum: { quantity: true },
-    }),
-    prisma.feedConsumption.aggregate({
-      where: { tenant_id: tenantId, record_date: yesterday },
-      _sum: { quantity: true },
-    }),
-    prisma.feedConsumption.aggregate({
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: weekStart, lte: recordDate },
-      },
-      _sum: { quantity: true },
-    }),
-    prisma.dailyProduction.aggregate({
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: weekStart, lte: recordDate },
-      },
-      _sum: { tb: true },
-    }),
+    emptyScope
+      ? Promise.resolve({ _sum: { quantity: null } })
+      : prisma.feedConsumption.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: recordDate,
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve({ _sum: { quantity: null } })
+      : prisma.feedConsumption.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: yesterday,
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve({ _sum: { quantity: null } })
+      : prisma.feedConsumption.aggregate({
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: weekStart, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: weekStart, lte: recordDate },
+            ...cageIdFilter,
+          },
+          select: {
+            record_date: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            weight: true,
+          },
+        }),
     prisma.salesOrder.aggregate({
       where: { tenant_id: tenantId, sale_date: recordDate },
       _sum: { total_amount: true },
@@ -171,44 +233,56 @@ export async function getDashboardExecutive(
       },
       _sum: { amount: true },
     }),
-    prisma.populationMutation.groupBy({
-      by: ["cage_id"],
-      where: {
-        mutation_type: "Mati",
-        record_date: { gte: weekStart, lte: recordDate },
-        cage: { location: { tenant_id: tenantId } },
-      },
-      _sum: { quantity: true },
-    }),
-    prisma.dailyProduction.groupBy({
-      by: ["record_date"],
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: range30Start, lte: recordDate },
-      },
-      _sum: { tb: true },
-      orderBy: { record_date: "asc" },
-    }),
-    prisma.feedConsumption.groupBy({
-      by: ["cage_id"],
-      where: {
-        tenant_id: tenantId,
-        record_date: { gte: weekStart, lte: recordDate },
-      },
-      _sum: { quantity: true },
-      orderBy: { _sum: { quantity: "desc" } },
-      take: MAX_FEED_CAGES,
-    }),
-    prisma.populationMutation.groupBy({
-      by: ["record_date"],
-      where: {
-        mutation_type: "Mati",
-        record_date: { gte: range30Start, lte: recordDate },
-        cage: { location: { tenant_id: tenantId } },
-      },
-      _sum: { quantity: true },
-      orderBy: { record_date: "asc" },
-    }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.populationMutation.groupBy({
+          by: ["cage_id"],
+          where: {
+            mutation_type: "Mati",
+            record_date: { gte: weekStart, lte: recordDate },
+            cage: { location: { tenant_id: tenantId } },
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.groupBy({
+          by: ["record_date"],
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: range30Start, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { tb: true, tr: true, tp: true },
+          orderBy: { record_date: "asc" },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.feedConsumption.groupBy({
+          by: ["cage_id"],
+          where: {
+            tenant_id: tenantId,
+            record_date: { gte: weekStart, lte: recordDate },
+            ...cageIdFilter,
+          },
+          _sum: { quantity: true },
+          orderBy: { _sum: { quantity: "desc" } },
+          take: MAX_FEED_CAGES,
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.populationMutation.groupBy({
+          by: ["record_date"],
+          where: {
+            mutation_type: "Mati",
+            record_date: { gte: range30Start, lte: recordDate },
+            cage: { location: { tenant_id: tenantId } },
+            ...(scoped ? { cage_id: { in: cageIds } } : {}),
+          },
+          _sum: { quantity: true },
+          orderBy: { record_date: "asc" },
+        }),
     prisma.salesOrder.groupBy({
       by: ["sale_date"],
       where: {
@@ -238,34 +312,41 @@ export async function getDashboardExecutive(
       },
       _sum: { quantity: true },
     }),
-    prisma.dailyProduction.findMany({
-      where: { tenant_id: tenantId },
-      orderBy: [{ record_date: "desc" }, { created_at: "desc" }],
-      take: 4,
-      select: {
-        id: true,
-        record_date: true,
-        created_at: true,
-        tb: true,
-        cage: { select: { name: true } },
-      },
-    }),
-    prisma.vaccineSchedule.findMany({
-      where: {
-        status: "Completed",
-        cage: { location: { tenant_id: tenantId } },
-      },
-      orderBy: [{ completed_at: "desc" }, { scheduled_date: "desc" }],
-      take: 4,
-      select: {
-        id: true,
-        scheduled_date: true,
-        completed_at: true,
-        quantity_used: true,
-        cage: { select: { name: true } },
-        item: { select: { name: true } },
-      },
-    }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.dailyProduction.findMany({
+          where: { tenant_id: tenantId, ...cageIdFilter },
+          orderBy: [{ record_date: "desc" }, { created_at: "desc" }],
+          take: 4,
+          select: {
+            id: true,
+            record_date: true,
+            created_at: true,
+            tb: true,
+            tr: true,
+            tp: true,
+            cage: { select: { name: true } },
+          },
+        }),
+    emptyScope
+      ? Promise.resolve([])
+      : prisma.vaccineSchedule.findMany({
+          where: {
+            status: "Completed",
+            cage: { location: { tenant_id: tenantId } },
+            ...(scoped ? { cage_id: { in: cageIds } } : {}),
+          },
+          orderBy: [{ completed_at: "desc" }, { scheduled_date: "desc" }],
+          take: 4,
+          select: {
+            id: true,
+            scheduled_date: true,
+            completed_at: true,
+            quantity_used: true,
+            cage: { select: { name: true } },
+            item: { select: { name: true } },
+          },
+        }),
     prisma.purchaseOrder.findMany({
       where: {
         vendor: { tenant_id: tenantId },
@@ -296,8 +377,11 @@ export async function getDashboardExecutive(
     }),
   ]);
 
-  const cageTbById = new Map(
-    cageProdToday.map((row) => [row.cage_id, row._sum.tb ?? 0]),
+  const cageEggsById = new Map(
+    cageProdToday.map((row) => [
+      row.cage_id,
+      (row._sum.tb ?? 0) + (row._sum.tr ?? 0) + (row._sum.tp ?? 0),
+    ]),
   );
 
   const cagePopulations = await Promise.all(
@@ -321,8 +405,8 @@ export async function getDashboardExecutive(
     if (!activeCycle) continue;
 
     const population = cagePopulations[i];
-    const tb = cageTbById.get(cage.id) ?? 0;
-    const actualHdp = computeHdpPercent(tb, population ?? 0);
+    const eggs = cageEggsById.get(cage.id) ?? 0;
+    const actualHdp = computeHdpPercent(eggs, population ?? 0);
     if (actualHdp === null) continue;
 
     const ageWeeks = cycleAgeInWeeks(activeCycle.start_date, recordDate);
@@ -432,19 +516,31 @@ export async function getDashboardExecutive(
     },
   });
 
-  const todayTb = prodToday._sum.tb ?? 0;
-  const yesterdayTb = prodYesterday._sum.tb ?? 0;
-  const weekTb = prodWeek._sum.tb ?? 0;
+  const todayTotal = prodToday.reduce(
+    (sum, row) => sum + row.tb + row.tr + row.tp,
+    0,
+  );
+  const yesterdayTotal = prodYesterday.reduce(
+    (sum, row) => sum + row.tb + row.tr + row.tp,
+    0,
+  );
+  const todayEggMassKg = sumEggMassKgInPeriod(prodToday, recordDate, recordDate);
+  const yesterdayEggMassKg = sumEggMassKgInPeriod(
+    prodYesterday,
+    yesterday,
+    yesterday,
+  );
+  const weekEggMassKg = sumEggMassKgInPeriod(prodWeek, weekStart, recordDate);
   const feedTodayKg = feedToday._sum.quantity ?? 0;
   const feedYesterdayKg = feedYesterday._sum.quantity ?? 0;
   const feedWeekKg = feedWeek._sum.quantity ?? 0;
 
-  const fcrToday = buildFcrSnapshot(feedTodayKg, todayTb);
-  const fcrYesterday = buildFcrSnapshot(feedYesterdayKg, yesterdayTb);
-  const fcrWeek = buildFcrSnapshot(feedWeekKg, weekTb);
+  const fcrToday = buildFcrSnapshot(feedTodayKg, todayEggMassKg);
+  const fcrYesterday = buildFcrSnapshot(feedYesterdayKg, yesterdayEggMassKg);
+  const fcrWeek = buildFcrSnapshot(feedWeekKg, weekEggMassKg);
 
-  const hdpToday = computeHdpPercent(todayTb, activePopulationTotal);
-  const hdpYesterday = computeHdpPercent(yesterdayTb, activePopulationTotal);
+  const hdpToday = computeHdpPercent(todayTotal, activePopulationTotal);
+  const hdpYesterday = computeHdpPercent(yesterdayTotal, activePopulationTotal);
 
   const revenueToday = decimalToNumber(salesToday._sum.total_amount ?? 0);
   const revenueYesterday = decimalToNumber(
@@ -461,11 +557,12 @@ export async function getDashboardExecutive(
   }
   const weeklyProfit = buildCashWeekBalance(weekCashIncome, weekCashExpense);
 
-  // --- Series: production 30d (zeros = no record that day) ---
+  // --- Series: production 30d (total seluruh kategori; zeros = no record that day) ---
   const prodKeyed = toDateKeyMap(
     prodByDate.map((row) => ({
       date: row.record_date,
-      value: row._sum.tb ?? 0,
+      value:
+        (row._sum.tb ?? 0) + (row._sum.tr ?? 0) + (row._sum.tp ?? 0),
     })),
   );
   const production30d = fillSeries(dates30, prodKeyed).map((p) => ({
@@ -474,12 +571,14 @@ export async function getDashboardExecutive(
     eggs: p.value,
   }));
 
-  // --- HDP vs target (daily TB / current active population) ---
+  // --- HDP vs target (daily total telur / current active population) ---
+  // Hari tanpa catatan produksi (eggs = 0) → null (gap), bukan 0% —
+  // hari Pra-Go-Live / hari kosong tidak dihitung sebagai nol.
   const hdpVsTarget30d = production30d.map((point) => {
     const hdp =
-      activePopulationTotal > 0
+      activePopulationTotal > 0 && point.eggs > 0
         ? Number(((point.eggs / activePopulationTotal) * 100).toFixed(1))
-        : 0;
+        : null;
     return {
       date: point.date,
       label: point.label,
@@ -599,7 +698,9 @@ export async function getDashboardExecutive(
       id: `prod-${row.id}`,
       kind: "production",
       title: "Produksi harian",
-      description: `${row.cage.name}: ${row.tb.toLocaleString("id-ID")} butir TB`,
+      description: `${row.cage.name}: ${(
+        row.tb + row.tr + row.tp
+      ).toLocaleString("id-ID")} butir telur`,
       at: row.created_at.toISOString(),
       href: "/dashboard/production",
     });
@@ -648,7 +749,11 @@ export async function getDashboardExecutive(
   const timeline = timelineDraft.slice(0, MAX_TIMELINE);
 
   const eggSpark = sparkFromSeries(production30d.map((p) => p.eggs));
-  const hdpSpark = sparkFromSeries(hdpVsTarget30d.map((p) => p.hdp));
+  const hdpSpark = sparkFromSeries(
+    hdpVsTarget30d
+      .map((p) => p.hdp)
+      .filter((value): value is number => value != null),
+  );
   const salesSpark = sparkFromSeries(sales7d.map((p) => p.amount));
   const fcrSpark =
     fcrToday != null ? [fcrYesterday ?? fcrToday, fcrToday] : [];
@@ -657,8 +762,8 @@ export async function getDashboardExecutive(
     buildKpi({
       id: "eggs",
       label: "Produksi telur hari ini",
-      value: todayTb,
-      previous: yesterdayTb,
+      value: todayTotal,
+      previous: yesterdayTotal,
       format: "count",
       unit: "butir",
       comparisonLabel: "vs kemarin",
@@ -676,22 +781,22 @@ export async function getDashboardExecutive(
     }),
     buildKpi({
       id: "hdp",
-      label: "HDP hari ini",
+      label: "HDP hari ini (indikatif)",
       value: hdpToday,
       previous: hdpYesterday,
       format: "percent",
       unit: "%",
-      comparisonLabel: "vs kemarin",
+      comparisonLabel: "vs kemarin — bukan angka keputusan",
       sparkline: hdpSpark,
     }),
     buildKpi({
       id: "fcr",
-      label: "FCR hari ini",
+      label: "FCR hari ini (egg mass, indikatif)",
       value: fcrToday,
       previous: fcrYesterday ?? fcrWeek,
       format: "fcr",
-      unit: "kg/butir",
-      comparisonLabel: "vs kemarin",
+      unit: "kg/kg",
+      comparisonLabel: "vs kemarin — tersembunyi bila berat kosong",
       sparkline: fcrSpark,
       invertTrend: true,
     }),

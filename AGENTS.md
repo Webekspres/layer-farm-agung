@@ -177,6 +177,12 @@ Follow **[DESIGN.md](./DESIGN.md)** for tokens, typography, and brand copy.
 - Use semantic classes: `bg-primary`, `text-muted-foreground`, `border-border`, `bg-sidebar`, etc.
 - Dark mode: `.dark` class via `next-themes`.
 
+**Tables (numbering)**
+
+- Setiap tabel data di web dashboard **wajib** memiliki kolom penomoran pertama: `<TableHead className="w-12">No</TableHead>` + cell `<TableCell className="text-muted-foreground tabular-nums">`.
+- Penomoran **berlanjut antar halaman** untuk tabel berpaginasi (punya `PaginationMeta`): `(page - 1) * pageSize + index + 1`. Tanpa paginasi cukup `index + 1`.
+- Sinkronkan `colSpan` pada baris kosong/empty-state dengan jumlah kolom baru.
+
 **Toasts (CRUD)**
 
 - Root: `@/components/ui/sonner` in `app/layout.tsx`.
@@ -200,6 +206,28 @@ Follow **[DESIGN.md](./DESIGN.md)** for tokens, typography, and brand copy.
 - **Category B (skip):** shadcn primitives, static layout, thin pass-through actions.
 
 See `.cursor/rules/testing-standards.mdc`.
+
+---
+
+## 📦 Application Versioning & Release Rules
+
+Semua pembaruan versi repositori **Web Backend/API** ini (`package.json`) wajib mengikuti kaidah **Semantic Versioning (SemVer 2.0.0)** dan selaras dengan versi Mobile (lihat [`../layer-farm-agung-mobile/AGENTS.md`](../layer-farm-agung-mobile/AGENTS.md)).
+
+### 1. Format Penomoran
+* **Web API / Dashboard:** `vMAJOR.MINOR.PATCH` (contoh: `v1.0.5`) — disimpan di `package.json → version` (tanpa prefix `v`).
+
+### 2. Rumus Kenaikan Versi (Version Bump Decision Matrix)
+
+| Tipe Perubahan | Komponen yang Diubah | Kapan Digunakan? | Contoh Transisi |
+| :--- | :--- | :--- | :--- |
+| **MAJOR (`X.0.0`)** | `X += 1, Y = 0, Z = 0` | Perombakan arsitektur besar, *breaking changes* pada API publik/mobile sync, atau rilis perdana sistem. | `1.0.5` → `2.0.0` |
+| **MINOR (`1.X.0`)** | `Y += 1, Z = 0` | Penambahan fitur baru yang *backward-compatible* (misal: modul master grade telur, tab inventory per grade). | `1.0.5` → `1.1.0` |
+| **PATCH (`1.0.X`)** | `Z += 1` | Perbaikan *bug*, penyesuaian validasi tanggal/lookback, refaktor internal tanpa fitur baru, perbaikan formula kalkulasi. | `1.0.5` → `1.0.6` |
+
+### 3. Aturan Sinkronisasi Saat Rilis Fitur / Fix
+1. **Penyelarasan Web & Mobile:** Jika perubahan melibatkan kontrak API antara backend dan mobile (misal: penambahan kartu FCR, penyesuaian `go_live_date`, perubahan payload `/api/v1/*`), naikkan nomor `MINOR` atau `PATCH` pada **kedua** repositori ke angka yang sama.
+2. **OpenAPI & UAT:** Perubahan kontrak `/api/v1/*` → update `docs/apicontract/openapi.yaml` dan cantumkan nomor versi aktif pada header dokumen pembuktian UAT / changelog rilis.
+3. **Satu sumber kebenaran:** angka versi hanya di `package.json` — jangan duplikasi di konstanta lain tanpa sinkron.
 
 ---
 
@@ -239,11 +267,38 @@ When adding nav items, update `features/dashboard/config/navigation.ts` and `fea
 
 ---
 
+## Shared AAPM source context
+
+[`docs/source/`](./docs/source/) holds the **shared AAPM product/business context** for this product (Web + Mobile): requirements, client expectations, UAT feedback, and related project references from the system analyst / client.
+
+Consult these documents **before** changing behavior when the task involves:
+
+- UAT revisions or “implement this UAT feedback”
+- Client-requested changes
+- Business workflows or domain behavior
+- Feature requirements or agreed AAPM scope
+
+They are **source/reference material** — do not invent missing requirements. If the current implementation differs from a documented requirement, **identify the discrepancy** (and any contradiction between source documents) rather than assuming which side is correct. Do not rewrite or “fix” files under `docs/source/`.
+
+Implementation details still come from this repo: codebase, Graphify (`graphify-out/`), architecture docs (`docs/ecosystem.md`, `docs/sitemap.md`), OpenAPI, and `.cursor/rules/`.
+
+**Expected flow for UAT / requirement-driven work:**
+
+1. Read the relevant file(s) under `docs/source/`
+2. Understand expected business behavior
+3. Inspect the current implementation
+4. Identify gap / discrepancy
+5. Impact analysis
+6. Implement only the necessary change
+
+---
+
 ## Related files
 
 | Doc / path | Contents |
 |------------|----------|
 | [DESIGN.md](./DESIGN.md) | Brand, colors, type, components, toasts |
+| [docs/source/](./docs/source/) | Shared AAPM business/UAT/client source context (Web + Mobile) |
 | [docs/sitemap.md](./docs/sitemap.md) | Routes, module progress, planned pages |
 | [docs/README.md](./docs/README.md) | Docs folder: markdown in Git, binaries local |
 | [docs/ecosystem.md](./docs/ecosystem.md) | Two-repo architecture (backend + aapm-mobile) |

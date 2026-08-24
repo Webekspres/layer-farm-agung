@@ -9,6 +9,7 @@ import {
   MapPin,
   Package,
   Shield,
+  SlidersHorizontal,
   Syringe,
   Truck,
   Users,
@@ -150,6 +151,12 @@ export const adminNavItems: NavItem[] = [
     href: "/dashboard/roles",
     icon: Shield,
     permission: "manage_roles",
+  },
+  {
+    title: "Kebijakan input",
+    href: "/dashboard/settings/input-control",
+    icon: SlidersHorizontal,
+    permission: "manage_production",
   },
 ];
 

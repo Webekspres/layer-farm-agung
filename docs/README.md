@@ -30,6 +30,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 | **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; progress implementasi |
 | **[staging.md](./staging.md)** | Staging: Vercel + Neon + Cloudflare R2 — env & bootstrap |
 | **[vaccination-architecture.md](./vaccination-architecture.md)** | Keputusan arsitektur Modul 13 (operational schedule) |
+| **[launch-alignment-2026-08-13.md](./launch-alignment-2026-08-13.md)** | **Peluncuran awal** vs arahan klien 13 Agu: mapping P0–P2, skenario S1–S8, keputusan terbuka |
 | **[egg-sales-stock.md](./egg-sales-stock.md)** | Penjualan telur vs TB/TR/TP, `OUT_SALES`, EggGrade opsional |
 | **[egg-ledger-architecture.md](./egg-ledger-architecture.md)** | Egg Ledger vs Inventori Saprodi (Option A: shared engine) |
 | **[smoke-egg-sales.md](./smoke-egg-sales.md)** | Checklist smoke jual telur + stok |

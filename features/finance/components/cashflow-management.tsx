@@ -169,6 +169,7 @@ export function CashflowManagement({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-12">No</TableHead>
                 <TableHead>Tanggal</TableHead>
                 <TableHead>Jenis</TableHead>
                 <TableHead>Kategori</TableHead>
@@ -177,8 +178,11 @@ export function CashflowManagement({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((tx) => (
+              {transactions.map((tx, index) => (
                 <TableRow key={tx.id}>
+                  <TableCell className="text-muted-foreground tabular-nums">
+                    {(pagination.page - 1) * pagination.pageSize + index + 1}
+                  </TableCell>
                   <TableCell>{formatDate(tx.transactionDate)}</TableCell>
                   <TableCell>
                     <Badge
