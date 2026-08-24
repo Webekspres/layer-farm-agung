@@ -43,6 +43,8 @@ next-env.d.ts
 
 # prisma
 /generated/
+# vendored package tarballs (deps resolve from npm via package.json)
+*.tgz
 
 # docs/ — commit markdown only; keep PDF/Office binaries local (see docs/README.md)
 /docs/**/*.pdf
