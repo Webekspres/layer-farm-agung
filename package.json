@@ -20,6 +20,7 @@
     "db:studio": "bun ./node_modules/prisma/build/index.js studio",
     "db:push": "bun ./node_modules/prisma/build/index.js db push",
     "db:seed": "bun --bun prisma/seed.ts",
+    "db:seed:uat": "bun --bun prisma/seed-uat.ts",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose up -d --build",
