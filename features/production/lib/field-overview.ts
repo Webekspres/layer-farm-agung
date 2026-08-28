@@ -71,6 +71,8 @@ export type FieldOverviewBuildInput = {
   cycleFeedKg?: number;
   /** Total egg mass (kg) seluruh siklus aktif dalam lingkup — utk FCR. Default 0. */
   cycleEggMassKg?: number;
+  /** True bila ada hari produksi tanpa berat — FCR siklus disembunyikan. */
+  cycleFcrBlocked?: boolean;
   /** Daily total telur (seluruh grade) keyed by business date string (YYYY-MM-DD). */
   eggsByDate: Map<string, number>;
 };
@@ -177,7 +179,9 @@ export function buildFieldOverview(
     targetHdpAvg,
     pendingVaccineCount: input.pendingVaccineCount,
     overdueVaccineCount: input.overdueVaccineCount,
-    cycleFcr: computeFcr(input.cycleFeedKg ?? 0, input.cycleEggMassKg ?? 0),
+    cycleFcr: input.cycleFcrBlocked
+      ? null
+      : computeFcr(input.cycleFeedKg ?? 0, input.cycleEggMassKg ?? 0),
     cycleFeedKg: input.cycleFeedKg ?? 0,
     cycleEggMassKg: input.cycleEggMassKg ?? 0,
     production7d,

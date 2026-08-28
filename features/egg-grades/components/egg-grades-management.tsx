@@ -75,7 +75,10 @@ export function EggGradesManagement({
 
   useActionFeedback(updateState, {
     successMessage: "Grade telur berhasil diperbarui.",
-    onSuccess: () => setEditOpen(false),
+    onSuccess: () => {
+      setEditOpen(false);
+      setEditing(null);
+    },
     when: editOpen,
   });
 
@@ -206,13 +209,19 @@ export function EggGradesManagement({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) setEditing(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit grade telur</DialogTitle>
           </DialogHeader>
           {editing ? (
-            <form action={updateAction}>
+            <form action={updateAction} key={`edit-grade-${editing.id}-${editing.isActive}`}>
               <input type="hidden" name="id" value={editing.id} />
               <FieldGroup>
                 <Field>

@@ -1661,6 +1661,18 @@ components:
         activeCyclePopulation:
           type: integer
           nullable: true
+        activeCycleAgeDays:
+          type: integer
+          nullable: true
+          description: Umur siklus aktif (hari kalender sejak start_date).
+        activeCycleAgeWeeks:
+          type: integer
+          nullable: true
+          description: Minggu penuh umur siklus (floor hari/7).
+        activeCycleAgeDaysRemainder:
+          type: integer
+          nullable: true
+          description: Sisa hari setelah minggu penuh (0–6).
         cycleFcr:
           type: number
           format: float

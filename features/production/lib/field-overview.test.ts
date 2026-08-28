@@ -184,4 +184,30 @@ describe("buildFieldOverview", () => {
     expect(result.cycleFcr).toBeNull();
     expect(emptyFieldOverview(TODAY).cycleFcr).toBeNull();
   });
+
+  test("cycle FCR is null when cycleFcrBlocked (production without weight)", () => {
+    const result = buildFieldOverview({
+      recordDate: TODAY,
+      cages: [
+        {
+          id: "c1",
+          name: "A1",
+          population: 1000,
+          recordedToday: true,
+          targetHdp: 90,
+        },
+      ],
+      todayTb: 100,
+      todayTr: 0,
+      todayTp: 0,
+      pendingVaccineCount: 0,
+      overdueVaccineCount: 0,
+      cycleFeedKg: 500,
+      cycleEggMassKg: 40,
+      cycleFcrBlocked: true,
+      eggsByDate: new Map([["2026-08-03", 100]]),
+    });
+
+    expect(result.cycleFcr).toBeNull();
+  });
 });
