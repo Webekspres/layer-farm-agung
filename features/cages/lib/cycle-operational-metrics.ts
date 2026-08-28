@@ -130,6 +130,41 @@ export function computeFcr(feedKg: number, eggMassKg: number): number | null {
   return feedKg / eggMassKg;
 }
 
+/** True bila ada hari produksi (total butir > 0) tanpa berat rata-rata dalam periode. */
+export function hasProductionWithoutWeightInPeriod(
+  rows: DailyProductionLike[],
+  startDate: Date,
+  endDate: Date,
+): boolean {
+  const start = normalizeBusinessDate(startDate).getTime();
+  const end = normalizeBusinessDate(endDate).getTime();
+
+  for (const row of rows) {
+    const ts = normalizeBusinessDate(row.record_date).getTime();
+    if (ts < start || ts > end) continue;
+    const totalEggs = row.tb + row.tr + row.tp;
+    if (totalEggs <= 0) continue;
+    if (!row.weight || row.weight <= 0) return true;
+  }
+  return false;
+}
+
+/**
+ * FCR siklus: null bila ada produksi tanpa berat (UAT TC-05 hari kedua)
+ * atau egg mass / feed tidak lengkap.
+ */
+export function resolveCycleFcr(
+  feedKg: number,
+  rows: DailyProductionLike[],
+  startDate: Date,
+  endDate: Date,
+): number | null {
+  if (hasProductionWithoutWeightInPeriod(rows, startDate, endDate)) {
+    return null;
+  }
+  return computeFcr(feedKg, sumEggMassKgInPeriod(rows, startDate, endDate));
+}
+
 /** Total butir telur seluruh kategori pada satu baris produksi. */
 export function productionTotal(row: {
   tb: number;

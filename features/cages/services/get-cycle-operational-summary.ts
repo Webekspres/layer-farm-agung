@@ -5,9 +5,9 @@ import {
   computeCapacityPercent,
   computeCrackRatio,
   computeCycleAgeParts,
-  computeFcr,
   filterMedicalInPeriod,
   productionTotal,
+  resolveCycleFcr,
   sumEggMassKgInPeriod,
   sumProductionInPeriod,
   sumProductionOnDate,
@@ -175,9 +175,11 @@ export function buildCycleOperationalSummary(
     },
     feed: {
       totalQuantity: totalFeed,
-      fcr: computeFcr(
+      fcr: resolveCycleFcr(
         totalFeed,
-        sumEggMassKgInPeriod(raw.production, effectiveStart, periodEnd),
+        raw.production,
+        effectiveStart,
+        periodEnd,
       ),
     },
     medical: {

@@ -177,6 +177,7 @@ export async function getFieldOverview(
 
   let cycleFeedKg = 0;
   let cycleEggMassKg = 0;
+  let cycleFcrBlocked = false;
 
   if (activeCycles.length > 0) {
     const minEffectiveStart = activeCycles.reduce<number | null>(
@@ -236,7 +237,11 @@ export async function getFieldOverview(
         if (row.cage_id !== entry.cageId) continue;
         const ts = normalizeBusinessDate(row.record_date).getTime();
         if (ts < startMs || ts > endMs) continue;
-        if (!row.weight || row.weight <= 0) continue;
+        if (!row.weight || row.weight <= 0) {
+          const totalEggs = row.tb + row.tr + row.tp;
+          if (totalEggs > 0) cycleFcrBlocked = true;
+          continue;
+        }
         const totalEggs = row.tb + row.tr + row.tp;
         cycleEggMassKg += (totalEggs * row.weight) / 1000;
       }
@@ -280,6 +285,7 @@ export async function getFieldOverview(
     overdueVaccineCount,
     cycleFeedKg,
     cycleEggMassKg,
+    cycleFcrBlocked,
     eggsByDate,
   });
 }

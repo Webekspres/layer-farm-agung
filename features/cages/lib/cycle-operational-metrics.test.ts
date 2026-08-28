@@ -3,7 +3,9 @@ import { normalizeBusinessDate } from "@/lib/business-date";
 import {
   computeCrackRatio,
   computeFcr,
+  hasProductionWithoutWeightInPeriod,
   productionTotal,
+  resolveCycleFcr,
   sumEggMassKgInPeriod,
 } from "./cycle-operational-metrics";
 
@@ -41,5 +43,20 @@ describe("egg-mass FCR", () => {
   test("computeCrackRatio counts TR only (TP = Telur Putih, bukan cacat)", () => {
     expect(computeCrackRatio(900, 50, 50)).toBeCloseTo(0.05, 6);
     expect(computeCrackRatio(0, 0, 0)).toBeNull();
+  });
+
+  test("resolveCycleFcr is null when any production day lacks weight (UAT TC-05)", () => {
+    const rows = [
+      { record_date: day("2026-08-01"), tb: 2500, tr: 150, tp: 50, weight: 60 },
+      { record_date: day("2026-08-02"), tb: 100, tr: 0, tp: 0, weight: null },
+    ];
+    const start = day("2026-08-01");
+    const end = day("2026-08-02");
+    expect(hasProductionWithoutWeightInPeriod(rows, start, end)).toBe(true);
+    // feed day 1+2 = 648, egg mass only day 1 = 162 → partial FCR would be 4.0
+    expect(resolveCycleFcr(648, rows, start, end)).toBeNull();
+    expect(
+      resolveCycleFcr(324, [rows[0]!], start, day("2026-08-01")),
+    ).toBeCloseTo(2, 5);
   });
 });

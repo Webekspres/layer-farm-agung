@@ -1,6 +1,7 @@
 import { resolveActiveCyclePopulation } from "@/features/cages/services/resolve-active-cycle-population";
 import {
-  computeFcr,
+  computeCycleAgeParts,
+  resolveCycleFcr,
   sumEggMassKgInPeriod,
 } from "@/features/cages/lib/cycle-operational-metrics";
 import { normalizeBusinessDate, startOfTodayBusiness } from "@/lib/business-date";
@@ -15,6 +16,11 @@ export type CageForProduction = {
   status: string;
   hasActiveCycle: boolean;
   activeCyclePopulation: number | null;
+  /** Umur siklus aktif (hari kalender sejak start_date); null bila tidak ada siklus. */
+  activeCycleAgeDays: number | null;
+  /** Minggu penuh + sisa hari (selaras tampilan web). */
+  activeCycleAgeWeeks: number | null;
+  activeCycleAgeDaysRemainder: number | null;
   /** FCR siklus aktif = total pakan (kg) ÷ egg mass (kg). Null bila belum ada data berat telur. */
   cycleFcr: number | null;
   /** Total konsumsi pakan (kg) siklus aktif sampai hari ini. */
@@ -58,12 +64,20 @@ export async function getCageForProduction(
   let cycleFcr: number | null = null;
   let cycleFeedKg = 0;
   let cycleEggMassKg = 0;
+  let activeCycleAgeDays: number | null = null;
+  let activeCycleAgeWeeks: number | null = null;
+  let activeCycleAgeDaysRemainder: number | null = null;
 
   if (activeCycle) {
     const periodEnd = startOfTodayBusiness();
     const periodStart = normalizeBusinessDate(
       activeCycle.go_live_date ?? activeCycle.start_date,
     );
+    const ageParts = computeCycleAgeParts(activeCycle.start_date, periodEnd);
+    activeCycleAgeDays =
+      ageParts.ageWeeks * 7 + ageParts.ageDaysRemainder;
+    activeCycleAgeWeeks = ageParts.ageWeeks;
+    activeCycleAgeDaysRemainder = ageParts.ageDaysRemainder;
 
     const [feedAgg, productionRows] = await Promise.all([
       prisma.feedConsumption.aggregate({
@@ -92,7 +106,12 @@ export async function getCageForProduction(
     cycleEggMassKg = Number(
       sumEggMassKgInPeriod(productionRows, periodStart, periodEnd).toFixed(1),
     );
-    cycleFcr = computeFcr(cycleFeedKg, cycleEggMassKg);
+    cycleFcr = resolveCycleFcr(
+      cycleFeedKg,
+      productionRows,
+      periodStart,
+      periodEnd,
+    );
   }
 
   return {
@@ -103,6 +122,9 @@ export async function getCageForProduction(
     status: row.status,
     hasActiveCycle: Boolean(activeCycle),
     activeCyclePopulation,
+    activeCycleAgeDays,
+    activeCycleAgeWeeks,
+    activeCycleAgeDaysRemainder,
     cycleFcr,
     cycleFeedKg,
     cycleEggMassKg,
