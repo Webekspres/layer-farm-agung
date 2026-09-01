@@ -6,8 +6,8 @@
 
 | Repo | Role |
 |------|------|
-| **layered-farm-agung** (this) | Admin dashboard, API (`/api/v1/*`), database, auth |
-| **[aapm-mobile](../mobile-apps/aapm-mobile)** | React Native + Expo app for **staff kandang** |
+| **layer-farm-agung** (this) | Admin dashboard, API (`/api/v1/*`), database, auth |
+| **[layer-farm-agung-mobile](../layer-farm-agung-mobile)** | React Native + Expo app for **staff kandang** |
 
 See **[docs/ecosystem.md](./docs/ecosystem.md)** for architecture and local dev workflow.
 
@@ -32,13 +32,13 @@ The platform supports **population monitoring**, **production efficiency** (HDP,
 | **Frontend** | ![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat-square&logo=next.js&logoColor=white) App Router |
 | **Styling & UI** | ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white) · [shadcn/ui](https://ui.shadcn.com/) · ![Lucide](https://img.shields.io/badge/Lucide-000000?style=flat-square&logo=lucide&logoColor=white) |
 | **Backend / API** | Next.js **Server Actions** |
-| **ORM** | ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white) — **29 models** across **4 domains** |
+| **ORM** | ![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=flat-square&logo=prisma&logoColor=white) — see [`prisma/schema.prisma`](./prisma/schema.prisma) (45 models, 4 domains) |
 | **Database** | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
 | **Authentication** | **Better Auth** with **RBAC** (Superadmin, Admin, Staff) |
 | **State** | **Zustand** |
 | **Data fetching** | **TanStack Query** |
 | **Validation & forms** | **Zod** · **React Hook Form** |
-| **Mobile (lapangan)** | **[aapm-mobile](../mobile-apps/aapm-mobile)** — React Native + Expo SDK 54 |
+| **Mobile (lapangan)** | **[layer-farm-agung-mobile](../layer-farm-agung-mobile)** — React Native + Expo SDK 54 |
 
 ---
 
@@ -66,7 +66,7 @@ The product is organized around **thirteen functional modules** that together co
 
 ## Database schema overview
 
-The data model is implemented with **Prisma ORM** on **PostgreSQL** and is designed as **approximately twenty-nine models** grouped into **four logical domains**. Exact table names live in `prisma/schema.prisma` as the project evolves.
+The data model is implemented with **Prisma ORM** on **PostgreSQL**, grouped into **four logical domains**. Exact table names and model count live in [`prisma/schema.prisma`](./prisma/schema.prisma) as the project evolves.
 
 | Domain | Scope (representative entities) |
 |--------|----------------------------------|
@@ -83,6 +83,7 @@ Cross-domain relationships (for example flock → inventory consumption → ledg
 
 | Document | Purpose |
 |----------|---------|
+| **[docs/handover/](./docs/handover/)** | **Paket handover** — mulai dari [`penyelarasan-revisi-1.md`](./docs/handover/penyelarasan-revisi-1.md) (HDP/FCR & UAT) |
 | **[DESIGN.md](./DESIGN.md)** | Brand & UI source of truth (colors, typography, components, copy) |
 | **[AGENTS.md](./AGENTS.md)** | Architecture, auth, testing, and agent conventions |
 | **[docs/sitemap.md](./docs/sitemap.md)** | Route map, module targets, and implementation progress |

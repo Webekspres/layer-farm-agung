@@ -4,14 +4,14 @@
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-07-17 |
+| **Terakhir diperbarui** | 2026-09-01 |
 | **Status plan** | **Fase 5 ✅** · **Fase 6a ready ✅** · Fase 6b dashboard lite ✅ · 100% release hardening |
 | **Progress domain (saat ini)** | D1 ~95% · D2 ~90% · D3 ~98% · D4 ~80% |
 | **Overall (13 modul internal)** | **~90%** |
-| **Repo backend** | `layered-farm-agung` |
-| **Repo mobile** | `aapm-mobile` |
+| **Repo backend** | `layer-farm-agung` |
+| **Repo mobile** | `layer-farm-agung-mobile` |
 
-**Referensi:** [sitemap.md](./sitemap.md) · [ecosystem.md](./ecosystem.md) · [prisma/schema.prisma](../prisma/schema.prisma) · [aapm-mobile/docs/progress.md](../../aapm-mobile/docs/progress.md)
+**Referensi:** [sitemap.md](./sitemap.md) · [ecosystem.md](./ecosystem.md) · [prisma/schema.prisma](../prisma/schema.prisma) · [layer-farm-agung-mobile/docs/progress.md](../../layer-farm-agung-mobile/docs/progress.md)
 
 ---
 
@@ -26,7 +26,7 @@
 | Fase 4 — Mobile riwayat | ✅ | Navigasi tanggal di riwayat kandang |
 | Infra WIB (tanggal operasional) | ✅ | `lib/business-date.ts` — single source of truth |
 | Fase 4b — Metrik siklus kandang | ✅ | Detail kandang: HDP, FCR, mutasi, riwayat enriched |
-| **Fase 5 P1 — Offline sync** | ✅ | Write antrean + flush + warm cache + idempotency — [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
+| **Fase 5 P1 — Offline sync** | ✅ | Write antrean + flush + warm cache + idempotency — [offline-sync-plan.md](../../layer-farm-agung-mobile/docs/offline-sync-plan.md) |
 | Fase 5 P2 — Mutasi stok global | ✅ | `/dashboard/inventory/mutations` |
 | Fase 5 P3–P6 | ✅ | Vaksinasi, mutasi pindah, PO partial/cancel, finance + early warning |
 | **Fase 6a — Ready** | ✅ | Neon migrate sales stock · smoke egg sales · docs sync · OpenAPI mobile types |
@@ -90,7 +90,7 @@ flowchart LR
 - [x] `operationalBusinessDateSchema` — strict `YYYY-MM-DD`, blok tanggal masa depan
 - [x] `validateOperationalBusinessDate()` di record services
 - [x] `components/shared/record-date-picker.tsx` (Shadcn + WIB)
-- [x] `aapm-mobile/lib/date.ts` — mirror WIB
+- [x] `layer-farm-agung-mobile/lib/date.ts` — mirror WIB
 
 ### Konvensi (wajib untuk kode baru)
 
@@ -160,7 +160,7 @@ Detail lengkap tetap di Git history; ringkasan untuk konteks agent:
 
 ## Fase 5 P1 — Offline sync + idempotency ✅
 
-**Selesai 2026-07-14** — backend `client_mutation_id` + mobile outbox/flush/warm cache/picker. Detail: **[aapm-mobile/docs/offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md)**. Edit/PATCH offline & admin `SyncQueue` monitor tetap out of scope.
+**Selesai 2026-07-14** — backend `client_mutation_id` + mobile outbox/flush/warm cache/picker. Detail: **[layer-farm-agung-mobile/docs/offline-sync-plan.md](../../layer-farm-agung-mobile/docs/offline-sync-plan.md)**. Koreksi offline PATCH/DELETE ✅ (ADR-001).
 
 ### DoD — tercapai
 
@@ -243,7 +243,7 @@ Detail lengkap tetap di Git history; ringkasan untuk konteks agent:
 - [x] Neon `db:migrate:deploy` (sales `location_id` / grade opsional)
 - [x] Smoke checklist jual telur — [`smoke-egg-sales.md`](./smoke-egg-sales.md) + unit tests Category A
 - [x] Sync `sitemap.md` / progress domain D4
-- [x] Mobile OpenAPI types: `aapm-mobile/types/aapm-api.ts`
+- [x] Mobile OpenAPI types: `layer-farm-agung-mobile/types/aapm-api.ts`
 
 ## Fase 6b — Dashboard lite (Modul 9–10) ✅
 

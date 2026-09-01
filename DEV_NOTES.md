@@ -34,6 +34,18 @@
 ---
 
 ## 🥚 Domain 3: Operasional Kandang & Mobile Forms (Offline-First, Expo)
+
+### Rumus HDP & FCR (Laporan Penyelarasan Revisi 1 §4 — resmi)
+
+- **HDP (%)** = (Total butir **semua kategori** TB+TR+TP pada hari itu / Populasi hidup) × 100  
+  Implementasi: `features/production/lib/compute-hdp.ts`
+- **Egg Mass (kg)** = Total butir × Berat rata-rata telur (kg)  
+- **FCR** = Total konsumsi pakan (kg) / Egg Mass (kg)  
+  Jika berat telur kosong atau egg mass ≤ 0 → tampilkan **"—"**, jangan hitung FCR dari butir saja.  
+  Implementasi: `features/cages/lib/cycle-operational-metrics.ts`
+
+Ringkasan handover: [`docs/handover/penyelarasan-revisi-1.md`](./docs/handover/penyelarasan-revisi-1.md). UAT: [`docs/UAT/STATUS.md`](./docs/UAT/STATUS.md).
+
 - **Mobile form bounds (Egg Production)** — validate in API + `features/*/schemas`; UI in Expo app:
   - `quantity` (Jumlah Telur Layak) and `weight` (Total Berat) inputs MUST NOT accept negative values.
   - Max egg count per single entry is capped at `10,000` to prevent catastrophic accidental typos by staff.

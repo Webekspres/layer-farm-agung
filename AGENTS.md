@@ -12,7 +12,7 @@ Detailed Cursor rules live in **`.cursor/rules/`** (architecture, naming, auth, 
 |--|--|
 | **Product** | Layered Farm Agung (AAPM) — hybrid: admin web + central API |
 | **Stack** | Next.js 16 App Router, React 19, Tailwind v4, shadcn/ui, Prisma 7, PostgreSQL, Better Auth, Bun |
-| **Mobile lapangan** | **[`aapm-mobile`](../mobile-apps/aapm-mobile)** — Expo SDK 54; konsumsi `app/api/v1/*` |
+| **Mobile lapangan** | **[`layer-farm-agung-mobile`](../layer-farm-agung-mobile)** — Expo SDK 54; konsumsi `app/api/v1/*` |
 | **Package manager** | **Bun** (`bun install`, `bun run dev`, `bun test`) |
 | **Locale** | UI copy in **Bahasa Indonesia** |
 
@@ -22,7 +22,7 @@ Detailed Cursor rules live in **`.cursor/rules/`** (architecture, naming, auth, 
 
 | | |
 |--|--|
-| **Repo** | [`../mobile-apps/aapm-mobile`](../mobile-apps/aapm-mobile) |
+| **Repo** | [`../layer-farm-agung-mobile`](../layer-farm-agung-mobile) |
 | **Role** | Staff kandang — input harian, QR, offline client |
 | **Contract** | [`docs/apicontract/openapi.yaml`](./docs/apicontract/openapi.yaml) |
 | **Ecosystem** | [`docs/ecosystem.md`](./docs/ecosystem.md) |
@@ -227,7 +227,7 @@ Semua pembaruan versi repositori **Web Backend/API** ini (`package.json`) wajib 
 ### 3. Aturan Sinkronisasi Saat Rilis Fitur / Fix
 1. **Penyelarasan Web & Mobile:** Jika perubahan melibatkan kontrak API antara backend dan mobile (misal: penambahan kartu FCR, penyesuaian `go_live_date`, perubahan payload `/api/v1/*`), naikkan nomor `MINOR` atau `PATCH` pada **kedua** repositori ke angka yang sama.
 2. **OpenAPI & UAT:** Perubahan kontrak `/api/v1/*` → update `docs/apicontract/openapi.yaml` dan cantumkan nomor versi aktif pada header dokumen pembuktian UAT / changelog rilis.
-3. **Satu sumber kebenaran:** angka versi hanya di `package.json` — jangan duplikasi di konstanta lain tanpa sinkron.
+3. **Satu sumber kebenaran:** angka versi hanya di `package.json` — jangan duplikasi di konstanta lain tanpa sinkron. `openapi.yaml` → `info.version` dapat tertinggal; percayai `package.json` untuk rilis.
 
 ---
 
@@ -301,9 +301,9 @@ Implementation details still come from this repo: codebase, Graphify (`graphify-
 | [docs/source/](./docs/source/) | Shared AAPM business/UAT/client source context (Web + Mobile) |
 | [docs/sitemap.md](./docs/sitemap.md) | Routes, module progress, planned pages |
 | [docs/README.md](./docs/README.md) | Docs folder: markdown in Git, binaries local |
-| [docs/ecosystem.md](./docs/ecosystem.md) | Two-repo architecture (backend + aapm-mobile) |
+| [docs/ecosystem.md](./docs/ecosystem.md) | Two-repo architecture (backend + layer-farm-agung-mobile) |
 | [docs/apicontract/openapi.yaml](./docs/apicontract/openapi.yaml) | Mobile API OpenAPI contract |
-| [../mobile-apps/aapm-mobile/AGENTS.md](../mobile-apps/aapm-mobile/AGENTS.md) | Mobile app agent guide |
+| [../layer-farm-agung-mobile/AGENTS.md](../layer-farm-agung-mobile/AGENTS.md) | Mobile app agent guide |
 | [README.md](./README.md) | Product modules, schema overview |
 | `.cursor/rules/*.mdc` | Full rules for Cursor |
 | `prisma/schema.prisma` | Data model |

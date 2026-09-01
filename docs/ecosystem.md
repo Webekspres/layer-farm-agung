@@ -4,7 +4,7 @@
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-06-24 |
+| **Terakhir diperbarui** | 2026-09-01 |
 | **Pivot** | Mobile **PWA/Serwist di Next.js dihentikan** → **React Native + Expo** |
 
 ---
@@ -13,12 +13,12 @@
 
 | Repositori | Path lokal (relatif workspace) | Peran |
 |------------|-------------------------------|--------|
-| **layered-farm-agung** | `./` (repo ini) | **Admin dashboard** (desktop/web), **API backend**, database (Prisma/PostgreSQL), auth (Better Auth), MinIO |
-| **aapm-mobile** | `../mobile-apps/aapm-mobile` | **Aplikasi lapangan** untuk **staff kandang** — input harian, QR, offline sync (rencana) |
+| **layer-farm-agung** | `./` (repo ini) | **Admin dashboard** (desktop/web), **API backend**, database (Prisma/PostgreSQL), auth (Better Auth), MinIO |
+| **layer-farm-agung-mobile** | `../layer-farm-agung-mobile` | **Aplikasi lapangan** untuk **staff kandang** — input harian, QR, offline sync ✅ |
 
 ```mermaid
 flowchart LR
-  subgraph admin ["layered-farm-agung"]
+  subgraph admin ["layer-farm-agung"]
     UI["(dashboard) Admin UI"]
     API["/api/auth + /api/v1"]
     DB[(PostgreSQL)]
@@ -26,9 +26,9 @@ flowchart LR
     API --> DB
   end
 
-  subgraph mobile ["aapm-mobile"]
+  subgraph mobile ["layer-farm-agung-mobile"]
     APP["Expo App"]
-    LOCAL["Offline queue (rencana)"]
+    LOCAL["Offline outbox"]
     APP --> LOCAL
   end
 
@@ -39,7 +39,7 @@ flowchart LR
 
 ## 2. Pembagian tanggung jawab
 
-### Backend (`layered-farm-agung`) — **sumber kebenaran data**
+### Backend (`layer-farm-agung`) — **sumber kebenaran data**
 
 | Area | Lokasi kode | Konsumen |
 |------|-------------|----------|
@@ -51,14 +51,14 @@ flowchart LR
 
 **Jangan** menambah UI lapangan (`/kandang`, input harian) di Next.js. **Jangan** menduplikasi aturan bisnis di mobile — validasi utama tetap di server.
 
-### Mobile (`aapm-mobile`) — **klien operasional**
+### Mobile (`layer-farm-agung-mobile`) — **klien operasional**
 
 | Area | Tanggung jawab |
 |------|----------------|
 | Login staff | Panggil Better Auth di backend |
 | Daftar kandang, form produksi, scan QR | UI + state lokal |
-| Offline / antrean sync | Klien (flush ke `/api/v1/*` saat online) |
-| Brand & touch UX lapangan | Ikuti token dari `layered-farm-agung/DESIGN.md` (adaptasi RN) |
+| Offline / antrean sync | Klien (flush ke `/api/v1/*` saat online) ✅ |
+| Brand & touch UX lapangan | Ikuti token dari `layer-farm-agung/DESIGN.md` (adaptasi RN) |
 
 Peran **staff** (`staff.kandang`) ditujukan untuk mobile; admin/superadmin memakai dashboard web.
 
@@ -66,27 +66,20 @@ Peran **staff** (`staff.kandang`) ditujukan untuk mobile; admin/superadmin memak
 
 ## 3. Alur integrasi API
 
-1. Mobile memanggil `POST /api/auth/sign-in/username` pada backend.
-2. Session cookie disimpan dan dikirim pada setiap `GET|POST /api/v1/*`.
+1. Mobile memanggil `POST /api/v1/mobile/auth/sign-in` (atau Better Auth) pada backend.
+2. Session cookie disimpan dan dikirim pada setiap `GET|POST|PATCH|DELETE /api/v1/*`.
 3. Respons memakai envelope: `{ success, message, data }` atau `{ success: false, error }`.
 
-Detail endpoint: **[apicontract/openapi.yaml](./apicontract/openapi.yaml)**.
+Detail endpoint: **[apicontract/openapi.yaml](./apicontract/openapi.yaml)** (25 route `/api/v1/*`).
 
-| Endpoint v1 | Status |
-|-------------|--------|
-| `POST /api/v1/mobile/auth/sign-in` | ✅ |
-| `GET /api/v1/cages` | ✅ |
-| `GET /api/v1/cages/{cageId}` | ✅ |
-| `POST /api/v1/cages/scan` | ✅ |
-| `GET /api/v1/cages/{cageId}/daily-history` | ✅ |
-| `GET /api/v1/egg-grades` | ✅ (legacy) |
-| `POST /api/v1/production` | ✅ grade (dari `EggGrade`), multi-record; tiap grade aktif menambah stok telur per grade (`IN_HARVEST` → `EggStock`) |
-| `PATCH /api/v1/production/{recordId}` | ✅ rekonsiliasi stok telur per grade saat koreksi |
-| `POST /api/v1/feed-consumption` | ✅ potong stok pakan (OUT_FEED) + peringatan stok rendah |
-| `POST /api/v1/medical-records` | ✅ opsional potong stok obat/vitamin (OUT_MEDICAL) |
-| `POST /api/v1/population-mutation` | ✅ |
-| `GET /api/v1/items?type=…&cageId=…` | ✅ picker item + stok tersedia (Feed/Medicine/Vitamin) |
-| `GET /api/v1/feed-items` | ✅ (legacy; gunakan `/items?type=Feed`) |
+| Endpoint v1 (ringkas) | Status |
+|-----------------------|--------|
+| Auth mobile, field overview, input-window | ✅ |
+| Cages, scan, daily-history, daily-report, daily-corrections | ✅ |
+| Production, feed, population, medical (POST + PATCH) | ✅ |
+| Vaccine schedules, vaccinations | ✅ |
+| Items, egg-grades, feed-items (legacy) | ✅ |
+| Notifications, push-tokens | ✅ |
 
 ---
 
@@ -96,14 +89,14 @@ Detail endpoint: **[apicontract/openapi.yaml](./apicontract/openapi.yaml)**.
 
 ```bash
 # Terminal 1 — backend
-cd layered-farm-agung
+cd layer-farm-agung
 bun run docker:db    # Postgres host :5433
 bun run dev          # http://localhost:3000
 
 # Terminal 2 — mobile
-cd mobile-apps/aapm-mobile
-npm install
-npx expo start
+cd layer-farm-agung-mobile
+bun install
+bunx expo start
 ```
 
 ### URL API dari perangkat fisik
@@ -128,10 +121,9 @@ Backend: pastikan `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL` konsisten de
 
 ## 5. Deep link & QR
 
-- Skema Expo saat ini: `aapmmobile://` (`app.json` → `scheme`).
-- Target bisnis (QR kandang): `…/kandang/{cageId}/produksi` — disepakati di tim mobile; selaraskan `scheme` + `expo-linking` saat implementasi scan.
-
-Data kandang setelah scan: `GET /api/v1/cages/{cageId}`.
+- Skema Expo: `aapmmobile://` (`app.json` → `scheme`).
+- QR kandang: scan → `POST /api/v1/cages/scan` → hub `kandang/[id]`.
+- Data kandang: `GET /api/v1/cages/{cageId}`.
 
 ---
 
@@ -146,7 +138,7 @@ Data kandang setelah scan: `GET /api/v1/cages/{cageId}`.
 | Perubahan di mobile | Tindakan di backend |
 |---------------------|---------------------|
 | Kebutuhan data baru | Tambah service + route `app/api/v1/` + OpenAPI |
-| Flow offline baru | Backend tetap idempotent / terima `is_synced` bila perlu |
+| Flow offline baru | Backend tetap idempotent / terima `clientMutationId` |
 
 **PR rule:** perubahan API → update `docs/apicontract/openapi.yaml` dan baris terkait di `docs/sitemap.md` dalam PR yang sama.
 
@@ -156,5 +148,5 @@ Data kandang setelah scan: `GET /api/v1/cages/{cageId}`.
 
 | Repo | Dokumen |
 |------|---------|
-| **layered-farm-agung** | [AGENTS.md](../AGENTS.md), [sitemap.md](./sitemap.md), [apicontract/](./apicontract/), [DEV_NOTES.md](../DEV_NOTES.md), [DESIGN.md](../DESIGN.md) |
-| **aapm-mobile** | [docs/](../../mobile-apps/aapm-mobile/docs/) (progress & roadmap), [AGENTS.md](../../mobile-apps/aapm-mobile/AGENTS.md) |
+| **layer-farm-agung** | [AGENTS.md](../AGENTS.md), [sitemap.md](./sitemap.md), [apicontract/](./apicontract/), [DEV_NOTES.md](../DEV_NOTES.md), [DESIGN.md](../DESIGN.md) |
+| **layer-farm-agung-mobile** | [docs/](../../layer-farm-agung-mobile/docs/) (progress & roadmap), [AGENTS.md](../../layer-farm-agung-mobile/AGENTS.md) |

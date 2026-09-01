@@ -26,7 +26,9 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 
 | File | Isi |
 |------|-----|
-| **[ecosystem.md](./ecosystem.md)** | **Arsitektur dua repo** — backend (ini) + [`aapm-mobile`](../mobile-apps/aapm-mobile) |
+| **[UAT/](./UAT/)** | **Dokumen UAT resmi** — PDF Berita Acara + lembar eksekusi TC-01–TC-05 ([`STATUS.md`](./UAT/STATUS.md)) |
+| **[handover/](./handover/)** | **Paket serah terima** — [`penyelarasan-revisi-1.md`](./handover/penyelarasan-revisi-1.md) + setup & operasional (successor dev) |
+| **[ecosystem.md](./ecosystem.md)** | **Arsitektur dua repo** — backend (ini) + [`layer-farm-agung-mobile`](../../layer-farm-agung-mobile) |
 | **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; progress implementasi |
 | **[staging.md](./staging.md)** | Staging: Vercel + Neon + Cloudflare R2 — env & bootstrap |
 | **[vaccination-architecture.md](./vaccination-architecture.md)** | Keputusan arsitektur Modul 13 (operational schedule) |

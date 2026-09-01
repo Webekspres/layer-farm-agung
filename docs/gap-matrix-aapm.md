@@ -1,6 +1,6 @@
 # AAPM Gap Matrix (Phase 0)
 
-**Status:** Phase 0 approved; **Phase 1 Pilot Reliability implemented 2026-08-11** (code + docs). Device retests for PH1-A/B/C/H still **pending**.  
+**Status:** Phase 0 approved; **Phase 1 Pilot Reliability implemented 2026-08-11** (code + docs). **UAT TC-01–TC-05 selesai 2026-09-01** — [`UAT/STATUS.md`](./UAT/STATUS.md) · PDF di [`UAT/`](./UAT/README.md).  
 **Created:** 2026-08-11  
 **Authority:** P0 Follow-up Notes + Readiness Report; P1 UAT Form; P2 Ringkasan; P3 Proposal (background only).  
 **Rule:** Follow-up retest status wins over older UAT notes. Proposal does not override pilot scope.  
@@ -43,7 +43,7 @@ If runtime-only: **Verification / Retest Required** (do not guess).
 | GAP-011 | Cold-start offline (reopen app offline → work) | Follow-up §7; UAT; Ringkasan #2 | Offline | Open; not pilot path | **2** + **6** | Post-Pilot Capability Gate (+ Pilot Limit) | Internet-first pilot | Do not promise; fix post-pilot | Mobile | Follow-up §7 two tests | — | P0 gate |
 | GAP-012 | QR / deep-link opens assigned cage reliably | Follow-up §8; UAT | QR | No progress 9 Aug | **6** (+ residual **2**) | Post-Pilot Capability Gate (+ Pilot Limit) | Manual cage pick | Disable as primary path; fix before enable | Both | Follow-up §8 three cases | — | P0 gate |
 | GAP-013 | Production (per grade) → sellable egg stock → sales | Follow-up §9; UAT #14; Readiness; 2026-08-20 | Telur jual | **Implemented 2026-08-20** — per-grade `EggStock`/`EggMovement` (tenant-isolated); grade **wajib** di baris penjualan; tab **Stok Telur**; migrasi histori dari `DailyProductionItem`−`SalesOrderItem`; item `Egg` legacy dihapus | **3** (verification) | Pilot Limit + Post-Pilot Capability Gate | Keep egg sales as pilot gate (do not promise w/o onboarding guide) | Retest end-to-end per [smoke-egg-sales.md](./smoke-egg-sales.md) | Web / API / Docs | Follow-up §9 | Resolved — no longer config vs defect | P1 gate |
-| GAP-014 | HDP/FCR used as decision KPIs without official formula / labels | Follow-up; Readiness; UAT Dashboard | HDP/FCR | Must not be decision metrics in pilot | **3** / **6** | Pilot Limit (+ Product Decision on official formula) | De-emphasize / label temporary | Phase 1: label or hide as decision KPI | Web | See Phase 1 F / KPI | GAP-003 for trusted numbers | P0 |
+| GAP-014 | HDP/FCR KPIs — **formula resmi Revisi 1 §4**; **TC-05 lulus** (2026-09-01) | Follow-up; Readiness; UAT; [penyelarasan-revisi-1.md](./handover/penyelarasan-revisi-1.md) | HDP/FCR | **Verified** | **5** | Resolved | — | — | Both | Revisi 1 §4 + UAT TC-05 | GAP-003 for cycle trust | Closed |
 | GAP-015 | Customer-readable release / version identity | Follow-up paket mitra | Versi web + APK | Missing in UI | **1** | Pilot Blocker (Docs-Ops / small UI) | Required for retest package | Expose version web + mobile Profile; document build | Both / Docs-Ops | Version visible on Profile/about | — | P0 |
 | GAP-016 | Pilot guide v1 + basic backup + on-call contact | Follow-up; Readiness | Paket mitra; gate layanan | Missing as customer pack | **1** | Pilot Blocker | Required before pilot | Write guide + backup note + contact | Docs-Ops | Docs delivered | GAP-010–014 limits listed | P0 |
 | GAP-017 | Multi-part daily form: partial OK; zero ≠ unreported | UAT; Readiness; Follow-up; product decision 2026-08-12 | Input harian rules | **Decided** — partial save kept; do not coerce empty→0 | **5** / UX polish | Input Harian refinement | Keep per-component save; label Belum dilaporkan vs 0 | Soft DailyReport + UI labels | Both | Partial OK; explicit 0 distinguishable | — | P1 |
@@ -73,7 +73,7 @@ If runtime-only: **Verification / Retest Required** (do not guess).
 | GAP-002 | Verification retest (inputs on Active cycle, one cycle) |
 | GAP-005 | Verification retest (idempotency) |
 | GAP-006 | Verification retest (correction → latest on Android) |
-| GAP-014 | Implement/limit: HDP/FCR non-decision labeling or hide |
+| ~~GAP-014~~ | **TC-05 lulus** — HDP/FCR Revisi 1 §4 terverifikasi (2026-09-01) |
 | GAP-015 | Implement Docs-Ops/UI: customer-visible version |
 | GAP-016 | Docs-Ops: pilot guide + backup + on-call |
 | GAP-008 | Implement staff Web **scope policy** (login kept; finance out of **nav + dashboard content**; not mobile-only; do not broaden perms) |
@@ -102,7 +102,7 @@ Recorded **2026-08-11** (pilot):
 | GAP-011 / GAP-028 | Internet-first; do not promise cold-start offline; soften “data offline siap” claims |
 | GAP-012 | Staff picks cage from list (primary); QR optional shortcut restored — not QR-primary / not required |
 | GAP-013 | Do not activate/promise egg stock sales in pilot |
-| GAP-014 | HDP/FCR indicative only / labeled / hidden as decision |
+| ~~GAP-014~~ | HDP/FCR resmi Revisi 1 §4 — **TC-05 lulus** ([`UAT/STATUS.md`](./UAT/STATUS.md)) |
 | GAP-008 / GAP-009 | **PH1-E shipped:** staff Web login kept; finance/revenue/PO hidden without `view_cashflow` (nav + dashboard KPIs/charts) |
 
 ### 3. Post-Pilot Capability Gates
@@ -122,7 +122,7 @@ Recorded **2026-08-11** (pilot):
 | ~~GAP-008 / GAP-009~~ | **Decided 2026-08-11** — see “Decided product policy — Staff Web” above |
 | ~~GAP-007~~ | **Decided 2026-08-12** — reason + actor + before/after + immutable history; **no** approval workflow. See [daily-input-correction.md](./daily-input-correction.md). Historical UAT noted alasan opsional — superseded for new corrections. |
 | ~~GAP-017~~ | **Decided 2026-08-12** — partial multi-component save remains OK; empty ≠ 0 (unreported vs explicit zero). Not atomic-required. |
-| GAP-014 | Official HDP/FCR definition (indicative labels already in pilot) |
+| ~~GAP-014~~ | **Decided 2026-08-19** — Revisi 1 §4; **verified TC-05** 2026-09-01 |
 | GAP-019 | Unit conversion model |
 | GAP-022 | PO credit / approval in scope? |
 | GAP-025 | Formal export required for pilot or later? |
@@ -236,13 +236,13 @@ And staff permissions are not broadened beyond the existing seeded set
 ### PH1-F — Pilot controls & KPI labeling (GAP-010, GAP-012, GAP-013, GAP-014, GAP-028)
 
 **Area:** Web / Mobile / Docs-Ops  
-**Action:** Soft-control + copy: disable/hide or SOP for cycle close/start, QR-primary, egg sales; label/hide HDP/FCR as non-decision; soften full-offline claims.
+**Action:** Soft-control + copy: disable/hide or SOP for cycle close/start, QR-primary, egg sales; HDP/FCR per Revisi 1 §4 (**TC-05 verified**); soften full-offline claims.
 
 ```text
 Given pilot baseline (Readiness)
 When a pilot user uses the apps per guide
 Then QR is not required (list pick works), optional Scan QR remains available as a shortcut, sales/egg-stock and multi-cycle are not presented as active capabilities
-And HDP/FCR are labeled as temporary/indicative or not shown as decision KPIs
+And HDP/FCR on Home/dashboard match Revisi 1 §4 (FCR shows "—" when egg mass incomplete)
 And Profile does not claim full offline reopen if cold-start is unsupported
 ```
 
@@ -298,11 +298,11 @@ And HDP/FCR are not treated as official decision metrics (per PH1-F)
 ## Cannot reconcile without human / client input
 
 1. ~~Staff dashboard finance/revenue visibility (GAP-008/009)~~ — **decided 2026-08-11** (Web login kept; finance/revenue hidden from nav **and** dashboard KPIs).  
-2. **Official HDP/FCR definition** (GAP-014) — formulas exist (`kg/butir`) but not ratified.  
+2. ~~**Official HDP/FCR definition** (GAP-014)~~ — **ratified Revisi 1 §4**; **TC-05 verified** 2026-09-01 ([`UAT/STATUS.md`](./UAT/STATUS.md)).  
 3. **Correction audit strictness** (GAP-007) — quality finding vs pilot “koreksi dasar”.  
 4. ~~Egg stock zero after TB~~ (GAP-013) — **resolved 2026-08-20**: per-grade `EggStock`/`EggMovement`, migration from `DailyProductionItem`−`SalesOrderItem`, legacy Egg item removed. Remaining ask is end-to-end retest (see Verification).  
 5. **Partial multi-component save** (GAP-017) — product/UX rule.  
-6. All **Verification** rows — need runtime retest on agreed build.
+6. ~~All **Verification** rows in UAT scope~~ — **TC-01–TC-05 completed** 2026-09-01 ([`UAT/STATUS.md`](./UAT/STATUS.md)).
 
 ---
 
@@ -312,4 +312,4 @@ Phase 1 coding for PH1-A–H is complete (see report). **No Phase 2** (cycle iso
 
 **Operational add-on (GAP-012, not Phase 2):** optional Mobile Scan QR shortcut restored (list remains primary) + Web **Cetak QR Kandang** on cage detail. Full Follow-up §8 QR/deep-link capability gate remains post-pilot.
 
-Next: formal device retest of PH1-A/B/C/H on pilot-like build; fill `pilot-ops-contact.md` before customer go-live.
+Next: pilot go-live prep; fill `pilot-ops-contact.md` before customer go-live. UAT: [`UAT/README.md`](./UAT/README.md).

@@ -5,10 +5,10 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 
 | | |
 |--|--|
-| **Terakhir diperbarui** | 2026-07-17 |
+| **Terakhir diperbarui** | 2026-09-01 |
 | **Progress proyek** | **~90%** keseluruhan (13 modul internal) · D3 ~98% · D4 ~80% — lihat [implementation_plan.md](./implementation_plan.md) |
 | **Repo ini** | Next.js 16 — **admin dashboard + API provider** |
-| **Mobile lapangan** | [`aapm-mobile`](../aapm-mobile) — React Native + Expo SDK 54 |
+| **Mobile lapangan** | [`layer-farm-agung-mobile`](../../layer-farm-agung-mobile) — React Native + Expo SDK 54 |
 | **Ekosistem** | [`docs/ecosystem.md`](./ecosystem.md) |
 | **Schema DB** | [`prisma/schema.prisma`](../prisma/schema.prisma) |
 | **Nav kode** | [`features/dashboard/config/navigation.ts`](../features/dashboard/config/navigation.ts) |
@@ -21,7 +21,7 @@ Input lapangan (staff kandang) **bukan** di repo ini — lihat **§6**.
 | Aplikasi | Stack | Cakupan |
 |----------|-------|---------|
 | **AAPM Admin** (repo ini) | Next.js 16, shadcn, Prisma | CRUD master data, user/RBAC, rekap operasional, keuangan |
-| **AAPM Mobile** ([`../aapm-mobile`](../aapm-mobile)) | React Native + Expo SDK 54 | Input harian kandang: produksi TB/TR/TP, pakan, populasi, pengobatan, QR |
+| **AAPM Mobile** ([`../../layer-farm-agung-mobile`](../../layer-farm-agung-mobile)) | React Native + Expo SDK 54 | Input harian kandang: produksi TB/TR/TP, pakan, populasi, pengobatan, QR, offline |
 
 **Scope hasil meeting:** produk ini adalah SaaS multi-tenant untuk manajemen peternakan ayam petelur. Role aplikasi tetap `superadmin` (operator platform), `admin` (tenant/peternak), dan `staff` (ABK kandang). Istilah “portal klien” pada proposal dipetakan ke dashboard tenant/admin, **bukan** portal buyer penjualan.
 
@@ -160,6 +160,15 @@ Backend di repo ini menyediakan:
 | `PATCH` | `/api/v1/population-mutation/[recordId]` | `manage_production` | ✅ | `update-population-mutation` |
 | `GET` | `/api/v1/items` | `manage_production` | ✅ | `list-items-for-cage` (Feed/Medicine/Vitamin + stok tersedia) |
 | `GET` | `/api/v1/feed-items` | `manage_production` | ✅ | `list-feed-items` (legacy) |
+| `GET` | `/api/v1/field/overview` | `manage_production` | ✅ | `get-field-overview` (dasbor staff mobile) |
+| `GET` | `/api/v1/input-window` | `manage_production` | ✅ | batas tanggal input (go-live + lookback) |
+| `GET` | `/api/v1/cages/[cageId]/daily-report` | `manage_production` | ✅ | ringkasan laporan harian per tanggal |
+| `GET` | `/api/v1/cages/[cageId]/daily-corrections` | `manage_production` | ✅ | jejak audit koreksi |
+| `GET` | `/api/v1/cages/[cageId]/vaccine-schedules` | `manage_production` | ✅ | jadwal vaksin pending |
+| `POST` | `/api/v1/vaccinations` | `manage_production` | ✅ | selesaikan vaksinasi |
+| `GET` | `/api/v1/notifications` | session | ✅ | daftar notifikasi in-app |
+| `PATCH` | `/api/v1/notifications/[id]/read` | session | ✅ | tandai dibaca |
+| `POST` | `/api/v1/push-tokens` | session | ✅ | registrasi token push Expo |
 
 **Format respons:** `{ success, message?, data? }` / `{ success: false, error }` — lihat `lib/api/response.ts`.
 
@@ -179,32 +188,40 @@ Backend di repo ini menyediakan:
 
 ---
 
-## 6. Sitemap — Mobile (`aapm-mobile`)
+## 6. Sitemap — Mobile (`layer-farm-agung-mobile`)
 
-> Implementasi UI di [`../aapm-mobile`](../aapm-mobile).  
-> **Progress mobile:** [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md)
+> Implementasi UI di [`../../layer-farm-agung-mobile`](../../layer-farm-agung-mobile).  
+> **Progress mobile:** [`layer-farm-agung-mobile/docs/progress.md`](../../layer-farm-agung-mobile/docs/progress.md)
 
 ### Alur utama
 
 ```
+(tabs)/  →  Home: KPI + chart + daftar kandang
+notifications  →  daftar notifikasi (dari lonceng header)
 (tabs)/input  →  scan QR / pilih kandang  →  kandang/[id] (hub)
   →  kandang/[id]/input   (form input harian unified)
-  →  kandang/[id]/riwayat (riwayat + edit produksi)
+  →  kandang/[id]/riwayat (riwayat + edit + hapus)
+  →  kandang/[id]/koreksi (audit koreksi)
+  →  kandang/[id]/vaksin  (jadwal vaksin)
+(tabs)/profile
 ```
 
 | Rute | Status | Model / API |
 |------|--------|-------------|
 | `(auth)/login` | ✅ | `POST /api/v1/mobile/auth/sign-in` |
-| `(tabs)/` home | ✅ | `GET /api/v1/cages` |
+| `(tabs)/` home | ✅ | `GET /api/v1/field/overview`, `GET /api/v1/cages` |
+| `notifications` | ✅ | `GET /api/v1/notifications`, push via `POST /api/v1/push-tokens` |
 | `(tabs)/input` | ✅ | QR tile + daftar kandang |
 | `scan/qr` | ✅ | `POST /api/v1/cages/scan` → hub |
 | `kandang/[id]` hub | ✅ | `GET /api/v1/cages/{id}` |
-| `kandang/[id]/input` | ✅ | Form unified 4 section — submit API langsung (produksi, pakan, populasi, pengobatan) |
+| `kandang/[id]/input` | ✅ | Form unified 4 section — submit API / outbox offline |
 | `kandang/[id]/riwayat` | ✅ | `GET …/daily-history`; navigasi tanggal WIB; edit semua tipe |
+| `kandang/[id]/koreksi` | ✅ | `GET …/daily-corrections` |
+| `kandang/[id]/hapus/[type]/[recordId]` | ✅ | DELETE via outbox offline |
 | `kandang/[id]/production/[recordId]` | ✅ | Edit TB/TR/TP |
-| `(tabs)/profile` | ✅ | Session + logout |
-| Vaksinasi | ✅ | Admin + mobile hub + API |
-| Offline sync flush | ✅ | Antrean + flush + warm + picker — [offline-sync-plan.md](../../aapm-mobile/docs/offline-sync-plan.md) |
+| `kandang/[id]/vaksin` | ✅ | `GET …/vaccine-schedules`, `POST /api/v1/vaccinations` |
+| `(tabs)/profile` | ✅ | Session + logout + unduh offline |
+| Offline sync flush | ✅ | Antrean + flush + warm + picker — [offline-sync-plan.md](../../layer-farm-agung-mobile/docs/offline-sync-plan.md) |
 
 **Legacy redirect:** `kandang/[id]/produksi`, `kandang/[id]/pakan` → flow baru.
 
@@ -262,19 +279,22 @@ Backend di repo ini menyediakan:
 
 ## 9. Backlog mobile (Expo)
 
-Lihat [`aapm-mobile/docs/progress.md`](../aapm-mobile/docs/progress.md).
+Lihat [`layer-farm-agung-mobile/docs/progress.md`](../../layer-farm-agung-mobile/docs/progress.md).
 
 - [x] API client + login staff
 - [x] Shell + navigasi (Home, Input, Profil)
 - [x] Form input harian unified (accordion) — 4 section submit API
 - [x] Produksi TB/TR/TP + submit API
 - [x] Konsumsi pakan, mutasi populasi, pengobatan — submit API
-- [x] QR scanner kamera
+- [x] QR scanner kamera + deep link
 - [x] Riwayat kandang + edit multi-record + navigasi tanggal WIB
+- [x] Koreksi audit + hapus entri (online + offline outbox)
 - [x] Flush antrean offline (`pending-input-queue`) saat online
 - [x] Layar vaksinasi (hub kandang)
+- [x] Notifikasi in-app + push token
+- [x] Dasbor staff (KPI + chart)
 - [x] OpenAPI types codegen
-- [ ] PATCH offline penuh + badge antrean tab bar
+- [ ] EAS production AAB (preview APK sudah pernah di-build)
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Accepted 2026-07-14** (jadwal operasional). **Extended 2026-07-17** (program berbasis umur).
 
-Detail + mobile ADR mirror: [`aapm-mobile/docs/adr/002-vaccination-operational-schedule.md`](../../aapm-mobile/docs/adr/002-vaccination-operational-schedule.md).
+Detail + mobile ADR mirror: [`layer-farm-agung-mobile/docs/adr/002-vaccination-operational-schedule.md`](../../layer-farm-agung-mobile/docs/adr/002-vaccination-operational-schedule.md).
 
 ## Ringkas
 
