@@ -14,8 +14,8 @@
 
 | File | Fungsi |
 |------|--------|
-| [`UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.pdf`](<UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.pdf>) | Lembar eksekusi & readiness (PDF ke klien) |
-| [`Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.pdf`](<Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.pdf>) | Berita acara serah terima UAT |
+| [`UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.md`](./UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.md) | Lembar eksekusi & readiness |
+| [`Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.md`](<Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.md>) | Berita acara serah terima UAT |
 | [`README.md`](./README.md) | Indeks folder UAT |
 
 ---

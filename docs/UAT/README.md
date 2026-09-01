@@ -1,6 +1,6 @@
 # UAT — dokumen resmi (repo backend)
 
-Paket **User Acceptance Test** yang dikirim ke klien. File PDF mengikuti aturan [`../README.md`](../README.md) (biasanya lokal / tidak di-push karena `*.pdf` di `.gitignore`).
+Paket **User Acceptance Test** yang dikirim ke klien. Versi **Markdown** di-commit ke repo; salinan PDF (jika ada) mengikuti [`../README.md`](../README.md) (`*.pdf` di `.gitignore`).
 
 | | |
 |--|--|
@@ -10,12 +10,14 @@ Paket **User Acceptance Test** yang dikirim ke klien. File PDF mengikuti aturan 
 
 ---
 
-## Dokumen klien (PDF)
+## Dokumen klien (repo)
 
 | File | Isi |
 |------|-----|
-| [`UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.pdf`](<UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.pdf>) | Readiness + lembar eksekusi TC-01–TC-05 |
-| [`Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.pdf`](<Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.pdf>) | Berita acara uji pembuktian & serah terima hasil UAT |
+| [`UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.md`](./UAT_Readiness_dan_Lembar_Eksekusi_TC01-TC05.md) | Readiness + lembar eksekusi TC-01–TC-05 |
+| [`Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.md`](<Berita Acara Uji Pembuktian dan Serah Terima Hasil UAT.md>) | Berita acara uji pembuktian & serah terima hasil UAT |
+
+Salinan PDF (opsional, lokal): `*.pdf` di folder yang sama — tidak di-push.
 
 ---
 
@@ -28,7 +30,7 @@ Jika checkout **workspace penuh** (dua repo + folder `UAT/` di root), ada artefa
 | [`UAT/UAT_Lembar_Eksekusi_TC01-TC05_v1.0.6-build.30.md`](../../../UAT/UAT_Lembar_Eksekusi_TC01-TC05_v1.0.6-build.30.md) | Lembar eksekusi markdown putaran final |
 | [`UAT/revisi/`](../../../UAT/revisi/) | Triage temuan, checklist fix/re-test, deploy handoff |
 
-Tanpa workspace root, cukup PDF di folder ini + [`STATUS.md`](./STATUS.md).
+Tanpa workspace root, cukup dokumen di folder ini + [`STATUS.md`](./STATUS.md).
 
 ---
 

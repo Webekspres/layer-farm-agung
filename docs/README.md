@@ -26,7 +26,7 @@ Aturan di `.gitignore`: `*.pdf`, `*.doc(x)`, `*.xls(x)`, `*.ppt(x)`, arsip zip, 
 
 | File | Isi |
 |------|-----|
-| **[UAT/](./UAT/)** | **Dokumen UAT resmi** — PDF Berita Acara + lembar eksekusi TC-01–TC-05 ([`STATUS.md`](./UAT/STATUS.md)) |
+| **[UAT/](./UAT/)** | **Dokumen UAT resmi** — Berita Acara + lembar eksekusi TC-01–TC-05 ([`README.md`](./UAT/README.md)) |
 | **[handover/](./handover/)** | **Paket serah terima** — [`penyelarasan-revisi-1.md`](./handover/penyelarasan-revisi-1.md) + setup & operasional (successor dev) |
 | **[ecosystem.md](./ecosystem.md)** | **Arsitektur dua repo** — backend (ini) + [`layer-farm-agung-mobile`](../../layer-farm-agung-mobile) |
 | **[sitemap.md](./sitemap.md)** | Peta rute **admin web + API**; progress implementasi |
