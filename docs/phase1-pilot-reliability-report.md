@@ -1,6 +1,6 @@
 # Phase 1 — Pilot Reliability report
 
-**Date:** 2026-08-11 (code) · **Device retest notes:** 2026-08-12 — lihat [phase1-device-retest-checklist.md](./phase1-device-retest-checklist.md)  
+**Date:** 2026-08-11 (code) · **Device retest notes:** 2026-08-12 — lihat [archive/phase1-device-retest-checklist.md](./archive/phase1-device-retest-checklist.md) (arsip; UAT formal: [UAT/README.md](./UAT/README.md))  
 **Scope:** PH1-A through PH1-H only. **No Phase 2.**  
 **Authority:** Approved backlog in [gap-matrix-aapm.md](./gap-matrix-aapm.md).
 
@@ -22,7 +22,7 @@
 
 **Mobile:** history cache clear on correction; Profile offline + version; Input QR demoted.  
 **Web:** dashboard finance gate; HDP/FCR labels; cage close-cycle pilot banner; Profile version.  
-**Docs:** pilot guide, ops contact, this report, [device retest checklist](./phase1-device-retest-checklist.md), gap matrix status.
+**Docs:** pilot guide, ops contact, this report, [device retest checklist](./archive/phase1-device-retest-checklist.md), gap matrix status.
 
 ## Known limitations (pilot)
 

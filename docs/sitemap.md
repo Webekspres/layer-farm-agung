@@ -328,4 +328,4 @@ Lihat [`layer-farm-agung-mobile/docs/progress.md`](../../layer-farm-agung-mobile
 
 ---
 
-*Perbarui dokumen ini saat menambah halaman admin atau endpoint API. Laporan mingguan: [`docs/weekly progress/`](./weekly%20progress/).*
+*Perbarui dokumen ini saat menambah halaman admin atau endpoint API. Progress terkini: §7–8 di atas · mobile [`progress.md`](../../layer-farm-agung-mobile/docs/progress.md).*

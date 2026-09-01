@@ -42,7 +42,7 @@ Sumber lengkap: [`../gap-matrix-aapm.md`](../gap-matrix-aapm.md). Ringkasan prio
 
 | Lokasi | Alasan |
 |--------|--------|
-| `docs/weekly progress/` | Arsip Juni–Juli 2026; path repo lama |
+| `docs/archive/` | Arsip historis — weekly progress, UAT 13 modul, PH1 retest |
 | `gap-matrix` baris GAP-014 **tanpa** catatan Revisi 1 | Bisa masih menyebut “belum ada formula” — utamakan [`penyelarasan-revisi-1.md`](./penyelarasan-revisi-1.md) |
 | `openapi.yaml` → `info.version` | Dapat tertinggal dari `package.json` |
 | Lembar UAT v1.0.5-build.27 | Arsip — gunakan build.30 |

@@ -37,7 +37,7 @@
 
 ## Verifikasi inti sebelum mulai
 
-Checklist executable: **[phase1-device-retest-checklist.md](./phase1-device-retest-checklist.md)**
+Checklist executable (arsip): **[archive/phase1-device-retest-checklist.md](./archive/phase1-device-retest-checklist.md)** — UAT resmi: [`UAT/README.md`](./UAT/README.md)
 
 1. Penugasan/cabut staff → daftar kandang Mobile update setelah refresh online  
 2. Input tersimpan pada kandang + siklus aktif; nilai sama di Android & web  

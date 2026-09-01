@@ -1,3 +1,5 @@
+> **Arsip** — retest manual PH1 (Agu 2026). UAT formal TC-01–TC-05 **selesai**: [`../UAT/README.md`](../UAT/README.md).
+
 # Phase 1 — Device Retest Checklist (manual)
 
 **Produk:** AAPM Web + Mobile  

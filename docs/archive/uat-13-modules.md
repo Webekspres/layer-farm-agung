@@ -1,3 +1,5 @@
+> **Arsip** — checklist rilis awal 13 modul (pra-pilot). UAT resmi: [`../UAT/README.md`](../UAT/README.md).
+
 # UAT Checklist — 13 Modul AAPM
 
 Checklist ini dipakai sebelum backend Vercel dan EAS Preview dinyatakan release candidate.

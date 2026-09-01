@@ -6,7 +6,7 @@
 
 **Aturan:** Dokumen 13 Agu menjadi sumber **prioritas** terbaru. Dokumen lama tetap berlaku kecuali ada supersede yang disebut di sini. File source / gap-matrix / pilot-guide **tidak diubah** oleh dokumen ini.
 
-**Baseline yang dibanding:** [gap-matrix-aapm.md](./gap-matrix-aapm.md) · [phase1-pilot-reliability-report.md](./phase1-pilot-reliability-report.md) · [phase1-device-retest-checklist.md](./phase1-device-retest-checklist.md) · [pilot-guide-v1.md](./pilot-guide-v1.md) · [pilot-ops-contact.md](./pilot-ops-contact.md) · [egg-sales-stock.md](./egg-sales-stock.md) · [daily-input-correction.md](./daily-input-correction.md)
+**Baseline yang dibanding:** [gap-matrix-aapm.md](./gap-matrix-aapm.md) · [phase1-pilot-reliability-report.md](./phase1-pilot-reliability-report.md) · [archive/phase1-device-retest-checklist.md](./archive/phase1-device-retest-checklist.md) · [pilot-guide-v1.md](./pilot-guide-v1.md) · [pilot-ops-contact.md](./pilot-ops-contact.md) · [egg-sales-stock.md](./egg-sales-stock.md) · [daily-input-correction.md](./daily-input-correction.md)
 
 ---
 
